@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 interface Season { id: string; name: string; }
-interface Competition { id: string; name: string; type: string | null; level: string | null; organizer: string | null; season: { name: string } | null; }
+interface Competition { id: string; name: string; type: string | null; level: string | null; organizer: string | null; season: { name: string }[] | null; }
 const emptyForm = { name: "", type: "campionato", level: "regionale", organizer: "", season_id: "" };
 
 export default function AdminCompetizioni() {
@@ -20,7 +20,7 @@ export default function AdminCompetizioni() {
       supabase.from("competitions").select("id, name, type, level, organizer, season:seasons(name)").order("name"),
       supabase.from("seasons").select("id, name").order("start_date", { ascending: false }),
     ]);
-    setCompetitions((c as Competition[]) ?? []);
+    setCompetitions((c as unknown as Competition[]) ?? []);
     setSeasons((s as Season[]) ?? []);
   }
 
