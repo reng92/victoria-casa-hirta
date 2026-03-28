@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 
 export const revalidate = 60;
 
@@ -57,7 +58,7 @@ function MatchCard({ match }: { match: Match }) {
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md transition flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <Link href={`/calendario/${match.id}`} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-brand-blue transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 block">
       <div className="flex flex-col gap-1 min-w-0">
         {match.competition && (
           <span className="text-xs font-semibold uppercase tracking-widest text-brand-red">
@@ -99,7 +100,7 @@ function MatchCard({ match }: { match: Match }) {
           </span>
         )}
       </div>
-    </div>
+    </Link>
   );
 }
 
