@@ -36,7 +36,7 @@ export default function AdminLogin() {
       <div className="bg-white rounded-2xl shadow-md p-8 w-full max-w-sm">
         <div className="text-center mb-8">
           <Image
-            src="/logo.jpeg"
+                src="/logo.jpeg"
             alt="Victoria Casa Hirta"
             width={72}
             height={72}
