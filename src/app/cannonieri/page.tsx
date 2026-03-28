@@ -8,24 +8,19 @@ interface Scorer {
   photo_url: string | null;
   role: string;
   gol: number;
-  assist: number;
-  presenze: number;
 }
 
 async function getScorers(): Promise<Scorer[]> {
-  const { data: events } = await supabase
+  const { data, error } = await supabase
     .from("match_events")
-    .select("player_id, event_type, player:players(full_name, photo_url, role)");
+    .select("player_id, event_type, player:players(full_name, photo_url, role)")
+    .eq("event_type", "gol");
 
-  const { data: lineups } = await supabase
-    .from("match_lineups")
-    .select("player_id");
-
-  if (!events) return [];
+  if (error || !data) return [];
 
   const map: Record<string, Scorer> = {};
 
-  for (const e of (events as unknown as any[])) {
+  for (const e of data as unknown as any[]) {
     const pid = e.player_id;
     if (!pid) continue;
     if (!map[pid]) {
@@ -35,23 +30,12 @@ async function getScorers(): Promise<Scorer[]> {
         photo_url: e.player?.photo_url ?? null,
         role: e.player?.role ?? "",
         gol: 0,
-        assist: 0,
-        presenze: 0,
       };
     }
-    if (e.event_type === "gol") map[pid].gol++;
-    if (e.event_type === "assist") map[pid].assist++;
+    map[pid].gol++;
   }
 
-  if (lineups) {
-    for (const l of lineups as any[]) {
-      const pid = l.player_id;
-      if (!pid) continue;
-      if (map[pid]) map[pid].presenze++;
-    }
-  }
-
-  return Object.values(map).sort((a, b) => b.gol - a.gol || b.assist - a.assist);
+  return Object.values(map).sort((a, b) => b.gol - a.gol);
 }
 
 export default async function CannonierigPage() {
@@ -74,8 +58,6 @@ export default async function CannonierigPage() {
                 <th className="py-3 px-4 text-left w-8">#</th>
                 <th className="py-3 px-4 text-left">Giocatore</th>
                 <th className="py-3 px-4 text-center">⚽ Gol</th>
-                <th className="py-3 px-4 text-center">🎯 Assist</th>
-                <th className="py-3 px-4 text-center hidden sm:table-cell">📋 Presenze</th>
               </tr>
             </thead>
             <tbody>
@@ -101,8 +83,6 @@ export default async function CannonierigPage() {
                     </div>
                   </td>
                   <td className="py-3 px-4 text-center font-bold text-lg text-brand-red">{s.gol}</td>
-                  <td className="py-3 px-4 text-center font-semibold text-gray-600">{s.assist}</td>
-                  <td className="py-3 px-4 text-center text-gray-500 hidden sm:table-cell">{s.presenze}</td>
                 </tr>
               ))}
             </tbody>
