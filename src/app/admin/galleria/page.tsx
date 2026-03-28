@@ -41,7 +41,7 @@ export default function AdminGalleria() {
         .select("id, match_date, away_team")
         .order("match_date", { ascending: false }),
     ]);
-    setPhotos((p as Photo[]) ?? []);
+    setPhotos((p as unknown as Photo[]) ?? []);
     setMatches((m as Match[]) ?? []);
   }
 
