@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -12,11 +12,21 @@ interface Match {
   is_home: boolean;
   home_score: number | null;
   away_score: number | null;
-  live_minute: number | null;
-  live_started_at: string | null;
   status: string;
   opponent_logo_url: string | null;
+  live_minute: number | null;
+  live_minute_set_at: string | null;
+  live_period: string | null;
+  live_extra_time: number | null;
   competition: { name: string } | null;
+}
+interface MatchEvent {
+  id: string;
+  event_type: string;
+  minute: number | null;
+  for_team: string | null;
+  player: { full_name: string } | null;
+  player_out: { full_name: string } | null;
 }
 
 const emptyForm = {
@@ -41,25 +51,33 @@ export default function AdminPartite() {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [opponentLogoUploading, setOpponentLogoUploading] = useState(false);
+
+  // Live state
   const [liveMatchId, setLiveMatchId] = useState<string | null>(null);
-  const [liveHome, setLiveHome] = useState("");
-  const [liveAway, setLiveAway] = useState("");
+  const [liveHome, setLiveHome] = useState("0");
+  const [liveAway, setLiveAway] = useState("0");
   const [livePlayer, setLivePlayer] = useState("");
+  const [livePlayerOut, setLivePlayerOut] = useState("");
   const [liveMinute, setLiveMinute] = useState("");
   const [liveEventType, setLiveEventType] = useState("gol");
   const [liveForTeam, setLiveForTeam] = useState<"vch" | "opponent">("vch");
   const [liveMsg, setLiveMsg] = useState("");
   const [liveMinuteDisplay, setLiveMinuteDisplay] = useState("");
   const [liveStartTime, setLiveStartTime] = useState("");
-  const [opponentLogoUploading, setOpponentLogoUploading] = useState(false);
+  const [liveExtraTime, setLiveExtraTime] = useState("0");
+  const [liveEvents, setLiveEvents] = useState<MatchEvent[]>([]);
+  const [showConfirm, setShowConfirm] = useState<string | null>(null);
+
+  useEffect(() => { fetchAll(); }, []);
 
   useEffect(() => {
-    fetchAll();
-  }, []);
+    if (liveMatchId) fetchLiveEvents(liveMatchId);
+  }, [liveMatchId]);
 
   async function fetchAll() {
     const [{ data: m }, { data: c }, { data: v }, { data: p }] = await Promise.all([
-      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, live_minute, live_started_at, status, opponent_logo_url, competition:competitions(name)").order("match_date", { ascending: false }),
+      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, opponent_logo_url, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
       supabase.from("competitions").select("id, name"),
       supabase.from("venues").select("id, name"),
       supabase.from("players").select("id, full_name").eq("is_active", true).order("full_name"),
@@ -68,6 +86,15 @@ export default function AdminPartite() {
     setCompetitions((c as unknown as Competition[]) ?? []);
     setVenues((v as unknown as Venue[]) ?? []);
     setPlayers((p as unknown as Player[]) ?? []);
+  }
+
+  async function fetchLiveEvents(matchId: string) {
+    const { data } = await supabase
+      .from("match_events")
+      .select("id, event_type, minute, for_team, player:players!match_events_player_id_fkey(full_name), player_out:players!match_events_player_out_id_fkey(full_name)")
+      .eq("match_id", matchId)
+      .order("minute", { ascending: true });
+    setLiveEvents((data as unknown as MatchEvent[]) ?? []);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -98,18 +125,35 @@ export default function AdminPartite() {
     fetchAll();
   }
 
-  async function setLive(match: Match) {
+  async function startLive(match: Match) {
     setLiveMatchId(match.id);
     setLiveHome(String(match.home_score ?? 0));
     setLiveAway(String(match.away_score ?? 0));
     setLiveMinuteDisplay(String(match.live_minute ?? 0));
+    setLiveExtraTime(String(match.live_extra_time ?? 0));
     const matchTime = new Date(match.match_date).toTimeString().slice(0, 5);
     setLiveStartTime(matchTime);
     setLiveMsg("");
     await supabase.from("matches").update({
       status: "live",
+      live_period: match.live_period ?? "first_half",
       live_started_at: new Date().toISOString(),
     }).eq("id", match.id);
+    fetchAll();
+    fetchLiveEvents(match.id);
+  }
+
+  async function setPeriod(period: string, minuteStart: number) {
+    if (!liveMatchId) return;
+    await supabase.from("matches").update({
+      live_period: period,
+      live_minute: minuteStart,
+      live_minute_set_at: new Date().toISOString(),
+      live_extra_time: 0,
+    }).eq("id", liveMatchId);
+    setLiveMinuteDisplay(String(minuteStart));
+    setLiveExtraTime("0");
+    setLiveMsg(period === "half_time" ? "⏸ Intervallo!" : period === "second_half" ? "▶️ Secondo tempo iniziato!" : period === "extra_time" ? "⚡ Tempi supplementari!" : "");
     fetchAll();
   }
 
@@ -118,41 +162,9 @@ export default function AdminPartite() {
     await supabase.from("matches").update({
       home_score: parseInt(liveHome) || 0,
       away_score: parseInt(liveAway) || 0,
-      status: "live",
     }).eq("id", liveMatchId);
-    setLiveMsg("Punteggio aggiornato!");
+    setLiveMsg("✅ Punteggio aggiornato!");
     fetchAll();
-  }
-
-  async function addLiveEvent() {
-    if (!liveMatchId || !livePlayer) return;
-    const { error } = await supabase.from("match_events").insert({
-      match_id: liveMatchId,
-      player_id: livePlayer,
-      event_type: liveEventType,
-      minute: liveMinute ? parseInt(liveMinute) : null,
-      for_team: liveForTeam,
-    });
-    if (!error) {
-      if (liveForTeam === "vch" && liveEventType === "gol") {
-        setLiveHome(String(parseInt(liveHome) + 1));
-        await supabase.from("matches").update({
-          home_score: parseInt(liveHome) + 1,
-          status: "live",
-        }).eq("id", liveMatchId);
-      }
-      if (liveForTeam === "opponent" && liveEventType === "gol") {
-        setLiveAway(String(parseInt(liveAway) + 1));
-        await supabase.from("matches").update({
-          away_score: parseInt(liveAway) + 1,
-          status: "live",
-        }).eq("id", liveMatchId);
-      }
-      setLiveMsg("Evento aggiunto!");
-      setLivePlayer("");
-      setLiveMinute("");
-      fetchAll();
-    }
   }
 
   async function updateLiveMinute() {
@@ -160,8 +172,9 @@ export default function AdminPartite() {
     await supabase.from("matches").update({
       live_minute: parseInt(liveMinuteDisplay) || 0,
       live_minute_set_at: new Date().toISOString(),
+      live_extra_time: parseInt(liveExtraTime) || 0,
     }).eq("id", liveMatchId);
-    setLiveMsg("Minuto aggiornato! Il timer riparte da " + liveMinuteDisplay + "'");
+    setLiveMsg(`⏱️ Timer riparte da ${liveMinuteDisplay}'${parseInt(liveExtraTime) > 0 ? `+${liveExtraTime}` : ""}`);
     fetchAll();
   }
 
@@ -171,7 +184,7 @@ export default function AdminPartite() {
       live_minute: parseInt(liveMinuteDisplay) || 0,
       live_minute_set_at: null,
     }).eq("id", liveMatchId);
-    setLiveMsg("Timer fermato a " + liveMinuteDisplay + "'");
+    setLiveMsg("⏸ Timer fermato");
   }
 
   async function updateStartTime() {
@@ -182,13 +195,65 @@ export default function AdminPartite() {
       match_date: newDatetime,
       live_started_at: newDatetime,
     }).eq("id", liveMatchId);
-    setLiveMsg("Orario aggiornato!");
+    setLiveMsg("🕐 Orario aggiornato!");
+    fetchAll();
+  }
+
+  async function addLiveEvent() {
+    if (!liveMatchId || !livePlayer) return;
+    const { error } = await supabase.from("match_events").insert({
+      match_id: liveMatchId,
+      player_id: livePlayer,
+      player_out_id: liveEventType === "cambio" ? (livePlayerOut || null) : null,
+      event_type: liveEventType,
+      minute: liveMinute ? parseInt(liveMinute) : null,
+      for_team: liveForTeam,
+    });
+    if (!error) {
+      if (liveEventType === "gol") {
+        const newHome = liveForTeam === "vch" ? parseInt(liveHome) + 1 : parseInt(liveHome);
+        const newAway = liveForTeam === "opponent" ? parseInt(liveAway) + 1 : parseInt(liveAway);
+        setLiveHome(String(newHome));
+        setLiveAway(String(newAway));
+        await supabase.from("matches").update({
+          home_score: newHome,
+          away_score: newAway,
+        }).eq("id", liveMatchId);
+        setShowConfirm(`GOL! ${liveForTeam === "vch" ? "VCH" : liveMatch?.away_team} ${newHome}–${newAway}`);
+        setTimeout(() => setShowConfirm(null), 3000);
+      }
+      setLiveMsg("✅ Evento aggiunto!");
+      setLivePlayer("");
+      setLivePlayerOut("");
+      setLiveMinute("");
+      fetchAll();
+      fetchLiveEvents(liveMatchId);
+    }
+  }
+
+  async function deleteEvent(eventId: string, eventType: string, forTeam: string | null) {
+    if (!confirm("Annullare questo evento?")) return;
+    if (eventType === "gol" && liveMatchId) {
+      const newHome = forTeam === "vch" ? Math.max(0, parseInt(liveHome) - 1) : parseInt(liveHome);
+      const newAway = forTeam === "opponent" ? Math.max(0, parseInt(liveAway) - 1) : parseInt(liveAway);
+      setLiveHome(String(newHome));
+      setLiveAway(String(newAway));
+      await supabase.from("matches").update({ home_score: newHome, away_score: newAway }).eq("id", liveMatchId);
+    }
+    await supabase.from("match_events").delete().eq("id", eventId);
+    setLiveMsg("↩️ Evento annullato");
+    if (liveMatchId) fetchLiveEvents(liveMatchId);
     fetchAll();
   }
 
   async function endMatch() {
     if (!liveMatchId) return;
-    await supabase.from("matches").update({ status: "finished" }).eq("id", liveMatchId);
+    if (!confirm("Terminare la partita?")) return;
+    await supabase.from("matches").update({
+      status: "finished",
+      live_period: "finished",
+      live_minute_set_at: null,
+    }).eq("id", liveMatchId);
     setLiveMatchId(null);
     setLiveMsg("");
     fetchAll();
@@ -196,171 +261,197 @@ export default function AdminPartite() {
 
   const liveMatch = matches.find(m => m.id === liveMatchId);
 
+  const periodLabel: Record<string, string> = {
+    first_half: "🔴 Primo tempo",
+    half_time: "⏸ Intervallo",
+    second_half: "🔴 Secondo tempo",
+    extra_time: "⚡ Supplementari",
+    finished: "✅ Terminata",
+  };
+
+  const eventEmoji: Record<string, string> = {
+    gol: "⚽",
+    autorete: "🙈",
+    assist: "🎯",
+    ammonizione: "🟨",
+    espulsione: "🟥",
+    cambio: "🔄",
+    rigore_segnato: "⚽✅",
+    rigore_parato: "🧤",
+    rigore_sbagliato: "❌",
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-extrabold text-brand-blue mb-8">Admin – Partite</h1>
 
-      {/* PANNELLO LIVESCORE ATTIVO */}
+      {/* CONFERMA GOL */}
+      {showConfirm && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-500 text-white font-extrabold text-xl px-8 py-4 rounded-2xl shadow-2xl animate-bounce">
+          {showConfirm}
+        </div>
+      )}
+
+      {/* PANNELLO LIVESCORE */}
       {liveMatchId && liveMatch && (
         <div className="bg-brand-blue text-white rounded-2xl p-6 mb-10 shadow-lg">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="w-3 h-3 rounded-full bg-brand-red animate-pulse inline-block" />
-            <span className="font-bold text-lg">LIVE – VCH vs {liveMatch.away_team}</span>
+          
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-brand-red animate-pulse inline-block" />
+              <span className="font-bold text-lg">VCH vs {liveMatch.away_team}</span>
+            </div>
+            <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-semibold">
+              {periodLabel[liveMatch.live_period ?? "first_half"]}
+            </span>
           </div>
 
           {/* Punteggio */}
           <div className="flex items-center justify-center gap-6 mb-4">
             <div className="text-center">
               <div className="text-xs text-white/60 mb-1">VCH</div>
-              <input
-                type="number"
-                min="0"
-                className="w-16 text-center text-3xl font-extrabold bg-white/10 border border-white/20 rounded-xl py-2 text-white"
-                value={liveHome}
-                onChange={e => setLiveHome(e.target.value)}
-              />
+              <input type="number" min="0" className="w-16 text-center text-3xl font-extrabold bg-white/10 border border-white/20 rounded-xl py-2 text-white" value={liveHome} onChange={e => setLiveHome(e.target.value)} />
             </div>
             <div className="text-3xl font-extrabold text-white/40">–</div>
             <div className="text-center">
               <div className="text-xs text-white/60 mb-1">{liveMatch.away_team}</div>
-              <input
-                type="number"
-                min="0"
-                className="w-16 text-center text-3xl font-extrabold bg-white/10 border border-white/20 rounded-xl py-2 text-white"
-                value={liveAway}
-                onChange={e => setLiveAway(e.target.value)}
-              />
+              <input type="number" min="0" className="w-16 text-center text-3xl font-extrabold bg-white/10 border border-white/20 rounded-xl py-2 text-white" value={liveAway} onChange={e => setLiveAway(e.target.value)} />
             </div>
           </div>
-
-          <button
-            onClick={updateLiveScore}
-            className="w-full bg-white text-brand-blue font-bold py-2 rounded-full mb-4 hover:opacity-90"
-          >
+          <button onClick={updateLiveScore} className="w-full bg-white text-brand-blue font-bold py-2 rounded-full mb-4 hover:opacity-90">
             Aggiorna punteggio
           </button>
 
-          {/* Timer manuale */}
+          {/* Gestione tempi */}
           <div className="bg-white/10 rounded-xl p-4 mb-4">
-            <div className="text-sm font-semibold mb-3">⏱️ Minuto di gioco</div>
-            <div className="flex items-center gap-3">
-              <input
-                type="number"
-                min="0"
-                max="120"
-                className="w-24 text-center text-2xl font-extrabold bg-white/10 border border-white/20 rounded-xl py-2 text-white"
-                value={liveMinuteDisplay}
-                onChange={e => setLiveMinuteDisplay(e.target.value)}
-                placeholder="0"
-              />
-              <span className="text-white/60 text-sm">'</span>
-              <div className="flex flex-col gap-1 flex-1">
-                <button
-                  onClick={updateLiveMinute}
-                  className="bg-white text-brand-blue text-xs font-bold px-4 py-1.5 rounded-full hover:opacity-90"
-                >
-                  Aggiorna minuto
-                </button>
-                <button
-                  onClick={stopTimer}
-                  className="bg-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-full hover:bg-white/30"
-                >
-                  ⏸ Ferma timer
-                </button>
-              </div>
-            </div>
-            <p className="text-xs text-white/40 mt-2">Inserisci il minuto attuale e aggiorna manualmente quando vuoi</p>
-          </div>
-
-          {/* Orario di inizio */}
-          <div className="bg-white/10 rounded-xl p-4 mb-4">
-            <div className="text-sm font-semibold mb-3">🕐 Orario effettivo inizio</div>
-            <div className="flex items-center gap-3">
-              <input
-                type="time"
-                className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white"
-                value={liveStartTime}
-                onChange={e => setLiveStartTime(e.target.value)}
-              />
-              <button
-                onClick={updateStartTime}
-                className="bg-white text-brand-blue text-xs font-bold px-4 py-2 rounded-full hover:opacity-90"
-              >
-                Aggiorna orario
+            <div className="text-sm font-semibold mb-3">⏱️ Gestione tempi</div>
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <button onClick={() => setPeriod("half_time", 45)} className="bg-yellow-500 text-white text-xs font-bold py-2 rounded-full hover:opacity-90">
+                ⏸ Fine 1° tempo
+              </button>
+              <button onClick={() => setPeriod("second_half", 45)} className="bg-green-500 text-white text-xs font-bold py-2 rounded-full hover:opacity-90">
+                ▶️ Inizio 2° tempo
+              </button>
+              <button onClick={() => setPeriod("extra_time", 90)} className="bg-purple-500 text-white text-xs font-bold py-2 rounded-full hover:opacity-90">
+                ⚡ Supplementari
+              </button>
+              <button onClick={stopTimer} className="bg-white/20 text-white text-xs font-semibold py-2 rounded-full hover:bg-white/30">
+                ⏸ Ferma timer
               </button>
             </div>
-            <p className="text-xs text-white/40 mt-2">Modifica l'orario reale di inizio partita</p>
+
+            {/* Timer manuale */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 flex-1">
+                <input
+                  type="number" min="0" max="120"
+                  className="w-16 text-center text-lg font-extrabold bg-white/10 border border-white/20 rounded-xl py-1.5 text-white"
+                  value={liveMinuteDisplay}
+                  onChange={e => setLiveMinuteDisplay(e.target.value)}
+                  placeholder="0"
+                />
+                <span className="text-white/60">+</span>
+                <input
+                  type="number" min="0" max="20"
+                  className="w-12 text-center text-lg font-extrabold bg-white/10 border border-white/20 rounded-xl py-1.5 text-white"
+                  value={liveExtraTime}
+                  onChange={e => setLiveExtraTime(e.target.value)}
+                  placeholder="0"
+                />
+                <span className="text-white/60 text-sm">'</span>
+              </div>
+              <button onClick={updateLiveMinute} className="bg-white text-brand-blue text-xs font-bold px-4 py-2 rounded-full hover:opacity-90">
+                Aggiorna
+              </button>
+            </div>
+            <p className="text-xs text-white/40 mt-2">Minuto + recupero. Il timer riparte da qui.</p>
+          </div>
+
+          {/* Orario inizio */}
+          <div className="bg-white/10 rounded-xl p-4 mb-4">
+            <div className="text-sm font-semibold mb-2">🕐 Orario effettivo inizio</div>
+            <div className="flex items-center gap-2">
+              <input type="time" className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white" value={liveStartTime} onChange={e => setLiveStartTime(e.target.value)} />
+              <button onClick={updateStartTime} className="bg-white text-brand-blue text-xs font-bold px-4 py-2 rounded-full hover:opacity-90">
+                Aggiorna
+              </button>
+            </div>
           </div>
 
           {/* Aggiungi evento */}
           <div className="bg-white/10 rounded-xl p-4 mb-4">
             <div className="text-sm font-semibold mb-3">Aggiungi evento</div>
+
+            {/* Squadra */}
+            <div className="flex gap-2 mb-2">
+              <button type="button" onClick={() => setLiveForTeam("vch")} className={`flex-1 py-2 rounded-full text-xs font-bold transition ${liveForTeam === "vch" ? "bg-white text-brand-blue" : "bg-white/10 text-white"}`}>
+                ⚽ VCH
+              </button>
+              <button type="button" onClick={() => setLiveForTeam("opponent")} className={`flex-1 py-2 rounded-full text-xs font-bold transition ${liveForTeam === "opponent" ? "bg-white text-brand-blue" : "bg-white/10 text-white"}`}>
+                ⚽ {liveMatch.away_team}
+              </button>
+            </div>
+
             <div className="grid grid-cols-2 gap-2 mb-2">
-              <select
-                className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white col-span-2"
-                value={livePlayer}
-                onChange={e => setLivePlayer(e.target.value)}
-              >
+              <select className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white col-span-2" value={livePlayer} onChange={e => setLivePlayer(e.target.value)}>
                 <option value="">– Seleziona giocatore –</option>
-                {players.map(p => (
-                  <option key={p.id} value={p.id}>{p.full_name}</option>
-                ))}
+                {players.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
               </select>
-              <div className="col-span-2">
-                <label className="text-xs text-white/60 mb-1 block">Squadra</label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setLiveForTeam("vch")}
-                    className={`flex-1 py-2 rounded-full text-xs font-bold transition ${liveForTeam === "vch" ? "bg-white text-brand-blue" : "bg-white/10 text-white"}`}
-                  >
-                    ⚽ VCH
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLiveForTeam("opponent")}
-                    className={`flex-1 py-2 rounded-full text-xs font-bold transition ${liveForTeam === "opponent" ? "bg-white text-brand-blue" : "bg-white/10 text-white"}`}
-                  >
-                    ⚽ {liveMatch?.away_team ?? "Avversario"}
-                  </button>
-                </div>
-              </div>
-              <select
-                className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white"
-                value={liveEventType}
-                onChange={e => setLiveEventType(e.target.value)}
-              >
+
+              {liveEventType === "cambio" && (
+                <select className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white col-span-2" value={livePlayerOut} onChange={e => setLivePlayerOut(e.target.value)}>
+                  <option value="">– Giocatore che esce –</option>
+                  {players.map(p => <option key={p.id} value={p.id}>{p.full_name}</option>)}
+                </select>
+              )}
+
+              <select className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white" value={liveEventType} onChange={e => setLiveEventType(e.target.value)}>
                 <option value="gol">⚽ Gol</option>
-                <option value="assist">🎯 Assist</option>
                 <option value="autorete">🙈 Autorete</option>
+                <option value="assist">🎯 Assist</option>
                 <option value="ammonizione">🟨 Ammonizione</option>
                 <option value="espulsione">🟥 Espulsione</option>
+                <option value="cambio">🔄 Cambio</option>
+                <option value="rigore_segnato">⚽✅ Rigore segnato</option>
+                <option value="rigore_parato">🧤 Rigore parato</option>
+                <option value="rigore_sbagliato">❌ Rigore sbagliato</option>
               </select>
-              <input
-                type="number"
-                min="1"
-                max="120"
-                placeholder="Minuto"
-                className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40"
-                value={liveMinute}
-                onChange={e => setLiveMinute(e.target.value)}
-              />
+
+              <input type="number" min="1" max="120" placeholder="Minuto" className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40" value={liveMinute} onChange={e => setLiveMinute(e.target.value)} />
             </div>
-            <button
-              onClick={addLiveEvent}
-              disabled={!livePlayer}
-              className="w-full bg-brand-red text-white font-semibold py-2 rounded-full hover:opacity-90 disabled:opacity-40"
-            >
+
+            <button onClick={addLiveEvent} disabled={!livePlayer} className="w-full bg-brand-red text-white font-semibold py-2 rounded-full hover:opacity-90 disabled:opacity-40">
               Aggiungi evento
             </button>
           </div>
 
+          {/* Lista eventi live */}
+          {liveEvents.length > 0 && (
+            <div className="bg-white/10 rounded-xl p-4 mb-4">
+              <div className="text-sm font-semibold mb-3">📋 Eventi partita</div>
+              <div className="flex flex-col gap-2">
+                {liveEvents.map((ev) => (
+                  <div key={ev.id} className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2">
+                      <span>{eventEmoji[ev.event_type] ?? "📋"}</span>
+                      <span className="font-semibold">{ev.player?.full_name ?? "–"}</span>
+                      {ev.player_out && <span className="text-white/50">↔️ {ev.player_out.full_name}</span>}
+                      <span className="text-white/50">{ev.minute ? `${ev.minute}'` : ""}</span>
+                      <span className="text-white/40">{ev.for_team === "opponent" ? `(${liveMatch.away_team})` : "(VCH)"}</span>
+                    </div>
+                    <button onClick={() => deleteEvent(ev.id, ev.event_type, ev.for_team)} className="text-white/40 hover:text-brand-red transition text-base">
+                      ↩️
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {liveMsg && <p className="text-xs text-green-300 text-center mb-3">{liveMsg}</p>}
 
-          <button
-            onClick={endMatch}
-            className="w-full bg-red-800 text-white font-bold py-2 rounded-full hover:opacity-90"
-          >
+          <button onClick={endMatch} className="w-full bg-red-800 text-white font-bold py-3 rounded-full hover:opacity-90 text-sm">
             ✅ Fine partita
           </button>
         </div>
@@ -423,11 +514,7 @@ export default function AdminPartite() {
               )}
               <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium px-4 py-2 rounded-full transition">
                 {opponentLogoUploading ? "Caricamento..." : "Carica logo"}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  disabled={opponentLogoUploading}
+                <input type="file" accept="image/*" className="hidden" disabled={opponentLogoUploading}
                   onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -439,13 +526,8 @@ export default function AdminPartite() {
                   }}
                 />
               </label>
-              <span className="text-xs text-gray-400">oppure</span>
-              <input
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
-                value={form.opponent_logo_url}
-                onChange={e => setForm(f => ({ ...f, opponent_logo_url: e.target.value }))}
-                placeholder="URL immagine..."
-              />
+              <span className="text-xs text-gray-400">o incolla URL</span>
+              <input className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.opponent_logo_url} onChange={e => setForm(f => ({ ...f, opponent_logo_url: e.target.value }))} placeholder="https://..." />
             </div>
           </div>
           <div className="sm:col-span-2">
@@ -463,38 +545,36 @@ export default function AdminPartite() {
           <div key={m.id} className={`bg-white border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm ${m.status === "live" ? "border-brand-red" : "border-gray-100"}`}>
             <div>
               {m.status === "live" && (
-                <div className="flex items-center gap-1 mb-1">
+                <div className="flex items-center gap-2 mb-1">
                   <span className="w-2 h-2 rounded-full bg-brand-red animate-pulse inline-block" />
-                  <span className="text-xs font-bold text-brand-red">LIVE</span>
+                  <span className="text-xs font-bold text-brand-red">
+                    {periodLabel[m.live_period ?? "first_half"]}
+                  </span>
                 </div>
               )}
               <div className="font-semibold text-brand-blue text-sm flex items-center gap-2">
-                {m.opponent_logo_url && (
-                  <img src={m.opponent_logo_url} alt={m.away_team} className="w-6 h-6 object-contain rounded" />
-                )}
+                {m.opponent_logo_url && <img src={m.opponent_logo_url} alt={m.away_team} className="w-6 h-6 object-contain rounded" />}
                 VCH vs {m.away_team} · {m.is_home ? "Casa" : "Trasferta"}
               </div>
               <div className="text-xs text-gray-400">
-                {new Date(m.match_date).toLocaleDateString("it-IT")} · {m.competition?.name ?? "–"} · {m.status}
+                {new Date(m.match_date).toLocaleDateString("it-IT")} · {m.competition?.name ?? "–"}
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               {m.status === "scheduled" && (
-                <button onClick={() => setLive(m)} className="text-xs bg-brand-red text-white px-3 py-1 rounded-full hover:opacity-90">
+                <button onClick={() => startLive(m)} className="text-xs bg-brand-red text-white px-3 py-1 rounded-full hover:opacity-90">
                   🔴 Inizia live
                 </button>
               )}
               {m.status === "live" && (
-                <button onClick={() => setLive(m)} className="text-xs bg-brand-red text-white px-3 py-1 rounded-full hover:opacity-90 animate-pulse">
+                <button onClick={() => startLive(m)} className="text-xs bg-brand-red text-white px-3 py-1 rounded-full animate-pulse">
                   🔴 Gestisci live
                 </button>
               )}
               {m.status === "finished" && (
                 <span className="text-sm font-bold text-brand-red">{m.home_score} – {m.away_score}</span>
               )}
-              <button onClick={() => handleDelete(m.id)} className="text-xs text-gray-400 hover:text-red-500 transition">
-                🗑️
-              </button>
+              <button onClick={() => handleDelete(m.id)} className="text-xs text-gray-400 hover:text-red-500 transition">🗑️</button>
             </div>
           </div>
         ))}
