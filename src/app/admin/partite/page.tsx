@@ -46,9 +46,9 @@ export default function AdminPartite() {
       supabase.from("competitions").select("id, name"),
       supabase.from("venues").select("id, name"),
     ]);
-    setMatches((m as Match[]) ?? []);
-    setCompetitions((c as Competition[]) ?? []);
-    setVenues((v as Venue[]) ?? []);
+    setMatches((m as unknown as Match[]) ?? []);
+    setCompetitions((c as unknown as Competition[]) ?? []);
+    setVenues((v as unknown as Venue[]) ?? []);
   }
 
   async function handleSubmit(e: React.FormEvent) {

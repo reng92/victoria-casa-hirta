@@ -16,7 +16,7 @@ export default function AdminStaff() {
 
   async function fetchStaff() {
     const { data } = await supabase.from("staff").select("id, full_name, role").order("role");
-    setStaff((data as StaffMember[]) ?? []);
+    setStaff((data as unknown as StaffMember[]) ?? []);
   }
 
   async function handleSubmit(e: React.FormEvent) {

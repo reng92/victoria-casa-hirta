@@ -15,7 +15,7 @@ export default function AdminNews() {
 
   async function fetchNews() {
     const { data } = await supabase.from("news").select("id, title, body, published_at").order("published_at", { ascending: false });
-    setNewsList((data as NewsItem[]) ?? []);
+    setNewsList((data as unknown as NewsItem[]) ?? []);
   }
 
   async function handleSubmit(e: React.FormEvent) {

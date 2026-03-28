@@ -23,7 +23,7 @@ export default function AdminRosa() {
 
   async function fetchPlayers() {
     const { data } = await supabase.from("players").select("id, full_name, shirt_number, role, is_active").order("shirt_number", { ascending: true });
-    setPlayers((data as Player[]) ?? []);
+    setPlayers((data as unknown as Player[]) ?? []);
   }
 
   async function handleSubmit(e: React.FormEvent) {

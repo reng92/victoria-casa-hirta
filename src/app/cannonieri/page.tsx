@@ -25,7 +25,7 @@ async function getScorers(): Promise<Scorer[]> {
 
   const map: Record<string, Scorer> = {};
 
-  for (const e of events as any[]) {
+  for (const e of (events as unknown as any[])) {
     const pid = e.player_id;
     if (!pid) continue;
     if (!map[pid]) {

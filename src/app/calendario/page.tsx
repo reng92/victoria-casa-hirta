@@ -21,7 +21,7 @@ async function getMatches(): Promise<Match[]> {
     .from("matches")
     .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, venue:venues(name), competition:competitions(name)")
     .order("match_date", { ascending: true });
-  return (data as Match[]) ?? [];
+  return (data as unknown as Match[]) ?? [];
 }
 
 function formatDate(dateStr: string) {

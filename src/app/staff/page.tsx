@@ -14,7 +14,7 @@ async function getStaff(): Promise<StaffMember[]> {
     .from("staff")
     .select("id, full_name, role, photo_url")
     .order("role", { ascending: true });
-  return (data as StaffMember[]) ?? [];
+  return (data as unknown as StaffMember[]) ?? [];
 }
 
 export default async function StaffPage() {

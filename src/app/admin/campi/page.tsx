@@ -15,7 +15,7 @@ export default function AdminCampi() {
 
   async function fetchVenues() {
     const { data } = await supabase.from("venues").select("*").order("name");
-    setVenues((data as Venue[]) ?? []);
+    setVenues((data as unknown as Venue[]) ?? []);
   }
 
   async function handleSubmit(e: React.FormEvent) {

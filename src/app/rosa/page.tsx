@@ -26,7 +26,7 @@ async function getPlayers(): Promise<Player[]> {
     .select("id, full_name, shirt_number, role, photo_url")
     .eq("is_active", true)
     .order("shirt_number", { ascending: true });
-  return (data as Player[]) ?? [];
+  return (data as unknown as Player[]) ?? [];
 }
 
 export default async function RosaPage() {

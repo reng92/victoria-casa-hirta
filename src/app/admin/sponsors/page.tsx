@@ -21,7 +21,7 @@ export default function AdminSponsors() {
 
   async function fetchSponsors() {
     const { data } = await supabase.from("sponsors").select("*").order("name");
-    setSponsors((data as Sponsor[]) ?? []);
+    setSponsors((data as unknown as Sponsor[]) ?? []);
   }
 
   async function handleSubmit(e: React.FormEvent) {

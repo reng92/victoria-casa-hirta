@@ -61,8 +61,8 @@ export default function AdminMarcatori() {
         .eq("is_active", true)
         .order("full_name"),
     ]);
-    setMatches((m as Match[]) ?? []);
-    setPlayers((p as Player[]) ?? []);
+    setMatches((m as unknown as Match[]) ?? []);
+    setPlayers((p as unknown as Player[]) ?? []);
   }
 
   async function fetchEvents(matchId: string) {

@@ -15,7 +15,7 @@ export default function AdminStagioni() {
 
   async function fetchSeasons() {
     const { data } = await supabase.from("seasons").select("*").order("start_date", { ascending: false });
-    setSeasons((data as Season[]) ?? []);
+    setSeasons((data as unknown as Season[]) ?? []);
   }
 
   async function handleSubmit(e: React.FormEvent) {

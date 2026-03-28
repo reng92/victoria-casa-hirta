@@ -17,7 +17,7 @@ async function getCompetitions(): Promise<Competition[]> {
     .from("competitions")
     .select("*, season:seasons(name)")
     .order("name", { ascending: true });
-  return (data as Competition[]) ?? [];
+  return (data as unknown as Competition[]) ?? [];
 }
 
 const levelLabel: Record<string, string> = {

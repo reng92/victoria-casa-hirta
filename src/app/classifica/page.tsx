@@ -20,7 +20,7 @@ async function getStandings(): Promise<Standing[]> {
     .from("standings")
     .select("*, competition:competitions(name)")
     .order("points", { ascending: false });
-  return (data as Standing[]) ?? [];
+  return (data as unknown as Standing[]) ?? [];
 }
 
 export default async function ClassificaPage() {

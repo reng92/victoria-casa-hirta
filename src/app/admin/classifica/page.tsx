@@ -20,7 +20,7 @@ export default function AdminClassifica() {
       supabase.from("standings").select("*").order("points", { ascending: false }),
       supabase.from("competitions").select("id, name"),
     ]);
-    setStandings((s as Standing[]) ?? []);
+    setStandings((s as unknown as Standing[]) ?? []);
     setCompetitions((c as Competition[]) ?? []);
   }
 
