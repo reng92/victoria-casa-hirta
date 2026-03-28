@@ -12,7 +12,7 @@ export default function HomePage() {
       <section className="bg-brand-blue text-white py-20 px-4 text-center">
         <div className="max-w-3xl mx-auto">
           <Image
-            src="/logo-transparent.jpeg"
+            src="/logo.jpeg"
             alt="Victoria Casa Hirta"
             width={120}
             height={120}
