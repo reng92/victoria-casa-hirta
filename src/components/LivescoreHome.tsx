@@ -70,7 +70,7 @@ export default function LivescoreHome() {
   if (matches.length === 0) return null;
 
   return (
-    <div className="w-full mb-8">
+    <div className="max-w-2xl mx-auto px-4 py-6">
       {matches.map((m) => {
         const ourScore = m.is_home ? m.home_score : m.away_score;
         const theirScore = m.is_home ? m.away_score : m.home_score;
