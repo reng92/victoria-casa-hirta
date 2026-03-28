@@ -8,11 +8,11 @@ interface LiveMatch {
   away_team: string;
   home_score: number | null;
   away_score: number | null;
-  live_minute: number | null;
-  live_started_at: string | null;
   is_home: boolean;
   status: string;
   opponent_logo_url: string | null;
+  live_minute: number | null;
+  live_minute_set_at: string | null;
   competition: { name: string } | null;
 }
 
@@ -20,12 +20,14 @@ interface LiveEvent {
   id: string;
   event_type: string;
   minute: number | null;
+  for_team: string | null;
   player: { full_name: string } | null;
 }
 
 export default function Livescore() {
   const [matches, setMatches] = useState<LiveMatch[]>([]);
   const [events, setEvents] = useState<Record<string, LiveEvent[]>>({});
+  const [ticks, setTicks] = useState(0);
 
   useEffect(() => {
     fetchLive();
@@ -37,10 +39,15 @@ export default function Livescore() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => setTicks(t => t + 1), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   async function fetchLive() {
     const { data } = await supabase
       .from("matches")
-      .select("id, home_team, away_team, home_score, away_score, live_minute, live_started_at, is_home, status, opponent_logo_url, competition:competitions(name)")
+      .select("id, home_team, away_team, home_score, away_score, is_home, status, opponent_logo_url, live_minute, live_minute_set_at, competition:competitions(name)")
       .eq("status", "live");
     const liveMatches = (data as unknown as LiveMatch[]) ?? [];
     setMatches(liveMatches);
@@ -49,7 +56,7 @@ export default function Livescore() {
     for (const m of liveMatches) {
       const { data: evs } = await supabase
         .from("match_events")
-        .select("id, event_type, minute, player:players(full_name)")
+        .select("id, event_type, minute, for_team, player:players(full_name)")
         .eq("match_id", m.id)
         .in("event_type", ["gol", "autorete"])
         .order("minute", { ascending: true });
@@ -58,70 +65,94 @@ export default function Livescore() {
     setEvents(eventsMap);
   }
 
+  function getCurrentMinute(m: LiveMatch): number {
+    if (!m.live_minute_set_at || m.live_minute === null) return m.live_minute ?? 0;
+    const setAt = new Date(m.live_minute_set_at).getTime();
+    const now = Date.now();
+    const elapsedMinutes = Math.floor((now - setAt) / 60000);
+    return (m.live_minute ?? 0) + elapsedMinutes;
+  }
+
   if (matches.length === 0) return null;
 
   return (
-    <div className="bg-brand-red text-white py-4 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="bg-gradient-to-r from-brand-blue via-brand-blue to-brand-red text-white py-6 px-4 shadow-lg">
+      <div className="max-w-2xl mx-auto">
         {matches.map((m) => {
-          const ourTeam = "Victoria Casa Hirta";
-          const opponent = m.is_home ? m.away_team : m.home_team;
           const ourScore = m.is_home ? m.home_score : m.away_score;
           const theirScore = m.is_home ? m.away_score : m.home_score;
+          const opponent = m.is_home ? m.away_team : m.home_team;
           const matchEvents = events[m.id] ?? [];
+          const vchGoals = matchEvents.filter(e => e.for_team === "vch" || e.for_team === null);
+          const oppGoals = matchEvents.filter(e => e.for_team === "opponent");
 
           return (
             <div key={m.id}>
-              {/* Header live */}
-              <div className="flex items-center justify-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse inline-block" />
-                <span className="text-xs font-bold uppercase tracking-widest">Live</span>
-                {m.competition && <span className="text-xs text-white/70">· {m.competition.name}</span>}
+              {/* Badge LIVE + competizione */}
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <span className="flex items-center gap-1.5 bg-brand-red text-white text-xs font-extrabold uppercase tracking-widest px-3 py-1 rounded-full">
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse inline-block" />
+                  Live
+                </span>
+                {m.competition && (
+                  <span className="text-xs text-white/70 font-medium">{m.competition.name}</span>
+                )}
+                {m.live_minute !== null && m.live_minute !== undefined && m.live_minute > 0 && (
+                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-bold">{getCurrentMinute(m)}'</span>
+                )}
               </div>
 
               {/* Scoreboard */}
-              <div className="flex items-center justify-center gap-6">
+              <div className="flex items-center justify-between gap-4">
                 {/* VCH */}
-                <div className="flex flex-col items-center gap-1 min-w-0">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
-                    <span className="text-xl font-bold">VCH</span>
+                <div className="flex flex-col items-center gap-2 flex-1">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center border-2 border-white">
+                    <img src="/logo.jpeg" alt="VCH" className="w-full h-full object-contain p-1" />
                   </div>
-                  <span className="text-xs text-white/80 text-center truncate max-w-24">Victoria Casa Hirta</span>
+                  <span className="text-xs font-bold text-center text-white leading-tight">Victoria Casa Hirta</span>
                 </div>
 
-                <div className="flex flex-col items-center">
-                  <div className="text-4xl font-extrabold tracking-tight">
-                    {ourScore ?? 0} – {theirScore ?? 0}
-                  </div>
-                  {m.live_minute !== null && m.live_minute !== undefined && m.live_minute > 0 && (
-                    <div className="flex items-center gap-1 mt-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse inline-block" />
-                      <span className="text-sm font-bold text-white/90">{m.live_minute}'</span>
+                {/* Score */}
+                <div className="flex flex-col items-center shrink-0">
+                  <div className="bg-white/10 rounded-2xl px-6 py-3 backdrop-blur">
+                    <div className="text-5xl font-extrabold tracking-tight text-white tabular-nums">
+                      {ourScore ?? 0}
+                      <span className="text-white/40 mx-2 text-4xl">–</span>
+                      {theirScore ?? 0}
                     </div>
-                  )}
+                  </div>
                 </div>
 
                 {/* Avversario */}
-                <div className="flex flex-col items-center gap-1 min-w-0">
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-white/10 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2 flex-1">
+                  <div className="w-16 h-16 rounded-full overflow-hidden bg-white shadow-lg flex items-center justify-center border-2 border-white">
                     {m.opponent_logo_url ? (
                       <img src={m.opponent_logo_url} alt={opponent} className="w-full h-full object-contain p-1" />
                     ) : (
-                      <span className="text-xl">⚽</span>
+                      <span className="text-3xl">⚽</span>
                     )}
                   </div>
-                  <span className="text-xs text-white/80 text-center truncate max-w-24">{opponent}</span>
+                  <span className="text-xs font-bold text-center text-white leading-tight">{opponent}</span>
                 </div>
               </div>
 
-              {/* Marcatori */}
+              {/* Marcatori divisi per squadra */}
               {matchEvents.length > 0 && (
-                <div className="flex flex-wrap justify-center gap-2 mt-3">
-                  {matchEvents.map(ev => (
-                    <span key={ev.id} className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
-                      ⚽ {ev.player?.full_name ?? "–"} {ev.minute ? `${ev.minute}'` : ""}
-                    </span>
-                  ))}
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1">
+                    {vchGoals.map(ev => (
+                      <span key={ev.id} className="text-xs text-white/80 text-left">
+                        ⚽ {ev.player?.full_name ?? "–"} {ev.minute ? `${ev.minute}'` : ""}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {oppGoals.map(ev => (
+                      <span key={ev.id} className="text-xs text-white/80 text-right">
+                        {ev.minute ? `${ev.minute}'` : ""} ⚽ {m.away_team}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>

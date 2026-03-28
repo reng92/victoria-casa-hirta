@@ -47,9 +47,11 @@ export default function AdminPartite() {
   const [livePlayer, setLivePlayer] = useState("");
   const [liveMinute, setLiveMinute] = useState("");
   const [liveEventType, setLiveEventType] = useState("gol");
+  const [liveForTeam, setLiveForTeam] = useState<"vch" | "opponent">("vch");
   const [liveMsg, setLiveMsg] = useState("");
   const [liveMinuteDisplay, setLiveMinuteDisplay] = useState("");
   const [liveStartTime, setLiveStartTime] = useState("");
+  const [opponentLogoUploading, setOpponentLogoUploading] = useState(false);
 
   useEffect(() => {
     fetchAll();
@@ -129,11 +131,27 @@ export default function AdminPartite() {
       player_id: livePlayer,
       event_type: liveEventType,
       minute: liveMinute ? parseInt(liveMinute) : null,
+      for_team: liveForTeam,
     });
     if (!error) {
+      if (liveForTeam === "vch" && liveEventType === "gol") {
+        setLiveHome(String(parseInt(liveHome) + 1));
+        await supabase.from("matches").update({
+          home_score: parseInt(liveHome) + 1,
+          status: "live",
+        }).eq("id", liveMatchId);
+      }
+      if (liveForTeam === "opponent" && liveEventType === "gol") {
+        setLiveAway(String(parseInt(liveAway) + 1));
+        await supabase.from("matches").update({
+          away_score: parseInt(liveAway) + 1,
+          status: "live",
+        }).eq("id", liveMatchId);
+      }
       setLiveMsg("Evento aggiunto!");
       setLivePlayer("");
       setLiveMinute("");
+      fetchAll();
     }
   }
 
@@ -141,8 +159,9 @@ export default function AdminPartite() {
     if (!liveMatchId) return;
     await supabase.from("matches").update({
       live_minute: parseInt(liveMinuteDisplay) || 0,
+      live_minute_set_at: new Date().toISOString(),
     }).eq("id", liveMatchId);
-    setLiveMsg("Minuto aggiornato!");
+    setLiveMsg("Minuto aggiornato! Il timer riparte da " + liveMinuteDisplay + "'");
     fetchAll();
   }
 
@@ -150,9 +169,9 @@ export default function AdminPartite() {
     if (!liveMatchId) return;
     await supabase.from("matches").update({
       live_minute: parseInt(liveMinuteDisplay) || 0,
-      live_started_at: null,
+      live_minute_set_at: null,
     }).eq("id", liveMatchId);
-    setLiveMsg("Timer fermato!");
+    setLiveMsg("Timer fermato a " + liveMinuteDisplay + "'");
   }
 
   async function updateStartTime() {
@@ -287,6 +306,25 @@ export default function AdminPartite() {
                   <option key={p.id} value={p.id}>{p.full_name}</option>
                 ))}
               </select>
+              <div className="col-span-2">
+                <label className="text-xs text-white/60 mb-1 block">Squadra</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLiveForTeam("vch")}
+                    className={`flex-1 py-2 rounded-full text-xs font-bold transition ${liveForTeam === "vch" ? "bg-white text-brand-blue" : "bg-white/10 text-white"}`}
+                  >
+                    ⚽ VCH
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLiveForTeam("opponent")}
+                    className={`flex-1 py-2 rounded-full text-xs font-bold transition ${liveForTeam === "opponent" ? "bg-white text-brand-blue" : "bg-white/10 text-white"}`}
+                  >
+                    ⚽ {liveMatch?.away_team ?? "Avversario"}
+                  </button>
+                </div>
+              </div>
               <select
                 className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white"
                 value={liveEventType}
@@ -378,8 +416,37 @@ export default function AdminPartite() {
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="text-xs text-gray-500 mb-1 block">Logo avversario (URL immagine)</label>
-            <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.opponent_logo_url} onChange={e => setForm(f => ({ ...f, opponent_logo_url: e.target.value }))} placeholder="https://..." />
+            <label className="text-xs text-gray-500 mb-1 block">Logo avversario</label>
+            <div className="flex items-center gap-3">
+              {form.opponent_logo_url && (
+                <img src={form.opponent_logo_url} alt="logo" className="w-12 h-12 rounded-full object-contain border border-gray-200" />
+              )}
+              <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium px-4 py-2 rounded-full transition">
+                {opponentLogoUploading ? "Caricamento..." : "Carica logo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={opponentLogoUploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setOpponentLogoUploading(true);
+                    const { uploadImage } = await import("@/lib/storage");
+                    const url = await uploadImage(file, "opponents");
+                    if (url) setForm(f => ({ ...f, opponent_logo_url: url }));
+                    setOpponentLogoUploading(false);
+                  }}
+                />
+              </label>
+              <span className="text-xs text-gray-400">oppure</span>
+              <input
+                className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                value={form.opponent_logo_url}
+                onChange={e => setForm(f => ({ ...f, opponent_logo_url: e.target.value }))}
+                placeholder="URL immagine..."
+              />
+            </div>
           </div>
           <div className="sm:col-span-2">
             <button type="submit" disabled={loading} className="bg-brand-blue text-white font-semibold px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-50">

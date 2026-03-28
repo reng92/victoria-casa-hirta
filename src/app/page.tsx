@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import NextMatch from "@/components/NextMatch";
+import LivescoreHome from "@/components/LivescoreHome";
 
 export const revalidate = 60;
 
@@ -33,6 +34,8 @@ export default function HomePage() {
           </Link>
         </div>
       </section>
+
+      <LivescoreHome />
 
       {/* Quick links */}
       <section className="max-w-7xl mx-auto px-4 py-16 grid grid-cols-2 md:grid-cols-4 gap-4">
