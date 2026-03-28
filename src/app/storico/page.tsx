@@ -21,22 +21,31 @@ interface Match {
   competition: { name: string } | null;
 }
 
-async function getSeasons(): Promise<Season[]> {
-  const { data } = await supabase
+interface SeasonWithMatches extends Season {
+  matches: Match[];
+}
+
+async function getAll(): Promise<SeasonWithMatches[]> {
+  const { data: seasons } = await supabase
     .from("seasons")
     .select("*")
     .order("start_date", { ascending: false });
-  return (data as Season[]) ?? [];
-}
 
-async function getMatchesBySeason(seasonId: string): Promise<Match[]> {
-  const { data } = await supabase
+  const { data: matches } = await supabase
     .from("matches")
-    .select("id, match_date, away_team, is_home, home_score, away_score, status, competition:competitions(name)")
+    .select("id, match_date, away_team, is_home, home_score, away_score, status, competition:competitions(name, season_id)")
     .eq("status", "finished")
-    .eq("competitions.season_id", seasonId)
     .order("match_date", { ascending: false });
-  return (data as Match[]) ?? [];
+
+  const allSeasons = (seasons as Season[]) ?? [];
+  const allMatches = (matches as unknown as (Match & { competition: { name: string; season_id: string } | null })[]) ?? [];
+
+  return allSeasons.map((season) => ({
+    ...season,
+    matches: allMatches.filter(
+      (m) => m.competition?.season_id === season.id
+    ),
+  }));
 }
 
 function getResult(m: Match): { label: string; color: string } {
@@ -49,7 +58,7 @@ function getResult(m: Match): { label: string; color: string } {
 }
 
 export default async function StoricoPage() {
-  const seasons = await getSeasons();
+  const seasons = await getAll();
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -60,11 +69,10 @@ export default async function StoricoPage() {
         <p className="text-gray-400 text-sm">Nessuna stagione disponibile.</p>
       )}
 
-      {seasons.map(async (season) => {
-        const matches = await getMatchesBySeason(season.id);
-        const wins = matches.filter(m => getResult(m).label === "V").length;
-        const draws = matches.filter(m => getResult(m).label === "N").length;
-        const losses = matches.filter(m => getResult(m).label === "P").length;
+      {seasons.map((season) => {
+        const wins = season.matches.filter(m => getResult(m).label === "V").length;
+        const draws = season.matches.filter(m => getResult(m).label === "N").length;
+        const losses = season.matches.filter(m => getResult(m).label === "P").length;
 
         return (
           <div key={season.id} className="mb-12">
@@ -73,18 +81,18 @@ export default async function StoricoPage() {
               {season.is_current && (
                 <span className="text-xs bg-brand-red text-white px-2 py-0.5 rounded-full">In corso</span>
               )}
-              {matches.length > 0 && (
+              {season.matches.length > 0 && (
                 <span className="text-xs text-gray-400 ml-auto">
-                  {matches.length} partite · {wins}V {draws}N {losses}P
+                  {season.matches.length} partite · {wins}V {draws}N {losses}P
                 </span>
               )}
             </div>
 
-            {matches.length === 0 ? (
+            {season.matches.length === 0 ? (
               <p className="text-gray-400 text-sm">Nessun risultato per questa stagione.</p>
             ) : (
               <div className="flex flex-col gap-2">
-                {matches.map((m) => {
+                {season.matches.map((m) => {
                   const result = getResult(m);
                   const ours = m.is_home ? m.home_score : m.away_score;
                   const theirs = m.is_home ? m.away_score : m.home_score;
@@ -106,7 +114,7 @@ export default async function StoricoPage() {
                         </span>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="font-bold text-gray-700">{ours} - {theirs}</span>
+                        <span className="font-bold text-gray-700">{ours} – {theirs}</span>
                         <span className={`font-extrabold text-base ${result.color}`}>{result.label}</span>
                       </div>
                     </div>

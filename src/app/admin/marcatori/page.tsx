@@ -71,7 +71,7 @@ export default function AdminMarcatori() {
       .select("id, match_id, player_id, event_type, minute, player:players(full_name)")
       .eq("match_id", matchId)
       .order("minute", { ascending: true });
-    setEvents((data as MatchEvent[]) ?? []);
+    setEvents((data as unknown as MatchEvent[]) ?? []);
   }
 
   async function handleSubmit(e: React.FormEvent) {
