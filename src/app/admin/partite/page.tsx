@@ -52,6 +52,22 @@ export default function AdminPartite() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
   const [opponentLogoUploading, setOpponentLogoUploading] = useState(false);
+  const [editMatch, setEditMatch] = useState<Match | null>(null);
+  const [editForm, setEditForm] = useState({
+    away_team: "",
+    match_date: "",
+    match_time: "",
+    is_home: true,
+    competition_id: "",
+    venue_id: "",
+    matchday: "",
+    status: "scheduled",
+    home_score: "",
+    away_score: "",
+    opponent_logo_url: "",
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editMsg, setEditMsg] = useState("");
 
   // Live state
   const [liveMatchId, setLiveMatchId] = useState<string | null>(null);
@@ -125,6 +141,44 @@ export default function AdminPartite() {
     if (!confirm("Eliminare questa partita?")) return;
     await supabase.from("matches").delete().eq("id", id);
     fetchAll();
+  }
+
+  function openEdit(m: Match) {
+    setEditMatch(m);
+    const d = new Date(m.match_date);
+    setEditForm({
+      away_team: m.away_team,
+      match_date: d.toISOString().split("T")[0],
+      match_time: d.toTimeString().slice(0, 5),
+      is_home: m.is_home,
+      competition_id: "",
+      venue_id: "",
+      matchday: "",
+      status: m.status,
+      home_score: m.home_score !== null ? String(m.home_score) : "",
+      away_score: m.away_score !== null ? String(m.away_score) : "",
+      opponent_logo_url: m.opponent_logo_url ?? "",
+    });
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editMatch) return;
+    setEditLoading(true);
+    setEditMsg("");
+    const match_date = `${editForm.match_date}T${editForm.match_time || "00:00"}:00`;
+    const { error } = await supabase.from("matches").update({
+      away_team: editForm.away_team,
+      match_date,
+      is_home: editForm.is_home,
+      status: editForm.status,
+      home_score: editForm.home_score !== "" ? parseInt(editForm.home_score) : null,
+      away_score: editForm.away_score !== "" ? parseInt(editForm.away_score) : null,
+      opponent_logo_url: editForm.opponent_logo_url || null,
+    }).eq("id", editMatch.id);
+    if (error) setEditMsg("Errore: " + error.message);
+    else { setEditMsg("Partita aggiornata!"); fetchAll(); setTimeout(() => setEditMatch(null), 1000); }
+    setEditLoading(false);
   }
 
   async function startLive(match: Match) {
@@ -513,6 +567,62 @@ export default function AdminPartite() {
         </div>
       )}
 
+      {editMatch && (
+        <div className="bg-white border-2 border-brand-blue rounded-2xl shadow-sm p-6 mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-lg text-brand-blue">✏️ Modifica partita</h2>
+            <button onClick={() => setEditMatch(null)} className="text-gray-400 hover:text-red-500 text-xl">✕</button>
+          </div>
+          <form onSubmit={handleEdit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Avversario *</label>
+              <input required className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.away_team} onChange={e => setEditForm(f => ({ ...f, away_team: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Data *</label>
+              <input required type="date" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.match_date} onChange={e => setEditForm(f => ({ ...f, match_date: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Orario</label>
+              <input type="time" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.match_time} onChange={e => setEditForm(f => ({ ...f, match_time: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Casa / Trasferta</label>
+              <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.is_home ? "1" : "0"} onChange={e => setEditForm(f => ({ ...f, is_home: e.target.value === "1" }))}>
+                <option value="1">Casa</option>
+                <option value="0">Trasferta</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Stato</label>
+              <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}>
+                <option value="scheduled">Programmata</option>
+                <option value="live">In corso</option>
+                <option value="finished">Terminata</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Logo avversario (URL)</label>
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.opponent_logo_url} onChange={e => setEditForm(f => ({ ...f, opponent_logo_url: e.target.value }))} placeholder="https://..." />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Gol VCH</label>
+              <input type="number" min="0" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.home_score} onChange={e => setEditForm(f => ({ ...f, home_score: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Gol Avversario</label>
+              <input type="number" min="0" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.away_score} onChange={e => setEditForm(f => ({ ...f, away_score: e.target.value }))} />
+            </div>
+            <div className="sm:col-span-2">
+              <button type="submit" disabled={editLoading} className="bg-brand-blue text-white font-semibold px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-50">
+                {editLoading ? "Salvataggio..." : "Salva modifiche"}
+              </button>
+              {editMsg && <span className="ml-4 text-sm text-green-600">{editMsg}</span>}
+            </div>
+          </form>
+        </div>
+      )}
+
       {/* FORM NUOVA PARTITA */}
       <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-10">
         <h2 className="font-bold text-lg text-brand-blue mb-4">Aggiungi partita</h2>
@@ -630,6 +740,9 @@ export default function AdminPartite() {
               {m.status === "finished" && (
                 <span className="text-sm font-bold text-brand-red">{m.home_score} – {m.away_score}</span>
               )}
+              <button onClick={() => openEdit(m)} className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition">
+                ✏️ Modifica
+              </button>
               <button onClick={() => handleDelete(m.id)} className="text-xs text-gray-400 hover:text-red-500 transition">🗑️</button>
             </div>
           </div>
