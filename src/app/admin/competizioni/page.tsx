@@ -100,7 +100,7 @@ export default function AdminCompetizioni() {
               <span className="font-bold text-brand-blue">{c.name}</span>
               {c.type && <span className="ml-2 text-xs bg-brand-blue text-white px-2 py-0.5 rounded-full capitalize">{c.type}</span>}
               {c.level && <span className="ml-2 text-xs bg-brand-red text-white px-2 py-0.5 rounded-full capitalize">{c.level}</span>}
-              {c.season && <span className="ml-2 text-xs text-gray-400">{c.season.name}</span>}
+              {c.season && c.season[0] && <span className="ml-2 text-xs text-gray-400">{c.season[0].name}</span>}
             </div>
             <button onClick={() => handleDelete(c.id)} className="text-xs text-gray-400 hover:text-red-500 transition">🗑️</button>
           </div>
