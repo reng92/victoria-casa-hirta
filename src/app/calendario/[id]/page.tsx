@@ -1,5 +1,8 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import MVPVoting from "@/components/MVPVoting";
+import Formation from "@/components/Formation";
+import WeatherWidget from "@/components/WeatherWidget";
 
 export const revalidate = 60;
 
@@ -208,6 +211,15 @@ export default async function PartitaPage({ params }: { params: { id: string } }
         </div>
       </div>
 
+      {match.venue?.city && (
+        <WeatherWidget
+          matchDate={match.match_date}
+          city={match.venue.city}
+        />
+      )}
+
+      <Formation matchId={match.id} />
+
       {/* Tabellino eventi */}
       {events.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6">
@@ -299,6 +311,10 @@ export default async function PartitaPage({ params }: { params: { id: string } }
             🗺️ Apri in Google Maps
           </a>
         </div>
+      )}
+
+      {isFinished && (
+        <MVPVoting matchId={match.id} awayTeam={match.is_home ? match.away_team : match.home_team} />
       )}
 
       {/* Note */}

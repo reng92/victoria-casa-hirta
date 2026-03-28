@@ -8,6 +8,7 @@ interface Player {
   full_name: string;
   shirt_number: number | null;
   role: string;
+  photo_url: string | null;
   is_active: boolean;
 }
 
@@ -18,11 +19,15 @@ export default function AdminRosa() {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
+  const [editPlayer, setEditPlayer] = useState<Player | null>(null);
+  const [editForm, setEditForm] = useState({ full_name: "", shirt_number: "", role: "attaccante", photo_url: "" });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editMsg, setEditMsg] = useState("");
 
   useEffect(() => { fetchPlayers(); }, []);
 
   async function fetchPlayers() {
-    const { data } = await supabase.from("players").select("id, full_name, shirt_number, role, is_active").order("shirt_number", { ascending: true });
+    const { data } = await supabase.from("players").select("id, full_name, shirt_number, role, photo_url, is_active").order("shirt_number", { ascending: true });
     setPlayers((data as unknown as Player[]) ?? []);
   }
 
@@ -52,9 +57,79 @@ export default function AdminRosa() {
     fetchPlayers();
   }
 
+  function openEdit(p: Player) {
+    setEditPlayer(p);
+    setEditForm({
+      full_name: p.full_name,
+      shirt_number: p.shirt_number ? String(p.shirt_number) : "",
+      role: p.role,
+      photo_url: p.photo_url ?? "",
+    });
+  }
+
+  async function handleEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editPlayer) return;
+    setEditLoading(true);
+    setEditMsg("");
+    const { error } = await supabase.from("players").update({
+      full_name: editForm.full_name,
+      shirt_number: editForm.shirt_number ? parseInt(editForm.shirt_number) : null,
+      role: editForm.role,
+      photo_url: editForm.photo_url || null,
+    }).eq("id", editPlayer.id);
+    if (error) setEditMsg("Errore: " + error.message);
+    else { setEditMsg("Giocatore aggiornato!"); fetchPlayers(); setTimeout(() => setEditPlayer(null), 1000); }
+    setEditLoading(false);
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-extrabold text-brand-blue mb-8">Admin – Rosa</h1>
+
+      {editPlayer && (
+        <div className="bg-white border-2 border-brand-blue rounded-2xl shadow-sm p-6 mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-lg text-brand-blue">✏️ Modifica giocatore</h2>
+            <button onClick={() => setEditPlayer(null)} className="text-gray-400 hover:text-red-500 text-xl">✕</button>
+          </div>
+          <form onSubmit={handleEdit} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Nome e cognome *</label>
+              <input required className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.full_name} onChange={e => setEditForm(f => ({ ...f, full_name: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">N° maglia</label>
+              <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.shirt_number} onChange={e => setEditForm(f => ({ ...f, shirt_number: e.target.value }))} />
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Ruolo</label>
+              <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}>
+                <option value="portiere">Portiere</option>
+                <option value="difensore">Difensore</option>
+                <option value="centrocampista">Centrocampista</option>
+                <option value="attaccante">Attaccante</option>
+              </select>
+            </div>
+            <div className="sm:col-span-3">
+              <ImageUpload
+                folder="players"
+                label="Cambia foto"
+                onUploaded={(url) => setEditForm(f => ({ ...f, photo_url: url }))}
+              />
+              {editForm.photo_url && (
+                <p className="text-xs text-green-600 mt-1">✓ Foto caricata</p>
+              )}
+            </div>
+            <div className="sm:col-span-3">
+              <button type="submit" disabled={editLoading} className="bg-brand-blue text-white font-semibold px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-50">
+                {editLoading ? "Salvataggio..." : "Salva modifiche"}
+              </button>
+              {editMsg && <span className="ml-4 text-sm text-green-600">{editMsg}</span>}
+            </div>
+          </form>
+        </div>
+      )}
 
       <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-10">
         <h2 className="font-bold text-lg text-brand-blue mb-4">Aggiungi giocatore</h2>
@@ -105,6 +180,9 @@ export default function AdminRosa() {
               {!p.is_active && <span className="ml-2 text-xs text-gray-300">(inattivo)</span>}
             </div>
             <div className="flex gap-2">
+              <button onClick={() => openEdit(p)} className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition">
+                ✏️ Modifica
+              </button>
               <button onClick={() => toggleActive(p.id, p.is_active)} className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200">
                 {p.is_active ? "Disattiva" : "Attiva"}
               </button>

@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import WeatherWidget from "@/components/WeatherWidget";
 
 interface Match {
   id: string;
@@ -167,6 +168,15 @@ export default async function NextMatch() {
                 >
                   🗺️ Apri in Google Maps
                 </a>
+              </div>
+            )}
+
+            {match.venue?.city && (
+              <div className="border-t border-gray-100 p-4">
+                <WeatherWidget
+                  matchDate={match.match_date}
+                  city={match.venue?.city ?? "Caserta"}
+                />
               </div>
             )}
 

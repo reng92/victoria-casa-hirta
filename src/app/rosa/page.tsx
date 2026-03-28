@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import Link from "next/link";
 
 export const revalidate = 60;
 
@@ -56,9 +57,10 @@ export default async function RosaPage() {
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {group.map((player) => (
-                <div
+                <Link
                   key={player.id}
-                  className="bg-white border border-gray-100 rounded-2xl p-4 text-center shadow-sm hover:shadow-md transition group"
+                  href={`/rosa/${player.id}`}
+                  className="bg-white border border-gray-100 rounded-2xl p-4 text-center shadow-sm hover:shadow-md hover:border-brand-blue transition group block"
                 >
                   <div className="w-20 h-20 mx-auto mb-3 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
                     {player.photo_url ? (
@@ -80,7 +82,7 @@ export default async function RosaPage() {
                     {player.full_name}
                   </div>
                   <div className="text-xs text-gray-400 mt-1 capitalize">{player.role}</div>
-                </div>
+                </Link>
               ))}
             </div>
           </div>

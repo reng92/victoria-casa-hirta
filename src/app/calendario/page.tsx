@@ -13,30 +13,33 @@ interface Match {
   away_score: number | null;
   status: string;
   matchday: number | null;
+  opponent_logo_url: string | null;
   venue: { name: string } | null;
-  competition: { name: string } | null;
+  competition: { id: string; name: string } | null;
+}
+
+interface Competition {
+  id: string;
+  name: string;
 }
 
 async function getMatches(): Promise<Match[]> {
   const { data } = await supabase
     .from("matches")
-    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, venue:venues(name), competition:competitions(name)")
+    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, venue:venues(name), competition:competitions(id, name)")
     .order("match_date", { ascending: true });
   return (data as unknown as Match[]) ?? [];
 }
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("it-IT", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
+    weekday: "short", day: "numeric", month: "short",
   });
 }
 
 function formatTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString("it-IT", {
-    hour: "2-digit",
-    minute: "2-digit",
+    hour: "2-digit", minute: "2-digit",
   });
 }
 
@@ -67,6 +70,9 @@ function MatchCard({ match }: { match: Match }) {
           </span>
         )}
         <div className="flex items-center gap-2 flex-wrap">
+          {match.opponent_logo_url && (
+            <img src={match.opponent_logo_url} alt={opponent} className="w-6 h-6 object-contain rounded" />
+          )}
           <span className="font-bold text-brand-blue text-sm">{ourTeam}</span>
           <span className="text-gray-400 text-xs">vs</span>
           <span className="font-semibold text-gray-700 text-sm">{opponent}</span>
@@ -107,13 +113,21 @@ function MatchCard({ match }: { match: Match }) {
 export default async function CalendarioPage() {
   const matches = await getMatches();
 
+  const competitions: Competition[] = Array.from(
+    new Map(
+      matches
+        .filter(m => m.competition)
+        .map(m => [m.competition!.id, m.competition!])
+    ).values()
+  );
+
   const played = matches.filter((m) => m.status === "finished");
   const upcoming = matches.filter((m) => m.status !== "finished");
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-extrabold text-brand-blue mb-2">Calendario</h1>
-      <p className="text-gray-500 mb-10 text-sm">Partite disputate e in programma</p>
+      <p className="text-gray-500 mb-6 text-sm">Partite disputate e in programma</p>
 
       {matches.length === 0 && (
         <p className="text-gray-400 text-sm">Il calendario verrà caricato a breve.</p>

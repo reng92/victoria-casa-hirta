@@ -12,6 +12,8 @@ const sections = [
   { href: "/admin/stagioni", emoji: "📆", label: "Stagioni", desc: "Gestisci le stagioni" },
   { href: "/admin/sponsors", emoji: "💰", label: "Sponsor", desc: "Gestisci gli sponsor" },
   { href: "/admin/galleria", emoji: "📸", label: "Galleria", desc: "Carica foto partite" },
+  { href: "/admin/presenze", emoji: "📋", label: "Presenze", desc: "Gestisci le presenze per partita" },
+  { href: "/admin/formazione", emoji: "🟩", label: "Formazione", desc: "Schema tattico e posizioni" },
 ];
 
 export default function AdminPage() {
