@@ -66,6 +66,8 @@ export default function AdminPartite() {
   const [liveMinuteDisplay, setLiveMinuteDisplay] = useState("");
   const [liveStartTime, setLiveStartTime] = useState("");
   const [liveExtraTime, setLiveExtraTime] = useState("0");
+  const [liveOpponentLogo, setLiveOpponentLogo] = useState("");
+  const [liveOpponentLogoUploading, setLiveOpponentLogoUploading] = useState(false);
   const [liveEvents, setLiveEvents] = useState<MatchEvent[]>([]);
   const [showConfirm, setShowConfirm] = useState<string | null>(null);
 
@@ -133,6 +135,7 @@ export default function AdminPartite() {
     setLiveExtraTime(String(match.live_extra_time ?? 0));
     const matchTime = new Date(match.match_date).toTimeString().slice(0, 5);
     setLiveStartTime(matchTime);
+    setLiveOpponentLogo(match.opponent_logo_url ?? "");
     setLiveMsg("");
     await supabase.from("matches").update({
       status: "live",
@@ -376,6 +379,50 @@ export default function AdminPartite() {
               <button onClick={updateStartTime} className="bg-white text-brand-blue text-xs font-bold px-4 py-2 rounded-full hover:opacity-90">
                 Aggiorna
               </button>
+            </div>
+          </div>
+
+          <div className="bg-white/10 rounded-xl p-4 mb-4">
+            <div className="text-sm font-semibold mb-2">🏟️ Logo avversario</div>
+            <div className="flex items-center gap-3">
+              {liveOpponentLogo && (
+                <img src={liveOpponentLogo} alt="logo" className="w-10 h-10 rounded-full object-contain bg-white p-1" />
+              )}
+              <label className="cursor-pointer bg-white/20 hover:bg-white/30 text-white text-xs font-medium px-4 py-2 rounded-full transition">
+                {liveOpponentLogoUploading ? "Caricamento..." : "Carica logo"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={liveOpponentLogoUploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !liveMatchId) return;
+                    setLiveOpponentLogoUploading(true);
+                    const { uploadImage } = await import("@/lib/storage");
+                    const url = await uploadImage(file, "opponents");
+                    if (url) {
+                      setLiveOpponentLogo(url);
+                      await supabase.from("matches").update({ opponent_logo_url: url }).eq("id", liveMatchId);
+                      setLiveMsg("✅ Logo avversario aggiornato!");
+                      fetchAll();
+                    }
+                    setLiveOpponentLogoUploading(false);
+                  }}
+                />
+              </label>
+              <input
+                className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/40"
+                value={liveOpponentLogo}
+                onChange={e => setLiveOpponentLogo(e.target.value)}
+                placeholder="o incolla URL..."
+                onBlur={async () => {
+                  if (!liveMatchId || !liveOpponentLogo) return;
+                  await supabase.from("matches").update({ opponent_logo_url: liveOpponentLogo }).eq("id", liveMatchId);
+                  setLiveMsg("✅ Logo avversario aggiornato!");
+                  fetchAll();
+                }}
+              />
             </div>
           </div>
 
