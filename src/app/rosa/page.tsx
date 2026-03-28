@@ -62,13 +62,11 @@ export default async function RosaPage() {
                 >
                   <div className="w-20 h-20 mx-auto mb-3 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
                     {player.photo_url ? (
-                      <Image
-                        src={player.photo_url}
-                        alt={player.full_name}
-                        width={80}
-                        height={80}
-                        className="object-cover w-full h-full"
-                      />
+                      <img
+  src={player.photo_url}
+  alt={player.full_name}
+  className="object-cover w-full h-full"
+/>
                     ) : (
                       <span className="text-3xl">⚽</span>
                     )}
