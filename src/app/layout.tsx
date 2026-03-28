@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -12,17 +13,13 @@ export const metadata: Metadata = {
   title: "Victoria Casa Hirta",
   description: "Sito ufficiale della squadra di calcio Victoria Casa Hirta",
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
   themeColor: "#102c5c",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "VCH",
-  },
-  viewport: {
-    width: "device-width",
-    initialScale: 1,
-    maximumScale: 1,
-  },
 };
 
 export default function RootLayout({
@@ -31,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="it">
       <head>
-        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/logo.jpeg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
