@@ -3,12 +3,26 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Livescore from "@/components/Livescore";
+import PWAInstaller from "@/components/PWAInstaller";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Victoria Casa Hirta",
   description: "Sito ufficiale della squadra di calcio Victoria Casa Hirta",
+  manifest: "/manifest.json",
+  themeColor: "#102c5c",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "VCH",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
 };
 
 export default function RootLayout({
@@ -16,10 +30,17 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="it">
+      <head>
+        <link rel="apple-touch-icon" href="/logo.png" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+      </head>
       <body className={inter.className}>
         <Navbar />
+        <Livescore />
         <main>{children}</main>
         <Footer />
+        <PWAInstaller />
       </body>
     </html>
   );

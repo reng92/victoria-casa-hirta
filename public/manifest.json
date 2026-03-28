@@ -1,0 +1,24 @@
+{
+  "name": "Victoria Casa Hirta",
+  "short_name": "VCH",
+  "description": "Sito ufficiale della squadra di calcio Victoria Casa Hirta",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#102c5c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

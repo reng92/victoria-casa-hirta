@@ -13,6 +13,9 @@ const links = [
   { href: "/campi", label: "Campi" },
   { href: "/news", label: "News" },
   { href: "/galleria", label: "Galleria" },
+  { href: "/staff", label: "Staff" },
+  { href: "/sponsors", label: "Sponsor" },
+  { href: "/storico", label: "Storico" },
 ];
 
 export default function Navbar() {

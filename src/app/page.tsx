@@ -41,6 +41,8 @@ export default function HomePage() {
           { href: "/calendario", emoji: "📅", label: "Calendario", desc: "Partite e risultati" },
           { href: "/classifica", emoji: "🏆", label: "Classifica", desc: "La nostra posizione" },
           { href: "/cannonieri", emoji: "⚽", label: "Cannonieri", desc: "Chi segna di più" },
+          { href: "/staff", emoji: "🧑‍💼", label: "Staff", desc: "Il nostro team" },
+          { href: "/storico", emoji: "📚", label: "Storico", desc: "Stagioni passate" },
         ].map((item) => (
           <Link
             key={item.href}
