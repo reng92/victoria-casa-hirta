@@ -11,7 +11,7 @@ interface Sponsor {
 
 async function getSponsors(): Promise<Sponsor[]> {
   const { data } = await supabase.from("sponsors").select("*").order("name");
-  return (data as Sponsor[]) ?? [];
+  return (data as unknown as Sponsor[]) ?? [];
 }
 
 export default async function SponsorsPage() {

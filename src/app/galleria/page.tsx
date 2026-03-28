@@ -15,7 +15,7 @@ async function getGallery(): Promise<Photo[]> {
     .from("gallery")
     .select("id, photo_url, caption, created_at, match:matches(home_team, away_team, match_date)")
     .order("created_at", { ascending: false });
-  return (data as Photo[]) ?? [];
+  return (data as unknown as Photo[]) ?? [];
 }
 
 export default async function GalleriaPage() {

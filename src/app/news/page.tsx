@@ -15,7 +15,7 @@ async function getNews(): Promise<NewsItem[]> {
     .from("news")
     .select("*")
     .order("published_at", { ascending: false });
-  return (data as NewsItem[]) ?? [];
+  return (data as unknown as NewsItem[]) ?? [];
 }
 
 function formatDate(dateStr: string) {

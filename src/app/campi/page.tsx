@@ -16,7 +16,7 @@ async function getVenues(): Promise<Venue[]> {
     .from("venues")
     .select("*")
     .order("name", { ascending: true });
-  return (data as Venue[]) ?? [];
+  return (data as unknown as Venue[]) ?? [];
 }
 
 export default async function CampiPage() {

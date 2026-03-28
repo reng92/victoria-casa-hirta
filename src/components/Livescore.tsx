@@ -36,7 +36,7 @@ export default function Livescore() {
       .from("matches")
       .select("id, home_team, away_team, home_score, away_score, is_home, status, competition:competitions(name)")
       .eq("status", "live");
-    setMatches((data as LiveMatch[]) ?? []);
+    setMatches((data as unknown as LiveMatch[]) ?? []);
   }
 
   if (matches.length === 0) return null;

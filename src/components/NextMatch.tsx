@@ -20,7 +20,7 @@ async function getNextMatch(): Promise<Match | null> {
     .order("match_date", { ascending: true })
     .limit(1)
     .single();
-  return data as Match | null;
+  return data as unknown as Match | null;
 }
 
 function formatDate(dateStr: string) {
