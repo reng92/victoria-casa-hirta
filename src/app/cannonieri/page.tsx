@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase";
 
-export const revalidate = 60;
+export const revalidate = 0;
 
 interface Scorer {
   player_id: string;
@@ -11,31 +11,36 @@ interface Scorer {
 }
 
 async function getScorers(): Promise<Scorer[]> {
-  const { data, error } = await supabase
+  const { data: events } = await supabase
     .from("match_events")
-    .select("player_id, event_type, player:players(full_name, photo_url, role)")
+    .select("player_id")
     .eq("event_type", "gol");
 
-  if (error || !data) return [];
+  if (!events || events.length === 0) return [];
 
-  const map: Record<string, Scorer> = {};
-
-  for (const e of data as unknown as any[]) {
-    const pid = e.player_id;
-    if (!pid) continue;
-    if (!map[pid]) {
-      map[pid] = {
-        player_id: pid,
-        full_name: e.player?.full_name ?? "Sconosciuto",
-        photo_url: e.player?.photo_url ?? null,
-        role: e.player?.role ?? "",
-        gol: 0,
-      };
-    }
-    map[pid].gol++;
+  const counts: Record<string, number> = {};
+  for (const e of events) {
+    counts[e.player_id] = (counts[e.player_id] ?? 0) + 1;
   }
 
-  return Object.values(map).sort((a, b) => b.gol - a.gol);
+  const playerIds = Object.keys(counts);
+
+  const { data: players } = await supabase
+    .from("players")
+    .select("id, full_name, photo_url, role")
+    .in("id", playerIds);
+
+  if (!players) return [];
+
+  return players
+    .map(p => ({
+      player_id: p.id,
+      full_name: p.full_name,
+      photo_url: p.photo_url,
+      role: p.role,
+      gol: counts[p.id] ?? 0,
+    }))
+    .sort((a, b) => b.gol - a.gol);
 }
 
 export default async function CannonierigPage() {
