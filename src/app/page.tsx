@@ -61,6 +61,34 @@ export default function HomePage() {
       {/* Next match da Supabase */}
       <NextMatch />
 
+      {/* Social section */}
+      <section className="max-w-7xl mx-auto px-4 py-12 text-center">
+        <h2 className="text-2xl md:text-3xl font-extrabold text-brand-blue mb-4">
+          Seguici sui social
+        </h2>
+        <p className="text-gray-600 mb-6">
+          Resta aggiornato con foto, notizie e risultati in tempo reale
+        </p>
+        <div className="flex items-center justify-center gap-4">
+          <a
+            href="https://www.facebook.com/victoriacasahirta/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-brand-blue text-white px-6 py-3 rounded-full font-semibold hover:opacity-90 transition"
+          >
+            Facebook
+          </a>
+          <a
+            href="https://www.instagram.com/victoriacasahirta"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-brand-red text-white px-6 py-3 rounded-full font-semibold hover:opacity-90 transition"
+          >
+            Instagram
+          </a>
+        </div>
+      </section>
+
     </div>
   );
 }
