@@ -15,11 +15,17 @@ export default function AdminLogin() {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
     if (error) {
-      setError("Credenziali non valide. Riprova.");
+      setError("Errore: " + error.message);
       setLoading(false);
-    } else {
+      return;
+    }
+
+    if (data.session) {
+      document.cookie = `vch-admin=1; path=/; max-age=86400`;
       router.push("/admin");
       router.refresh();
     }
@@ -30,7 +36,7 @@ export default function AdminLogin() {
       <div className="bg-white rounded-2xl shadow-md p-8 w-full max-w-sm">
         <div className="text-center mb-8">
           <Image
-            src="/logo.png"
+            src="/logo.jpeg"
             alt="Victoria Casa Hirta"
             width={72}
             height={72}
@@ -61,7 +67,7 @@ export default function AdminLogin() {
               onChange={e => setPassword(e.target.value)}
             />
           </div>
-          {error && <p className="text-xs text-brand-red">{error}</p>}
+          {error && <p className="text-xs text-brand-red bg-red-50 p-2 rounded-lg">{error}</p>}
           <button
             type="submit"
             disabled={loading}
