@@ -14,6 +14,7 @@ interface Match {
   away_score: number | null;
   status: string;
   opponent_logo_url: string | null;
+  instagram_reels: string[] | null;
   live_minute: number | null;
   live_minute_set_at: string | null;
   live_period: string | null;
@@ -66,6 +67,8 @@ export default function AdminPartite() {
     away_score: "",
     opponent_logo_url: "",
   });
+  const [editReels, setEditReels] = useState<string[]>([]);
+  const [editNewReel, setEditNewReel] = useState("");
   const [editLoading, setEditLoading] = useState(false);
   const [editMsg, setEditMsg] = useState("");
 
@@ -95,7 +98,7 @@ export default function AdminPartite() {
 
   async function fetchAll() {
     const [{ data: m }, { data: c }, { data: v }, { data: p }] = await Promise.all([
-      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, opponent_logo_url, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
+      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, opponent_logo_url, instagram_reels, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
       supabase.from("competitions").select("id, name"),
       supabase.from("venues").select("id, name"),
       supabase.from("players").select("id, full_name").eq("is_active", true).order("full_name"),
@@ -159,6 +162,8 @@ export default function AdminPartite() {
       away_score: m.away_score !== null ? String(m.away_score) : "",
       opponent_logo_url: m.opponent_logo_url ?? "",
     });
+    setEditReels(m.instagram_reels ?? []);
+    setEditNewReel("");
   }
 
   async function handleEdit(e: React.FormEvent) {
@@ -175,6 +180,7 @@ export default function AdminPartite() {
       home_score: editForm.home_score !== "" ? parseInt(editForm.home_score) : null,
       away_score: editForm.away_score !== "" ? parseInt(editForm.away_score) : null,
       opponent_logo_url: editForm.opponent_logo_url || null,
+      instagram_reels: editReels.length > 0 ? editReels : null,
     }).eq("id", editMatch.id);
     if (error) setEditMsg("Errore: " + error.message);
     else { setEditMsg("Partita aggiornata!"); fetchAll(); setTimeout(() => setEditMatch(null), 1000); }
@@ -613,6 +619,61 @@ export default function AdminPartite() {
               <label className="text-xs text-gray-500 mb-1 block">Gol Avversario</label>
               <input type="number" min="0" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.away_score} onChange={e => setEditForm(f => ({ ...f, away_score: e.target.value }))} />
             </div>
+            {/* Instagram Reels */}
+            <div className="sm:col-span-2">
+              <label className="text-xs text-gray-500 mb-2 block font-semibold">🎬 Instagram Reels</label>
+              <div className="flex gap-2 mb-2">
+                <input
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  placeholder="https://www.instagram.com/reel/..."
+                  value={editNewReel}
+                  onChange={e => setEditNewReel(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      const url = editNewReel.trim();
+                      if (url && !editReels.includes(url)) {
+                        setEditReels(r => [...r, url]);
+                        setEditNewReel("");
+                      }
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const url = editNewReel.trim();
+                    if (url && !editReels.includes(url)) {
+                      setEditReels(r => [...r, url]);
+                      setEditNewReel("");
+                    }
+                  }}
+                  className="bg-pink-500 text-white text-xs font-bold px-4 py-2 rounded-full hover:opacity-90 shrink-0"
+                >
+                  Aggiungi
+                </button>
+              </div>
+              {editReels.length > 0 && (
+                <div className="flex flex-col gap-1.5">
+                  {editReels.map((url, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-pink-50 border border-pink-100 rounded-lg px-3 py-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="text-pink-500 shrink-0">
+                        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                      </svg>
+                      <span className="text-xs text-gray-600 truncate flex-1">{url}</span>
+                      <button
+                        type="button"
+                        onClick={() => setEditReels(r => r.filter((_, j) => j !== i))}
+                        className="text-gray-400 hover:text-red-500 transition text-sm font-bold shrink-0"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="sm:col-span-2">
               <button type="submit" disabled={editLoading} className="bg-brand-blue text-white font-semibold px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-50">
                 {editLoading ? "Salvataggio..." : "Salva modifiche"}

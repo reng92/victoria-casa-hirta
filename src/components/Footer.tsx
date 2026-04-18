@@ -46,9 +46,10 @@ export default function Footer() {
             </a>
           </div>
 
-          <p className="text-white/50 text-xs text-center">
-            © {new Date().getFullYear()} Victoria Casa Hirta. Tutti i diritti riservati.
-          </p>
+          <div className="text-white/50 text-xs text-center">
+            <p>Associazione Sportiva di Fatto Victoria Casa Hirta 2016</p>
+            <p>© {new Date().getFullYear()} Tutti i diritti riservati.</p>
+          </div>
         </div>
       </div>
     </footer>

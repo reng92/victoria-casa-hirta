@@ -18,6 +18,7 @@ interface Match {
   matchday: number | null;
   notes: string | null;
   opponent_logo_url: string | null;
+  instagram_reels: string[] | null;
   live_minute: number | null;
   live_period: string | null;
   venue: { name: string; address: string; city: string | null; maps_url: string | null } | null;
@@ -36,7 +37,7 @@ interface MatchEvent {
 async function getMatch(id: string): Promise<Match | null> {
   const { data } = await supabase
     .from("matches")
-    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, notes, opponent_logo_url, live_minute, live_period, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
+    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, notes, opponent_logo_url, instagram_reels, live_minute, live_period, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
     .eq("id", id)
     .single();
   return data as unknown as Match | null;
@@ -282,6 +283,49 @@ export default async function PartitaPage({ params }: { params: { id: string } }
                 )}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Instagram Reels */}
+      {match.instagram_reels && match.instagram_reels.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="white">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </div>
+            <h2 className="font-bold text-brand-blue text-lg">Reels & Video</h2>
+          </div>
+          <div className="p-4 flex flex-col gap-3">
+            {match.instagram_reels.map((url, i) => (
+              <a
+                key={i}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 rounded-xl p-4 hover:opacity-90 transition group"
+                style={{ background: "linear-gradient(135deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)" }}
+              >
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-bold text-sm">
+                    {match.instagram_reels!.length > 1 ? `Reel ${i + 1}` : "Guarda il reel"}
+                  </p>
+                  <p className="text-white/70 text-xs truncate">{url}</p>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 opacity-70 group-hover:opacity-100 transition">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+              </a>
+            ))}
           </div>
         </div>
       )}
