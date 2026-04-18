@@ -2,10 +2,7 @@ import type { Metadata } from "next";
 import type { Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import Livescore from "@/components/Livescore";
-import Countdown from "@/components/Countdown";
+import ConditionalShell from "@/components/ConditionalShell";
 import PWAInstaller from "@/components/PWAInstaller";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -34,11 +31,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className={inter.className}>
-        <Navbar />
-        <Livescore />
-        <Countdown />
-        <main>{children}</main>
-        <Footer />
+        <ConditionalShell>{children}</ConditionalShell>
         <PWAInstaller />
       </body>
     </html>
