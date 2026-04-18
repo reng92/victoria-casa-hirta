@@ -4,7 +4,7 @@ import MVPVoting from "@/components/MVPVoting";
 import Formation from "@/components/Formation";
 import WeatherWidget from "@/components/WeatherWidget";
 
-export const revalidate = 60;
+export const revalidate = 0;
 
 interface Match {
   id: string;
