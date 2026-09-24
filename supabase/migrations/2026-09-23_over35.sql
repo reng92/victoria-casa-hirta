@@ -15,8 +15,6 @@
 --                 goals_for, goals_against, points)
 -- ============================================================================
 
-begin;
-
 -- ----------------------------------------------------------------------------
 -- 1. Colonne per gironi, formato e stato competizione
 -- ----------------------------------------------------------------------------
@@ -42,6 +40,12 @@ where not exists (select 1 from public.seasons where name = '2026/27');
 
 update public.seasons set is_current = false where is_current = true and name <> '2026/27';
 update public.seasons set is_current = true  where name = '2026/27';
+
+-- Le competizioni delle stagioni passate (o senza stagione) risultano concluse.
+update public.competitions
+set status = 'conclusa'
+where status = 'attiva'
+  and (season_id is null or season_id in (select id from public.seasons where is_current = false));
 
 -- ----------------------------------------------------------------------------
 -- 3. Campionato 2026/27 (in arrivo, girone unico)
@@ -123,5 +127,3 @@ where c.name = 'Coppa Over 35'
       and m.away_team = 'Phoenix Caserta'
       and m.match_date::date = date '2026-09-26'
   );
-
-commit;

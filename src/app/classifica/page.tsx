@@ -220,6 +220,9 @@ export default async function ClassificaPage() {
     }
     c.rows.push(s);
   }
+  // Competizioni in corso per prime, poi in arrivo, infine concluse
+  const statusOrder: Record<string, number> = { attiva: 0, in_arrivo: 1, conclusa: 2 };
+  comps.sort((a, b) => (statusOrder[a.status ?? ""] ?? 1) - (statusOrder[b.status ?? ""] ?? 1));
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
