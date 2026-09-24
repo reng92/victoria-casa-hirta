@@ -22,9 +22,11 @@ export async function middleware(req: NextRequest) {
 
   // Admin auth
   const isAdminRoute = pathname.startsWith("/admin");
-  const isLoginPage = pathname === "/admin/login";
+  // Login e recupero password sono raggiungibili senza sessione: il link di
+  // recupero porta i token nel frammento dell'URL, che il server non vede.
+  const isAuthPage = pathname === "/admin/login" || pathname === "/admin/reset-password";
 
-  if (isAdminRoute && !isLoginPage) {
+  if (isAdminRoute && !isAuthPage) {
     const adminCookie = req.cookies.get("vch-admin")?.value;
     const hasSupabaseSession = [...req.cookies.getAll()].some(c =>
       c.name.includes("supabase") || c.name.includes("sb-")
