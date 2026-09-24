@@ -42,6 +42,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Link href="/admin/marcatori" className="text-white/60 hover:text-white transition text-xs hidden md:block">Marcatori</Link>
           <Link href="/admin/rosa" className="text-white/60 hover:text-white transition text-xs hidden md:block">Rosa</Link>
           <Link href="/admin/news" className="text-white/60 hover:text-white transition text-xs hidden md:block">News</Link>
+          <Link href="/admin/loghi" className="text-white/60 hover:text-white transition text-xs hidden md:block">Loghi</Link>
+          <Link href="/admin/sponsors" className="text-white/60 hover:text-white transition text-xs hidden md:block">Sponsor</Link>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-white/60 text-xs hidden sm:block">{email}</span>

@@ -6,7 +6,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { OutcomeBadge } from "@/components/ui/Badge";
 import { formatDateShort, getOutcome } from "@/lib/format";
-import { getOpponent, matchContextShort } from "@/lib/competitions";
+import { getOpponent, getScores, matchContextShort } from "@/lib/competitions";
 
 interface Match {
   id: string;
@@ -58,8 +58,7 @@ export default async function LastResult() {
 function LastResultBody({ m }: { m: Match }) {
   const opponent = getOpponent(m);
   const context = matchContextShort(m);
-  const ours = m.is_home ? m.home_score : m.away_score;
-  const theirs = m.is_home ? m.away_score : m.home_score;
+  const { ours, theirs } = getScores(m);
   const outcome = getOutcome(ours, theirs);
   const scoreColor = outcome === "win" ? "text-win" : outcome === "loss" ? "text-loss" : outcome === "draw" ? "text-draw" : "text-text";
 

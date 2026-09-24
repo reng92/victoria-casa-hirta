@@ -77,6 +77,16 @@ export function getOpponent(m: { home_team?: string | null; away_team: string; i
   return m.away_team;
 }
 
+/**
+ * Punteggio dal punto di vista della Victoria. Nel DB `home_score` è SEMPRE
+ * il numero di gol della Victoria e `away_score` quello dell'avversario,
+ * indipendentemente da `is_home` (il form admin li etichetta "Gol VCH" e
+ * "Gol Avversario").
+ */
+export function getScores(m: { home_score: number | null; away_score: number | null }) {
+  return { ours: m.home_score, theirs: m.away_score };
+}
+
 export interface StandingLike {
   group_name?: string | null;
   points: number;

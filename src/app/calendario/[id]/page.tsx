@@ -24,7 +24,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, OutcomeBadge, Pill } from "@/components/ui/Badge";
 import { formatDateFull, formatTime, getOutcome } from "@/lib/format";
-import { getOpponent, matchContextLabel } from "@/lib/competitions";
+import { getOpponent, getScores, matchContextLabel } from "@/lib/competitions";
 
 export const revalidate = 0;
 
@@ -159,8 +159,7 @@ export default async function PartitaPage({ params }: { params: { id: string } }
   }
 
   const events = await getEvents(match.id);
-  const ourScore = match.is_home ? match.home_score : match.away_score;
-  const theirScore = match.is_home ? match.away_score : match.home_score;
+  const { ours: ourScore, theirs: theirScore } = getScores(match);
   const isFinished = match.status === "finished";
   const isLive = match.status === "live";
   const opponent = getOpponent(match);

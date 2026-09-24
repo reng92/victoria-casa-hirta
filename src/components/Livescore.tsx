@@ -4,7 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/Badge";
-import { getOpponent } from "@/lib/competitions";
+import { getOpponent, getScores } from "@/lib/competitions";
 
 interface LiveMatch {
   id: string;
@@ -87,8 +87,7 @@ export default function Livescore() {
     <div className="sticky top-16 z-40 px-4 pt-2">
       <div className="max-w-3xl mx-auto flex flex-col gap-2">
         {matches.map((m) => {
-          const ourScore = m.is_home ? m.home_score : m.away_score;
-          const theirScore = m.is_home ? m.away_score : m.home_score;
+          const { ours: ourScore, theirs: theirScore } = getScores(m);
           const opponent = getOpponent(m);
           const matchEvents = events[m.id] ?? [];
           const vchGoals = matchEvents.filter(e => e.for_team === "vch" || e.for_team === null);

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { groupLabel, groupOptions, isGroupFormat, matchdayLabel } from "@/lib/competitions";
+import LogoField from "@/components/admin/LogoField";
 
 interface Competition { id: string; name: string; format: string | null; }
 interface Venue { id: string; name: string; }
@@ -58,7 +59,6 @@ export default function AdminPartite() {
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
-  const [opponentLogoUploading, setOpponentLogoUploading] = useState(false);
   const [editMatch, setEditMatch] = useState<Match | null>(null);
   const [editForm, setEditForm] = useState({
     away_team: "",
@@ -133,6 +133,10 @@ export default function AdminPartite() {
     setLoading(true);
     setMsg("");
     const match_date = `${form.match_date}T${form.match_time || "00:00"}:00`;
+    // Se il logo non è indicato, riusa quello già assegnato allo stesso avversario
+    const known = form.opponent_logo_url
+      ? null
+      : matches.find(x => x.away_team.trim().toLowerCase() === form.away_team.trim().toLowerCase() && x.opponent_logo_url)?.opponent_logo_url ?? null;
     const { error } = await supabase.from("matches").insert({
       away_team: form.away_team,
       match_date,
@@ -144,7 +148,7 @@ export default function AdminPartite() {
       status: form.status,
       home_score: form.home_score !== "" ? parseInt(form.home_score) : null,
       away_score: form.away_score !== "" ? parseInt(form.away_score) : null,
-      opponent_logo_url: form.opponent_logo_url || null,
+      opponent_logo_url: form.opponent_logo_url || known,
     });
     if (error) setMsg("Errore: " + error.message);
     else { setMsg("Partita salvata!"); setForm(emptyForm); fetchAll(); }
@@ -650,9 +654,13 @@ export default function AdminPartite() {
                 </select>
               </div>
             )}
-            <div>
-              <label className="text-xs text-gray-500 mb-1 block">Logo avversario (URL)</label>
-              <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.opponent_logo_url} onChange={e => setEditForm(f => ({ ...f, opponent_logo_url: e.target.value }))} placeholder="https://..." />
+            <div className="sm:col-span-2">
+              <LogoField
+                value={editForm.opponent_logo_url}
+                onChange={url => setEditForm(f => ({ ...f, opponent_logo_url: url }))}
+                folder="opponents"
+                label="Logo avversario"
+              />
             </div>
             <div>
               <label className="text-xs text-gray-500 mb-1 block">Gol VCH</label>
@@ -786,28 +794,12 @@ export default function AdminPartite() {
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="text-xs text-gray-500 mb-1 block">Logo avversario</label>
-            <div className="flex items-center gap-3">
-              {form.opponent_logo_url && (
-                <img src={form.opponent_logo_url} alt="logo" className="w-12 h-12 rounded-full object-contain border border-gray-200" />
-              )}
-              <label className="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-medium px-4 py-2 rounded-full transition">
-                {opponentLogoUploading ? "Caricamento..." : "Carica logo"}
-                <input type="file" accept="image/*" className="hidden" disabled={opponentLogoUploading}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    setOpponentLogoUploading(true);
-                    const { uploadImage } = await import("@/lib/storage");
-                    const url = await uploadImage(file, "opponents");
-                    if (url) setForm(f => ({ ...f, opponent_logo_url: url }));
-                    setOpponentLogoUploading(false);
-                  }}
-                />
-              </label>
-              <span className="text-xs text-gray-400">o incolla URL</span>
-              <input className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.opponent_logo_url} onChange={e => setForm(f => ({ ...f, opponent_logo_url: e.target.value }))} placeholder="https://..." />
-            </div>
+            <LogoField
+              value={form.opponent_logo_url}
+              onChange={url => setForm(f => ({ ...f, opponent_logo_url: url }))}
+              folder="opponents"
+              label="Logo avversario (se vuoto, viene riusato quello già salvato per lo stesso avversario)"
+            />
           </div>
           <div className="sm:col-span-2">
             <button type="submit" disabled={loading} className="bg-brand-blue text-white font-semibold px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-50">

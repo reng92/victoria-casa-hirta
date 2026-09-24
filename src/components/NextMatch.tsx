@@ -121,9 +121,9 @@ export default async function NextMatch() {
             <div className="flex flex-col items-center shrink-0 px-1">
               {match.status === "live" ? (
                 <span className="font-display text-5xl md:text-6xl font-bold tabular leading-none">
-                  {match.is_home ? match.home_score ?? 0 : match.away_score ?? 0}
+                  {match.home_score ?? 0}
                   <span className="text-white/30 mx-2">–</span>
-                  {match.is_home ? match.away_score ?? 0 : match.home_score ?? 0}
+                  {match.away_score ?? 0}
                 </span>
               ) : (
                 <>

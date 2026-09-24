@@ -7,7 +7,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, Pill } from "@/components/ui/Badge";
 import { formatDateShort, formatTime, formatWeekday, getOutcome, outcomeShort } from "@/lib/format";
-import { getOpponent, groupLabel, matchdayLabel } from "@/lib/competitions";
+import { getOpponent, getScores, groupLabel, matchdayLabel } from "@/lib/competitions";
 
 export const revalidate = 60;
 
@@ -82,8 +82,7 @@ function MatchRow({ m }: { m: Match }) {
   const isLive = m.status === "live";
   const isFinished = m.status === "finished";
   const opponent = getOpponent(m);
-  const ours = m.is_home ? m.home_score : m.away_score;
-  const theirs = m.is_home ? m.away_score : m.home_score;
+  const { ours, theirs } = getScores(m);
   const outcome = isFinished ? getOutcome(ours, theirs) : null;
   const d = new Date(m.match_date);
   const reels = m.instagram_reels?.length ?? 0;
