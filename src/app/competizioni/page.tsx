@@ -1,4 +1,11 @@
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { ArrowRight, CalendarDays, Medal, Trophy } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import Avatar from "@/components/ui/Avatar";
+import { Pill } from "@/components/ui/Badge";
+import { formatLabel, statusLabel } from "@/lib/competitions";
 
 export const revalidate = 60;
 
@@ -9,13 +16,16 @@ interface Competition {
   level: string | null;
   organizer: string | null;
   logo_url: string | null;
-  season: { name: string } | null;
+  format: string | null;
+  status: string | null;
+  notes: string | null;
+  season: { name: string; is_current: boolean } | null;
 }
 
 async function getCompetitions(): Promise<Competition[]> {
   const { data } = await supabase
     .from("competitions")
-    .select("*, season:seasons(name)")
+    .select("*, season:seasons(name, is_current)")
     .order("name", { ascending: true });
   return (data as unknown as Competition[]) ?? [];
 }
@@ -32,47 +42,87 @@ const typeLabel: Record<string, string> = {
   torneo: "Torneo",
 };
 
+const statusOrder: Record<string, number> = { attiva: 0, in_arrivo: 1, conclusa: 2 };
+
+const statusTone = (s: string | null) =>
+  s === "attiva" ? "win" : s === "in_arrivo" ? "draw" : s === "conclusa" ? "neutral" : "neutral";
+
 export default async function CompetizioniPage() {
-  const competitions = await getCompetitions();
+  const all = await getCompetitions();
+
+  // Solo la stagione corrente; se nessuna stagione è marcata corrente, mostra tutto.
+  const current = all.filter((c) => c.season?.is_current);
+  const competitions = (current.length > 0 ? current : all).sort(
+    (a, b) => (statusOrder[a.status ?? ""] ?? 1) - (statusOrder[b.status ?? ""] ?? 1) || a.name.localeCompare(b.name)
+  );
+  const seasonName = competitions.find((c) => c.season?.is_current)?.season?.name;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-extrabold text-brand-blue mb-2">Competizioni</h1>
-      <p className="text-gray-500 mb-10 text-sm">Campionati e coppe a cui partecipiamo</p>
+    <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
+      <PageHeader
+        title="Competizioni"
+        subtitle={seasonName ? `Stagione ${seasonName} · campionati e coppe a cui partecipiamo` : "Campionati e coppe a cui partecipiamo"}
+      />
 
       {competitions.length === 0 && (
-        <p className="text-gray-400 text-sm">Le competizioni verranno caricate a breve.</p>
+        <div className="bento-card">
+          <EmptyState icon={Medal} title="Nessuna competizione" description="Le competizioni verranno caricate a breve." />
+        </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {competitions.map((c) => (
-          <div key={c.id} className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 hover:shadow-md transition flex gap-4 items-start">
-            <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-              {c.logo_url ? (
-                <img src={c.logo_url} alt={c.name} className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-2xl">🏆</span>
-              )}
-            </div>
-            <div>
-              <h2 className="font-bold text-brand-blue text-lg leading-tight mb-1">{c.name}</h2>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {c.type && (
-                  <span className="text-xs bg-brand-blue text-white px-2 py-0.5 rounded-full">
-                    {typeLabel[c.type] ?? c.type}
-                  </span>
-                )}
-                {c.level && (
-                  <span className="text-xs bg-brand-red text-white px-2 py-0.5 rounded-full">
-                    {levelLabel[c.level] ?? c.level}
-                  </span>
-                )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+        {competitions.map((c) => {
+          const upcoming = c.status === "in_arrivo";
+          return (
+            <article key={c.id} className={`bento-card p-5 flex flex-col gap-4 ${upcoming ? "opacity-90" : ""}`}>
+              <div className="flex gap-4 items-start">
+                <Avatar src={c.logo_url} name={c.name} size={56} rounded="xl" />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h2 className="font-display text-h3 leading-tight text-balance">{c.name}</h2>
+                    {c.status && statusLabel[c.status] && (
+                      <Pill tone={statusTone(c.status)} className="shrink-0">{statusLabel[c.status]}</Pill>
+                    )}
+                  </div>
+                  {(c.type || c.level) && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {c.type && <Pill tone="brand">{typeLabel[c.type] ?? c.type}</Pill>}
+                      {c.level && <Pill tone="accent">{levelLabel[c.level] ?? c.level}</Pill>}
+                    </div>
+                  )}
+                  <div className="mt-3 flex flex-col gap-0.5 text-xs text-muted">
+                    {c.format && <p>Formula: <span className="text-text">{formatLabel[c.format] ?? c.format}</span></p>}
+                    {c.organizer && <p>Organizzatore: <span className="text-text">{c.organizer}</span></p>}
+                    {c.season && <p>Stagione: <span className="text-text">{c.season.name}</span></p>}
+                  </div>
+                  {c.notes && <p className="mt-2 text-sm text-text/90">{c.notes}</p>}
+                </div>
               </div>
-              {c.organizer && <p className="text-xs text-gray-400">Organizzatore: {c.organizer}</p>}
-              {c.season && <p className="text-xs text-gray-400">Stagione: {c.season.name}</p>}
-            </div>
-          </div>
-        ))}
+
+              {upcoming ? (
+                <p className="text-xs text-muted border-t border-border pt-3">
+                  Calendario e classifica saranno disponibili all&apos;inizio della competizione.
+                </p>
+              ) : (
+                <div className="flex items-center gap-2 border-t border-border pt-3">
+                  <Link
+                    href="/calendario"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-surface-2 border border-border hover:bg-brand hover:text-white transition"
+                  >
+                    <CalendarDays className="w-3.5 h-3.5" aria-hidden /> Calendario
+                  </Link>
+                  <Link
+                    href="/classifica"
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full bg-surface-2 border border-border hover:bg-brand hover:text-white transition"
+                  >
+                    <Trophy className="w-3.5 h-3.5" aria-hidden /> Classifica
+                    <ArrowRight className="w-3.5 h-3.5" aria-hidden />
+                  </Link>
+                </div>
+              )}
+            </article>
+          );
+        })}
       </div>
     </div>
   );

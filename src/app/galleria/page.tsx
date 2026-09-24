@@ -1,4 +1,8 @@
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
+import { Camera } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
 
 export const revalidate = 60;
 
@@ -22,30 +26,36 @@ export default async function GalleriaPage() {
   const photos = await getGallery();
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-extrabold text-brand-blue mb-2">Galleria</h1>
-      <p className="text-gray-500 mb-10 text-sm">Foto e momenti della squadra</p>
+    <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
+      <PageHeader title="Galleria" subtitle={`Foto e momenti della squadra${photos.length ? ` · ${photos.length} foto` : ""}`} />
 
       {photos.length === 0 && (
-        <p className="text-gray-400 text-sm">Le foto verranno caricate a breve.</p>
+        <div className="bento-card">
+          <EmptyState icon={Camera} title="Nessuna foto" description="Le foto verranno caricate a breve." />
+        </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {photos.map((p) => (
-          <div key={p.id} className="relative group rounded-xl overflow-hidden bg-gray-100 aspect-square">
-            <img
+      <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+        {photos.map((p, i) => (
+          <li key={p.id} className="group relative aspect-square rounded-card overflow-hidden bg-surface-2 border border-border">
+            <Image
               src={p.photo_url}
-              alt={p.caption ?? "Foto"}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              alt={p.caption ?? "Foto della squadra"}
+              fill
+              sizes="(min-width:768px) 25vw, (min-width:640px) 33vw, 50vw"
+              priority={i < 4}
+              className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
             />
             {p.caption && (
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-end p-3">
-                <p className="text-white text-xs font-medium">{p.caption}</p>
+              <div
+                className="absolute inset-x-0 bottom-0 pt-10 pb-2.5 px-3 bg-gradient-to-t from-black/75 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
+              >
+                <p className="text-white text-xs font-medium leading-snug line-clamp-2">{p.caption}</p>
               </div>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

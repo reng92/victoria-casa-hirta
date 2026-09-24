@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { groupOptions, isGroupFormat, sortStandings } from "@/lib/competitions";
 
-interface Competition { id: string; name: string; }
-interface Standing { id: string; team_name: string; played: number; won: number; drawn: number; lost: number; goals_for: number; goals_against: number; points: number; competition_id: string; }
-const emptyForm = { team_name: "", competition_id: "", played: "", won: "", drawn: "", lost: "", goals_for: "", goals_against: "", points: "" };
+interface Competition { id: string; name: string; format: string | null; }
+interface Standing { id: string; team_name: string; group_name: string | null; played: number; won: number; drawn: number; lost: number; goals_for: number; goals_against: number; points: number; competition_id: string; }
+const emptyForm = { team_name: "", competition_id: "", group_name: "", played: "", won: "", drawn: "", lost: "", goals_for: "", goals_against: "", points: "" };
 
 export default function AdminClassifica() {
   const [standings, setStandings] = useState<Standing[]>([]);
@@ -18,11 +19,15 @@ export default function AdminClassifica() {
   async function fetchAll() {
     const [{ data: s }, { data: c }] = await Promise.all([
       supabase.from("standings").select("*").order("points", { ascending: false }),
-      supabase.from("competitions").select("id, name"),
+      supabase.from("competitions").select("id, name, format"),
     ]);
-    setStandings((s as unknown as Standing[]) ?? []);
+    setStandings(sortStandings((s as unknown as Standing[]) ?? []));
     setCompetitions((c as Competition[]) ?? []);
   }
+
+  const selectedFormat = competitions.find((c) => c.id === form.competition_id)?.format ?? null;
+  const showGroup = isGroupFormat(selectedFormat);
+  const compName = (id: string) => competitions.find((c) => c.id === id)?.name ?? "–";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +36,7 @@ export default function AdminClassifica() {
     const { error } = await supabase.from("standings").insert({
       team_name: form.team_name,
       competition_id: form.competition_id || null,
+      group_name: showGroup && form.group_name ? form.group_name : null,
       played: parseInt(form.played) || 0,
       won: parseInt(form.won) || 0,
       drawn: parseInt(form.drawn) || 0,
@@ -73,6 +79,15 @@ export default function AdminClassifica() {
               {competitions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
+          {showGroup && (
+            <div className="col-span-2 sm:col-span-4">
+              <label className="text-xs text-gray-500 mb-1 block">Girone *</label>
+              <select required className="w-full sm:w-1/2 border border-gray-200 rounded-lg px-3 py-2 text-sm" {...f("group_name")}>
+                <option value="">– Seleziona –</option>
+                {groupOptions.map(g => <option key={g} value={g}>Girone {g}</option>)}
+              </select>
+            </div>
+          )}
           {[
             { key: "played", label: "G" },
             { key: "won", label: "V" },
@@ -101,6 +116,7 @@ export default function AdminClassifica() {
           <div key={s.id} className="bg-white border border-gray-100 rounded-2xl p-4 flex items-center justify-between shadow-sm">
             <div className="text-sm">
               <span className="font-bold text-brand-blue">{s.team_name}</span>
+              <span className="ml-2 text-xs text-gray-400">{compName(s.competition_id)}{s.group_name ? ` · Girone ${s.group_name}` : ""}</span>
               <span className="ml-3 text-gray-500">G:{s.played} V:{s.won} N:{s.drawn} P:{s.lost} GF:{s.goals_for} GS:{s.goals_against}</span>
               <span className="ml-3 font-bold text-brand-red">Pt:{s.points}</span>
             </div>

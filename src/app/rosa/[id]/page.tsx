@@ -1,5 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { ArrowLeft, Calendar, ClipboardList, Goal, Target, Square, ArrowLeftRight, ShieldAlert, Users, type LucideIcon } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import Avatar from "@/components/ui/Avatar";
+import { Pill } from "@/components/ui/Badge";
+import { formatDateNumeric } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -57,102 +63,136 @@ const roleLabel: Record<string, string> = {
   attaccante: "Attaccante",
 };
 
-const eventEmoji: Record<string, string> = {
-  gol: "⚽",
-  assist: "🎯",
-  ammonizione: "🟨",
-  espulsione: "🟥",
-  cambio: "🔄",
-  autorete: "🙈",
+const eventLabel: Record<string, string> = {
+  gol: "Gol",
+  assist: "Assist",
+  ammonizione: "Ammonizione",
+  espulsione: "Espulsione",
+  cambio: "Sostituzione",
+  autorete: "Autorete",
+};
+
+const eventIcon: Record<string, { icon: LucideIcon; color: string }> = {
+  gol: { icon: Goal, color: "text-win" },
+  assist: { icon: Target, color: "text-brand-soft" },
+  ammonizione: { icon: Square, color: "text-draw" },
+  espulsione: { icon: Square, color: "text-loss" },
+  cambio: { icon: ArrowLeftRight, color: "text-muted" },
+  autorete: { icon: ShieldAlert, color: "text-loss" },
 };
 
 export default async function GiocatorePage({ params }: { params: { id: string } }) {
   const player = await getPlayer(params.id);
   if (!player) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <p className="text-gray-400">Giocatore non trovato.</p>
-        <Link href="/rosa" className="text-brand-blue text-sm mt-4 inline-block">← Rosa</Link>
+      <div className="max-w-2xl mx-auto px-4 py-6 md:py-10">
+        <div className="bento-card">
+          <EmptyState icon={Users} title="Giocatore non trovato" description="Il profilo richiesto non esiste o non è più attivo." />
+          <div className="pb-8 text-center">
+            <Link href="/rosa" className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-soft hover:text-text transition">
+              <ArrowLeft className="w-4 h-4" aria-hidden />
+              Torna alla rosa
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
 
   const stats = await getStats(player.id);
 
+  const statCards: { value: number; label: string; icon: LucideIcon; color: string }[] = [
+    { value: stats.presenze, label: "Presenze", icon: ClipboardList, color: "text-brand-soft" },
+    { value: stats.gol, label: "Gol", icon: Goal, color: "text-win" },
+    { value: stats.assist, label: "Assist", icon: Target, color: "text-brand-soft" },
+    { value: stats.ammonizioni, label: "Ammonizioni", icon: Square, color: "text-draw" },
+    { value: stats.espulsioni, label: "Espulsioni", icon: Square, color: "text-loss" },
+  ];
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
-      <Link href="/rosa" className="text-sm text-gray-400 hover:text-brand-blue transition mb-6 inline-block">
-        ← Rosa
-      </Link>
+    <div className="max-w-2xl mx-auto px-4 py-6 md:py-10">
+      <PageHeader title={player.full_name} back={{ href: "/rosa", label: "Rosa" }} />
 
       {/* Header giocatore */}
-      <div className="bg-brand-blue text-white rounded-2xl overflow-hidden shadow-lg mb-6">
-        <div className="px-6 py-8 flex items-center gap-6">
-          <div className="w-24 h-24 rounded-full overflow-hidden bg-white/10 flex items-center justify-center shrink-0 border-4 border-white/20">
-            {player.photo_url ? (
-              <img src={player.photo_url} alt={player.full_name} className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-5xl">⚽</span>
+      <section className="relative mesh-hero rounded-hero text-white overflow-hidden shadow-card mb-4 min-h-[180px]">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          style={{ backgroundImage: "radial-gradient(circle at 1px 1px, #fff 1px, transparent 1px)", backgroundSize: "22px 22px" }}
+        />
+        {player.shirt_number !== null && (
+          <span
+            className="absolute -top-2 right-3 font-display font-bold text-white/10 leading-none tabular select-none"
+            style={{ fontSize: "clamp(7rem, 30vw, 11rem)" }}
+            aria-hidden
+          >
+            {player.shirt_number}
+          </span>
+        )}
+        <div className="relative p-5 sm:p-7 flex items-center gap-5">
+          <Avatar src={player.photo_url} name={player.full_name} size={96} rounded="xl" className="ring-4 ring-white/10 !bg-white/10 !border-white/15" />
+          <div className="min-w-0">
+            {player.shirt_number !== null && (
+              <p className="font-display text-accent-soft font-bold text-4xl leading-none tabular mb-1">#{player.shirt_number}</p>
             )}
-          </div>
-          <div>
-            {player.shirt_number && (
-              <div className="text-brand-red font-extrabold text-4xl leading-none mb-1">
-                #{player.shirt_number}
-              </div>
-            )}
-            <h1 className="text-2xl font-extrabold leading-tight">{player.full_name}</h1>
-            <p className="text-white/60 text-sm mt-1">{roleLabel[player.role] ?? player.role}</p>
-            {player.birth_date && (
-              <p className="text-white/40 text-xs mt-0.5">
-                Nato il {new Date(player.birth_date).toLocaleDateString("it-IT")}
-              </p>
-            )}
+            <h2 className="font-display text-xl sm:text-2xl font-bold leading-tight text-balance">{player.full_name}</h2>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <Pill tone="glass" className="normal-case tracking-normal">{roleLabel[player.role] ?? player.role}</Pill>
+              {player.birth_date && (
+                <span className="text-xs text-white/70">Nato il {formatDateNumeric(player.birth_date)}</span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Statistiche */}
-      <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">
-        {[
-          { value: stats.presenze, label: "Presenze", emoji: "📋" },
-          { value: stats.gol, label: "Gol", emoji: "⚽" },
-          { value: stats.assist, label: "Assist", emoji: "🎯" },
-          { value: stats.ammonizioni, label: "Ammonizioni", emoji: "🟨" },
-          { value: stats.espulsioni, label: "Espulsioni", emoji: "🟥" },
-        ].map((s) => (
-          <div key={s.label} className="bg-white border border-gray-100 rounded-2xl p-4 text-center shadow-sm">
-            <div className="text-2xl mb-1">{s.emoji}</div>
-            <div className="text-2xl font-extrabold text-brand-blue">{s.value}</div>
-            <div className="text-xs text-gray-400 mt-0.5">{s.label}</div>
-          </div>
-        ))}
-      </div>
+      <section aria-label="Statistiche" className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
+        {statCards.map((s) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="bento-card p-4 text-center">
+              <Icon className={`w-5 h-5 mx-auto mb-2 ${s.color}`} aria-hidden />
+              <p className="font-display text-2xl font-bold tabular leading-none">{s.value}</p>
+              <p className="text-[11px] text-muted mt-1.5">{s.label}</p>
+            </div>
+          );
+        })}
+      </section>
 
       {/* Ultimi eventi */}
-      {stats.events.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="font-bold text-brand-blue text-lg">📅 Ultimi eventi</h2>
-          </div>
-          <div className="divide-y divide-gray-50">
-            {stats.events.slice(0, 10).map((ev) => (
-              <div key={ev.id} className="px-6 py-3 flex items-center gap-3 text-sm">
-                <span className="text-xl">{eventEmoji[ev.event_type] ?? "📋"}</span>
-                <div className="flex-1">
-                  <span className="font-semibold text-gray-800 capitalize">{ev.event_type}</span>
-                  {ev.match && (
-                    <span className="text-gray-400 ml-2 text-xs">
-                      vs {ev.match.away_team} · {new Date(ev.match.match_date).toLocaleDateString("it-IT")}
-                    </span>
-                  )}
-                </div>
-                {ev.minute && <span className="text-xs text-gray-400">{ev.minute}'</span>}
-              </div>
-            ))}
-          </div>
+      <section className="bento-card" aria-labelledby="eventi-title">
+        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-brand-soft" aria-hidden />
+          <h2 id="eventi-title" className="font-display text-base font-bold">Ultimi eventi</h2>
         </div>
-      )}
+        {stats.events.length === 0 ? (
+          <EmptyState compact icon={ClipboardList} title="Nessun evento registrato" description="Gol, assist e cartellini compariranno qui." />
+        ) : (
+          <ul className="divide-y divide-border">
+            {stats.events.slice(0, 10).map((ev) => {
+              const meta = eventIcon[ev.event_type] ?? { icon: ClipboardList, color: "text-muted" };
+              const Icon = meta.icon;
+              return (
+                <li key={ev.id} className="px-5 py-3 flex items-center gap-3 text-sm">
+                  <span className="w-8 h-8 rounded-xl bg-surface-2 border border-border flex items-center justify-center shrink-0">
+                    <Icon className={`w-4 h-4 ${meta.color}`} aria-hidden />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold">{eventLabel[ev.event_type] ?? ev.event_type}</p>
+                    {ev.match && (
+                      <p className="text-muted text-xs truncate">
+                        vs {ev.match.away_team} · {formatDateNumeric(ev.match.match_date)}
+                      </p>
+                    )}
+                  </div>
+                  {ev.minute && <span className="text-xs text-muted tabular shrink-0">{ev.minute}&apos;</span>}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

@@ -1,5 +1,14 @@
+import Link from "next/link";
+import { Suspense } from "react";
+import { CalendarDays, MapPin, Navigation, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import WeatherWidget from "@/components/WeatherWidget";
+import LiveCountdown from "@/components/LiveCountdown";
+import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
+import { LiveBadge, Pill } from "@/components/ui/Badge";
+import { formatDateLong, formatTime } from "@/lib/format";
+import { getOpponent, matchContextLabel } from "@/lib/competitions";
+import AnniversaryBadge from "@/components/AnniversaryBadge";
 
 interface Match {
   id: string;
@@ -10,179 +19,186 @@ interface Match {
   home_score: number | null;
   away_score: number | null;
   status: string;
+  matchday: number | null;
+  group_name: string | null;
   opponent_logo_url: string | null;
   venue: { name: string; address: string; city: string | null; maps_url: string | null } | null;
   competition: { name: string } | null;
 }
 
+const BASE_SELECT =
+  "id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, venue:venues(name, address, city, maps_url), competition:competitions(name)";
+
 async function getNextMatch(): Promise<Match | null> {
-  const { data } = await supabase
-    .from("matches")
-    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, opponent_logo_url, venue:venues(name, address, city, maps_url), competition:competitions(name)")
-    .in("status", ["scheduled", "live"])
-    .gte("match_date", new Date().toISOString())
-    .order("match_date", { ascending: true })
-    .limit(1)
-    .single();
+  // Una partita "live" va mostrata anche se il calcio d'inizio è già passato.
+  const query = (select: string) =>
+    supabase
+      .from("matches")
+      .select(select)
+      .or(`status.eq.live,and(status.eq.scheduled,match_date.gte.${new Date().toISOString()})`)
+      .order("status", { ascending: true }) // "live" < "scheduled": live per primo
+      .order("match_date", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+  const { data, error } = await query(BASE_SELECT.replace("matchday,", "matchday, group_name,"));
+  if (error) {
+    // Fallback se group_name non esiste ancora
+    const { data: fallback } = await query(BASE_SELECT);
+    return fallback as unknown as Match | null;
+  }
   return data as unknown as Match | null;
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("it-IT", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-}
-
-function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString("it-IT", {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function getMapsEmbedUrl(mapsUrl: string): string | null {
-  try {
-    const url = new URL(mapsUrl);
-    const q = url.searchParams.get("q");
-    if (q) return `https://maps.google.com/maps?q=${encodeURIComponent(q)}&output=embed`;
-    return `https://maps.google.com/maps?q=${encodeURIComponent(mapsUrl)}&output=embed`;
-  } catch {
-    return null;
-  }
-}
-
+/** Hero "prossima partita": gradient mesh, loghi, countdown live, CTA mappe. */
 export default async function NextMatch() {
   const match = await getNextMatch();
+  const opponent = match ? getOpponent(match) : "";
 
   return (
-    <section className="bg-gray-50 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        <h2 className="text-2xl font-bold text-brand-blue mb-6 text-center">Prossima Partita</h2>
+    <section
+      aria-labelledby="next-match-title"
+      className="relative mesh-hero rounded-hero text-white overflow-hidden min-h-[440px] md:min-h-[420px] flex flex-col shadow-card"
+    >
+      {/* Trama decorativa */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, #fff 1px, transparent 1px)",
+          backgroundSize: "22px 22px",
+        }}
+      />
 
-        {!match ? (
-          <div className="bg-white rounded-2xl shadow p-8 text-gray-400 text-sm text-center">
-            Nessuna partita in programma al momento.
+      {!match ? (
+        <div className="relative flex-1 flex flex-col items-center justify-center text-center p-8">
+          <AnniversaryBadge size={96} priority className="mb-5" />
+          <h1 id="next-match-title" className="font-display text-display">
+            Victoria <span className="text-accent-soft">Casa Hirta</span>
+          </h1>
+          <p className="text-white/70 mt-3 max-w-md">
+            Calcio amatoriale con passione e orgoglio in Campania.
+          </p>
+          <p className="mt-6 text-sm text-white/60">Nessuna partita in programma al momento.</p>
+          <Link
+            href="/calendario"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-white text-brand-blue font-semibold px-5 py-2.5 text-sm hover:bg-white/90 transition"
+          >
+            Vai al calendario <ArrowRight className="w-4 h-4" aria-hidden />
+          </Link>
+        </div>
+      ) : (
+        <div className="relative flex-1 flex flex-col p-5 sm:p-7 md:p-8">
+          {/* Riga superiore: competizione + stato */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Pill tone="glass" className="normal-case tracking-normal">{matchContextLabel(match)}</Pill>
+              <Pill tone="glass">{match.is_home ? "In casa" : "Trasferta"}</Pill>
+            </div>
+            <div className="flex items-center gap-3">
+              {match.status === "live" ? (
+                <LiveBadge />
+              ) : (
+                <p className="text-[11px] uppercase tracking-wider text-white/60 font-semibold">Prossima partita</p>
+              )}
+              <AnniversaryBadge size={36} className="hidden xs:block" />
+            </div>
           </div>
-        ) : (
-          <div className="bg-white rounded-2xl shadow-md overflow-hidden">
 
-            {/* Competition badge */}
-            {match.competition && (
-              <div className="bg-brand-blue/5 border-b border-gray-100 px-6 py-2 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-widest text-brand-red">
-                  {match.competition.name}
-                </span>
-                {match.status === "live" && (
-                  <span className="flex items-center gap-1 text-xs font-bold text-brand-red">
-                    <span className="w-2 h-2 rounded-full bg-brand-red animate-pulse inline-block" />
-                    LIVE
-                  </span>
-                )}
-              </div>
-            )}
-
-            {/* Match card */}
-            <div className="px-6 py-8">
-              <div className="flex items-center justify-between gap-4">
-
-                {/* VCH */}
-                <div className="flex flex-col items-center gap-2 flex-1">
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-brand-blue flex items-center justify-center shadow">
-                    <img src="/logo.jpeg" alt="VCH" className="w-full h-full object-contain p-1" />
-                  </div>
-                  <span className="text-sm font-bold text-brand-blue text-center leading-tight">
-                    Victoria Casa Hirta
-                  </span>
-                  <span className="text-xs text-gray-400">{match.is_home ? "Casa" : "Ospite"}</span>
-                </div>
-
-                {/* Score / VS */}
-                <div className="flex flex-col items-center gap-1 shrink-0">
-                  {match.status === "live" || match.status === "finished" ? (
-                    <div className="text-4xl font-extrabold text-brand-blue tracking-tight">
-                      {match.is_home ? match.home_score ?? 0 : match.away_score ?? 0}
-                      <span className="text-gray-300 mx-2">–</span>
-                      {match.is_home ? match.away_score ?? 0 : match.home_score ?? 0}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="text-3xl font-extrabold text-gray-200">VS</div>
-                      <div className="text-xs text-gray-500 font-medium mt-1">
-                        {formatTime(match.match_date)}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Avversario */}
-                <div className="flex flex-col items-center gap-2 flex-1">
-                  <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center shadow">
-                    {match.opponent_logo_url ? (
-                      <img src={match.opponent_logo_url} alt={match.away_team} className="w-full h-full object-contain p-1" />
-                    ) : (
-                      <span className="text-3xl">⚽</span>
-                    )}
-                  </div>
-                  <span className="text-sm font-bold text-gray-700 text-center leading-tight">
-                    {match.is_home ? match.away_team : match.home_team}
-                  </span>
-                  <span className="text-xs text-gray-400">{match.is_home ? "Ospite" : "Casa"}</span>
-                </div>
-
-              </div>
-
-              {/* Date & venue */}
-              <div className="mt-6 pt-4 border-t border-gray-100 text-center space-y-1">
-                <p className="text-sm font-medium text-gray-700 capitalize">
-                  📅 {formatDate(match.match_date)}
-                </p>
-                {match.venue && (
-                  <p className="text-xs text-gray-400">
-                    📍 {match.venue.name}
-                    {match.venue.city ? ` · ${match.venue.city}` : ""}
-                  </p>
-                )}
-              </div>
+          {/* Squadre */}
+          <div className="flex-1 flex items-center justify-between gap-3 py-6 md:py-8">
+            <div className="flex flex-col items-center gap-3 flex-1 min-w-0">
+              <VCHLogo size={72} priority className="ring-4 ring-white/10 md:!w-24 md:!h-24" />
+              <h1
+                id="next-match-title"
+                className="font-display text-base sm:text-xl md:text-2xl font-bold text-center leading-tight text-balance"
+              >
+                Victoria Casa Hirta
+              </h1>
             </div>
 
-            {/* Mappa Google */}
-            {match.venue?.maps_url && (
-              <div className="border-t border-gray-100">
-                <iframe
-                  src={`https://maps.google.com/maps?q=${encodeURIComponent(match.venue.address + (match.venue.city ? ", " + match.venue.city : ""))}&output=embed&z=15`}
-                  width="100%"
-                  height="200"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  className="w-full"
-                />
+            <div className="flex flex-col items-center shrink-0 px-1">
+              {match.status === "live" ? (
+                <span className="font-display text-5xl md:text-6xl font-bold tabular leading-none">
+                  {match.is_home ? match.home_score ?? 0 : match.away_score ?? 0}
+                  <span className="text-white/30 mx-2">–</span>
+                  {match.is_home ? match.away_score ?? 0 : match.home_score ?? 0}
+                </span>
+              ) : (
+                <>
+                  <span className="font-display text-4xl md:text-5xl font-bold text-white/25 leading-none">VS</span>
+                  <span className="mt-2 text-sm font-semibold tabular text-white/80">{formatTime(match.match_date)}</span>
+                </>
+              )}
+            </div>
+
+            <div className="flex flex-col items-center gap-3 flex-1 min-w-0">
+              <TeamLogo
+                src={match.opponent_logo_url}
+                name={opponent}
+                size={72}
+                priority
+                className="ring-4 ring-white/10 md:!w-24 md:!h-24"
+              />
+              <p className="font-display text-base sm:text-xl md:text-2xl font-bold text-center leading-tight text-balance">
+                {opponent}
+              </p>
+            </div>
+          </div>
+
+          {/* Countdown */}
+          {match.status !== "live" && (
+            <div className="flex justify-center mb-5">
+              <LiveCountdown target={match.match_date} />
+            </div>
+          )}
+
+          {/* Data, ora, campo, meteo */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-col gap-1.5 text-sm text-white/85 min-w-0">
+              <p className="inline-flex items-center gap-2 capitalize">
+                <CalendarDays className="w-4 h-4 text-white/60 shrink-0" aria-hidden />
+                <span className="truncate">{formatDateLong(match.match_date)} · {formatTime(match.match_date)}</span>
+              </p>
+              {match.venue && (
+                <p className="inline-flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-white/60 shrink-0" aria-hidden />
+                  <span className="truncate">
+                    {match.venue.name}
+                    {match.venue.city ? ` · ${match.venue.city}` : ""}
+                  </span>
+                </p>
+              )}
+              {match.venue?.city && (
+                <Suspense fallback={null}>
+                  <WeatherWidget matchDate={match.match_date} city={match.venue.city} variant="chip" />
+                </Suspense>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {match.venue?.maps_url && (
                 <a
                   href={match.venue.maps_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 py-3 text-xs font-semibold text-brand-blue hover:text-brand-red transition border-t border-gray-100"
+                  className="inline-flex items-center gap-2 rounded-full bg-accent text-white font-semibold px-4 py-2.5 text-sm shadow-glow hover:brightness-110 transition"
                 >
-                  🗺️ Apri in Google Maps
+                  <Navigation className="w-4 h-4" aria-hidden />
+                  Come arrivare
                 </a>
-              </div>
-            )}
-
-            {match.venue?.city && (
-              <div className="border-t border-gray-100 p-4">
-                <WeatherWidget
-                  matchDate={match.match_date}
-                  city={match.venue?.city ?? "Caserta"}
-                />
-              </div>
-            )}
-
+              )}
+              <Link
+                href={`/calendario/${match.id}`}
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur text-white font-semibold px-4 py-2.5 text-sm hover:bg-white/20 transition"
+              >
+                Dettagli <ArrowRight className="w-4 h-4" aria-hidden />
+              </Link>
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </section>
   );
 }

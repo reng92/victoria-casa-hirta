@@ -1,6 +1,11 @@
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import Link from "next/link";
+import { Users } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import { Pill } from "@/components/ui/Badge";
+import { initials } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -11,6 +16,13 @@ const ruoliLabel: Record<string, string> = {
   difensore: "Difensori",
   centrocampista: "Centrocampisti",
   attaccante: "Attaccanti",
+};
+
+const ruoloSingolare: Record<string, string> = {
+  portiere: "Portiere",
+  difensore: "Difensore",
+  centrocampista: "Centrocampista",
+  attaccante: "Attaccante",
 };
 
 interface Player {
@@ -30,6 +42,52 @@ async function getPlayers(): Promise<Player[]> {
   return (data as unknown as Player[]) ?? [];
 }
 
+function PlayerCard({ p, priority }: { p: Player; priority?: boolean }) {
+  return (
+    <Link
+      href={`/rosa/${p.id}`}
+      className="group bento-card block focus-visible:ring-2 focus-visible:ring-brand-soft"
+      aria-label={`${p.full_name}${p.shirt_number ? `, numero ${p.shirt_number}` : ""}, ${ruoloSingolare[p.role] ?? p.role}`}
+    >
+      <div className="relative aspect-[3/4] bg-surface-2 overflow-hidden">
+        {p.photo_url ? (
+          <Image
+            src={p.photo_url}
+            alt=""
+            fill
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
+            priority={priority}
+            className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
+          />
+        ) : (
+          <div className="absolute inset-0 mesh-hero flex items-center justify-center">
+            <span className="font-display text-4xl font-bold text-white/30">{initials(p.full_name)}</span>
+          </div>
+        )}
+        {/* Gradiente per leggibilità */}
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/30 to-transparent" aria-hidden />
+
+        {/* Numero maglia grande in overlay */}
+        {p.shirt_number !== null && (
+          <span
+            className="absolute top-2 right-3 font-display font-bold text-white/90 leading-none tabular drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]"
+            style={{ fontSize: "clamp(2.25rem, 8vw, 3.5rem)" }}
+            aria-hidden
+          >
+            {p.shirt_number}
+          </span>
+        )}
+
+        {/* Nome + ruolo */}
+        <div className="absolute inset-x-0 bottom-0 p-3">
+          <p className="font-display font-bold text-white leading-tight text-sm sm:text-base text-balance">{p.full_name}</p>
+          <Pill tone="glass" className="mt-1.5 normal-case tracking-normal">{ruoloSingolare[p.role] ?? p.role}</Pill>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default async function RosaPage() {
   const players = await getPlayers();
 
@@ -39,53 +97,30 @@ export default async function RosaPage() {
   }, {});
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-extrabold text-brand-blue mb-2">Rosa</h1>
-      <p className="text-gray-500 mb-10 text-sm">Stagione in corso</p>
+    <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
+      <PageHeader title="Rosa" subtitle={`Stagione in corso · ${players.length} giocatori`} />
 
       {players.length === 0 && (
-        <p className="text-gray-400 text-sm">La rosa verrà caricata a breve.</p>
+        <div className="bento-card">
+          <EmptyState icon={Users} title="Rosa non disponibile" description="I giocatori verranno caricati a breve." />
+        </div>
       )}
 
-      {ruoliOrder.map((role) => {
+      {ruoliOrder.map((role, gi) => {
         const group = grouped[role];
         if (!group || group.length === 0) return null;
         return (
-          <div key={role} className="mb-12">
-            <h2 className="text-xl font-bold text-brand-red uppercase tracking-widest mb-6 border-b border-gray-100 pb-2">
-              {ruoliLabel[role]}
-            </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {group.map((player) => (
-                <Link
-                  key={player.id}
-                  href={`/rosa/${player.id}`}
-                  className="bg-white border border-gray-100 rounded-2xl p-4 text-center shadow-sm hover:shadow-md hover:border-brand-blue transition group block"
-                >
-                  <div className="w-20 h-20 mx-auto mb-3 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-                    {player.photo_url ? (
-                      <img
-  src={player.photo_url}
-  alt={player.full_name}
-  className="object-cover w-full h-full"
-/>
-                    ) : (
-                      <span className="text-3xl">⚽</span>
-                    )}
-                  </div>
-                  {player.shirt_number && (
-                    <div className="text-xs font-bold text-brand-red mb-1">
-                      #{player.shirt_number}
-                    </div>
-                  )}
-                  <div className="font-semibold text-brand-blue text-sm leading-tight group-hover:text-brand-red transition">
-                    {player.full_name}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1 capitalize">{player.role}</div>
-                </Link>
+          <section key={role} className="mb-10" aria-labelledby={`role-${role}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <h2 id={`role-${role}`} className="font-display text-h3">{ruoliLabel[role]}</h2>
+              <span className="text-xs text-muted tabular">{group.length}</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+              {group.map((p, i) => (
+                <PlayerCard key={p.id} p={p} priority={gi === 0 && i < 2} />
               ))}
             </div>
-          </div>
+          </section>
         );
       })}
     </div>

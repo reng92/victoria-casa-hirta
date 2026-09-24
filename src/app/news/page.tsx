@@ -1,4 +1,10 @@
 import { supabase } from "@/lib/supabase";
+import Image from "next/image";
+import { Newspaper } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import { Pill } from "@/components/ui/Badge";
+import { formatDateFull } from "@/lib/format";
 
 export const revalidate = 60;
 
@@ -18,46 +24,46 @@ async function getNews(): Promise<NewsItem[]> {
   return (data as unknown as NewsItem[]) ?? [];
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("it-IT", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 export default async function NewsPage() {
   const newsList = await getNews();
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-extrabold text-brand-blue mb-2">News</h1>
-      <p className="text-gray-500 mb-10 text-sm">Comunicati e aggiornamenti</p>
+    <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
+      <PageHeader title="News" subtitle="Comunicati e aggiornamenti" />
 
       {newsList.length === 0 && (
-        <p className="text-gray-400 text-sm">Nessuna news pubblicata al momento.</p>
+        <div className="bento-card">
+          <EmptyState icon={Newspaper} title="Nessuna news pubblicata" description="I comunicati della società compariranno qui." />
+        </div>
       )}
 
-      <div className="flex flex-col gap-6">
-        {newsList.map((n) => (
-          <div key={n.id} className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden hover:shadow-md transition flex flex-col sm:flex-row">
-            {n.cover_url ? (
-              <img src={n.cover_url} alt={n.title} className="w-full sm:w-48 h-40 sm:h-auto object-cover shrink-0" />
-            ) : (
-              <div className="w-full sm:w-48 h-24 sm:h-auto bg-brand-blue/10 flex items-center justify-center text-4xl shrink-0">
-                📰
-              </div>
-            )}
-            <div className="p-5 flex flex-col justify-center">
-              <p className="text-xs text-brand-red font-semibold uppercase tracking-wide mb-1">
-                {formatDate(n.published_at)}
-              </p>
-              <h2 className="font-bold text-brand-blue text-lg mb-2">{n.title}</h2>
-              {n.body && (
-                <p className="text-sm text-gray-500 line-clamp-3">{n.body}</p>
+      <div className="flex flex-col gap-4 md:gap-5">
+        {newsList.map((n, i) => (
+          <article key={n.id} className="bento-card flex flex-col sm:flex-row">
+            <div className="relative aspect-[16/9] sm:aspect-auto sm:w-56 md:w-64 shrink-0 bg-surface-2 overflow-hidden">
+              {n.cover_url ? (
+                <Image
+                  src={n.cover_url}
+                  alt=""
+                  fill
+                  sizes="(min-width: 768px) 256px, (min-width: 640px) 224px, 100vw"
+                  priority={i === 0}
+                  className="object-cover"
+                />
+              ) : (
+                <div className="absolute inset-0 mesh-hero flex items-center justify-center">
+                  <Newspaper className="w-8 h-8 text-white/40" aria-hidden />
+                </div>
               )}
             </div>
-          </div>
+            <div className="p-5 flex flex-col justify-center min-w-0">
+              <Pill tone="neutral" className="self-start normal-case tracking-normal mb-2">
+                <time dateTime={n.published_at} className="capitalize">{formatDateFull(n.published_at)}</time>
+              </Pill>
+              <h2 className="font-display text-h3 text-balance">{n.title}</h2>
+              {n.body && <p className="text-sm text-muted mt-2 line-clamp-3">{n.body}</p>}
+            </div>
+          </article>
         ))}
       </div>
     </div>

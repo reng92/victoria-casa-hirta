@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { formatLabel, formatOptions, statusLabel, statusOptions } from "@/lib/competitions";
 
 interface Season { id: string; name: string; }
-interface Competition { id: string; name: string; type: string | null; level: string | null; organizer: string | null; season: { name: string }[] | null; }
-const emptyForm = { name: "", type: "campionato", level: "regionale", organizer: "", season_id: "" };
+interface Competition { id: string; name: string; type: string | null; level: string | null; organizer: string | null; format: string | null; status: string | null; notes: string | null; season: { name: string }[] | null; }
+const emptyForm = { name: "", type: "campionato", level: "regionale", organizer: "", season_id: "", format: "girone_unico", status: "attiva", notes: "" };
 
 export default function AdminCompetizioni() {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
@@ -17,7 +18,7 @@ export default function AdminCompetizioni() {
 
   async function fetchAll() {
     const [{ data: c }, { data: s }] = await Promise.all([
-      supabase.from("competitions").select("id, name, type, level, organizer, season:seasons(name)").order("name"),
+      supabase.from("competitions").select("id, name, type, level, organizer, format, status, notes, season:seasons(name)").order("name"),
       supabase.from("seasons").select("id, name").order("start_date", { ascending: false }),
     ]);
     setCompetitions((c as unknown as Competition[]) ?? []);
@@ -34,6 +35,9 @@ export default function AdminCompetizioni() {
       level: form.level,
       organizer: form.organizer || null,
       season_id: form.season_id || null,
+      format: form.format,
+      status: form.status,
+      notes: form.notes || null,
     });
     if (error) setMsg("Errore: " + error.message);
     else { setMsg("Competizione salvata!"); setForm(emptyForm); fetchAll(); }
@@ -84,6 +88,22 @@ export default function AdminCompetizioni() {
               {seasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Formula</label>
+            <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.format} onChange={e => setForm(f => ({ ...f, format: e.target.value }))}>
+              {formatOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-gray-500 mb-1 block">Stato</label>
+            <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+              {statusOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-xs text-gray-500 mb-1 block">Note / formula (pubbliche)</label>
+            <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="es. Passano le prime 2 di ogni girone, poi eliminazione diretta" />
+          </div>
           <div className="sm:col-span-2">
             <button type="submit" disabled={loading} className="bg-brand-blue text-white font-semibold px-6 py-2 rounded-full hover:opacity-90 transition disabled:opacity-50">
               {loading ? "Salvataggio..." : "Salva competizione"}
@@ -100,6 +120,8 @@ export default function AdminCompetizioni() {
               <span className="font-bold text-brand-blue">{c.name}</span>
               {c.type && <span className="ml-2 text-xs bg-brand-blue text-white px-2 py-0.5 rounded-full capitalize">{c.type}</span>}
               {c.level && <span className="ml-2 text-xs bg-brand-red text-white px-2 py-0.5 rounded-full capitalize">{c.level}</span>}
+              {c.status && <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${c.status === "attiva" ? "bg-green-100 text-green-700" : c.status === "in_arrivo" ? "bg-yellow-100 text-yellow-700" : "bg-gray-100 text-gray-600"}`}>{statusLabel[c.status] ?? c.status}</span>}
+              {c.format && <span className="ml-2 text-xs text-gray-500">{formatLabel[c.format] ?? c.format}</span>}
               {c.season && c.season[0] && <span className="ml-2 text-xs text-gray-400">{c.season[0].name}</span>}
             </div>
             <button onClick={() => handleDelete(c.id)} className="text-xs text-gray-400 hover:text-red-500 transition">🗑️</button>

@@ -31,7 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   if (isLoginPage) return <>{children}</>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div data-theme="light" className="min-h-screen bg-gray-50 text-gray-900">
       <div className="bg-brand-blue text-white px-4 py-3 flex items-center justify-between text-sm sticky top-16 z-40">
         <div className="flex items-center gap-4">
           <Link href="/admin" className="font-bold text-white hover:text-brand-red transition">

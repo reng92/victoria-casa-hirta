@@ -1,4 +1,9 @@
 import { supabase } from "@/lib/supabase";
+import { UserCog } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import EmptyState from "@/components/ui/EmptyState";
+import Avatar from "@/components/ui/Avatar";
+import { Pill } from "@/components/ui/Badge";
 
 export const revalidate = 60;
 
@@ -21,36 +26,26 @@ export default async function StaffPage() {
   const staff = await getStaff();
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-extrabold text-brand-blue mb-2">Staff Tecnico</h1>
-      <p className="text-gray-500 mb-10 text-sm">Il nostro team dietro le quinte</p>
+    <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
+      <PageHeader title="Staff Tecnico" subtitle="Il nostro team dietro le quinte" />
 
       {staff.length === 0 && (
-        <p className="text-gray-400 text-sm">Lo staff verrà caricato a breve.</p>
+        <div className="bento-card">
+          <EmptyState icon={UserCog} title="Staff non disponibile" description="Lo staff verrà caricato a breve." />
+        </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+      <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 md:gap-4">
         {staff.map((s) => (
-          <div
-            key={s.id}
-            className="bg-white border border-gray-100 rounded-2xl p-5 text-center shadow-sm hover:shadow-md transition"
-          >
-            <div className="w-20 h-20 mx-auto mb-3 rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
-              {s.photo_url ? (
-                <img
-                  src={s.photo_url}
-                  alt={s.full_name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-3xl">🧑‍💼</span>
-              )}
+          <li key={s.id} className="bento-card p-5 flex flex-col items-center text-center gap-3">
+            <Avatar src={s.photo_url} name={s.full_name} size={80} className="ring-2 ring-brand-soft/30" />
+            <div className="min-w-0 w-full">
+              <p className="font-semibold text-sm leading-tight text-balance">{s.full_name}</p>
+              <Pill tone="accent" className="mt-2 normal-case tracking-normal">{s.role}</Pill>
             </div>
-            <div className="font-bold text-brand-blue text-sm leading-tight">{s.full_name}</div>
-            <div className="text-xs text-brand-red font-semibold mt-1">{s.role}</div>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 }

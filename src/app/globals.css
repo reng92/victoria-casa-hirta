@@ -2,8 +2,203 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ------------------------------------------------------------------
+   Design tokens
+   Dark è il tema di default; light in [data-theme="light"].
+   Ogni token esiste sia come colore (--bg) sia come tripletta RGB
+   (--bg-rgb) per consentire i modificatori di opacità Tailwind.
+------------------------------------------------------------------- */
+:root {
+  --bg: #0b1220;
+  --bg-rgb: 11 18 32;
+  --surface: #111a2e;
+  --surface-rgb: 17 26 46;
+  --surface-2: #172238;
+  --surface-2-rgb: 23 34 56;
+  --border: rgb(255 255 255 / 0.08);
+  --text: #e8eef8;
+  --text-rgb: 232 238 248;
+  --muted: #98a6bf;
+  --muted-rgb: 152 166 191;
+
+  /* Colori societari */
+  --brand: #102c5c;
+  --brand-rgb: 16 44 92;
+  --accent: #e70d0c;
+  --accent-rgb: 231 13 12;
+
+  /* Varianti leggibili su sfondo scuro (AA) */
+  --brand-soft: #7ea2e8;
+  --brand-soft-rgb: 126 162 232;
+  --accent-soft: #ff6b6a;
+  --accent-soft-rgb: 255 107 106;
+
+  --win-rgb: 74 222 128;
+  --draw-rgb: 250 204 21;
+  --loss-rgb: 248 113 113;
+
+  --radius-card: 16px;
+  --radius-hero: 24px;
+
+  --header-h: 64px;
+  --bottom-nav-h: 64px;
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"],
+[data-theme="light"] {
+  --bg: #f4f6fb;
+  --bg-rgb: 244 246 251;
+  --surface: #ffffff;
+  --surface-rgb: 255 255 255;
+  --surface-2: #eaeff7;
+  --surface-2-rgb: 234 239 247;
+  --border: rgb(16 44 92 / 0.12);
+  --text: #0b1220;
+  --text-rgb: 11 18 32;
+  --muted: #56647c;
+  --muted-rgb: 86 100 124;
+
+  --brand-soft: #102c5c;
+  --brand-soft-rgb: 16 44 92;
+  --accent-soft: #c90b0a;
+  --accent-soft-rgb: 201 11 10;
+
+  --win-rgb: 22 163 74;
+  --draw-rgb: 202 138 4;
+  --loss-rgb: 220 38 38;
+
+  color-scheme: light;
+}
+
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-white text-gray-900 antialiased;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans), system-ui, sans-serif;
+    @apply antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background: rgb(var(--accent-rgb) / 0.35);
+  }
+  :focus-visible {
+    outline: 2px solid rgb(var(--brand-soft-rgb));
+    outline-offset: 2px;
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Vetro: superficie semi-trasparente con blur */
+  .glass {
+    background-color: rgb(var(--surface-rgb) / 0.6);
+    -webkit-backdrop-filter: blur(24px);
+    backdrop-filter: blur(24px);
+    border: 1px solid rgb(255 255 255 / 0.1);
+  }
+  [data-theme="light"] .glass {
+    border-color: rgb(16 44 92 / 0.1);
+  }
+
+  /* Card della griglia bento */
+  .bento-card {
+    position: relative;
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 10px 30px -18px rgb(0 0 0 / 0.5);
+    overflow: hidden;
+  }
+  [data-theme="light"] .bento-card {
+    box-shadow: 0 1px 2px rgb(16 44 92 / 0.05), 0 12px 32px -20px rgb(16 44 92 / 0.25);
+  }
+
+  /* Gradient mesh blu → rosso molto scuro per l'hero */
+  .mesh-hero {
+    background-color: #0a1a3a;
+    background-image:
+      radial-gradient(60% 70% at 15% 20%, rgb(16 44 92 / 0.95) 0%, transparent 60%),
+      radial-gradient(50% 60% at 90% 15%, rgb(231 13 12 / 0.35) 0%, transparent 60%),
+      radial-gradient(70% 60% at 80% 100%, rgb(231 13 12 / 0.28) 0%, transparent 60%),
+      radial-gradient(60% 50% at 30% 100%, rgb(16 44 92 / 0.8) 0%, transparent 60%),
+      linear-gradient(160deg, #0c1a38 0%, #0b1220 55%, #1a0b12 100%);
+  }
+
+  /* Pill / badge */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider;
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    border-radius: 12px;
+    background-color: rgb(var(--surface-2-rgb));
+    background-image: linear-gradient(
+      90deg,
+      rgb(var(--surface-2-rgb)) 0%,
+      rgb(var(--text-rgb) / 0.06) 50%,
+      rgb(var(--surface-2-rgb)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.8s linear infinite;
+  }
+
+  /* Marquee sponsor */
+  .marquee {
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 40s linear infinite;
+  }
+  .marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  /* Segmented control / tab indicator */
+  .tab-indicator {
+    background-color: rgb(var(--accent-rgb));
+  }
+
+  /* Scrollbar sottile per righe orizzontali */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@layer utilities {
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  .text-balance {
+    text-wrap: balance;
   }
 }

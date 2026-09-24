@@ -1,5 +1,13 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { CalendarX, ChevronRight, Clapperboard } from "lucide-react";
+import PageHeader from "@/components/ui/PageHeader";
+import Tabs from "@/components/ui/Tabs";
+import EmptyState from "@/components/ui/EmptyState";
+import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
+import { LiveBadge, Pill } from "@/components/ui/Badge";
+import { formatDateShort, formatTime, formatWeekday, getOutcome, outcomeShort } from "@/lib/format";
+import { getOpponent, groupLabel, matchdayLabel } from "@/lib/competitions";
 
 export const revalidate = 60;
 
@@ -13,20 +21,21 @@ interface Match {
   away_score: number | null;
   status: string;
   matchday: number | null;
+  group_name: string | null;
   opponent_logo_url: string | null;
   instagram_reels: string[] | null;
   venue: { name: string } | null;
-  competition: { id: string; name: string } | null;
+  competition: { id: string; name: string; format: string | null } | null;
 }
 
 async function getMatches(): Promise<Match[]> {
   const { data, error } = await supabase
     .from("matches")
-    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, instagram_reels, venue:venues(name), competition:competitions(id, name)")
+    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, opponent_logo_url, instagram_reels, venue:venues(name), competition:competitions(id, name, format)")
     .order("match_date", { ascending: true });
 
   if (error) {
-    // Fallback senza instagram_reels se la colonna non esiste ancora
+    // Fallback senza group_name / instagram_reels se le colonne non esistono ancora
     const { data: fallback } = await supabase
       .from("matches")
       .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, venue:venues(name), competition:competitions(id, name)")
@@ -36,158 +45,151 @@ async function getMatches(): Promise<Match[]> {
   return (data as unknown as Match[]) ?? [];
 }
 
-function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("it-IT", {
-    day: "numeric", month: "short",
-  });
+interface RoundGroup {
+  key: string;
+  label: string | null;
+  items: Match[];
+}
+interface CompetitionGroup {
+  key: string;
+  name: string;
+  rounds: RoundGroup[];
 }
 
-function formatTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString("it-IT", {
-    hour: "2-digit", minute: "2-digit",
-  });
-}
-
-function InstagramIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-    </svg>
-  );
-}
-
-function MatchCard({ match }: { match: Match }) {
-  const isLive = match.status === "live";
-  const isHome = match.is_home;
-  const opponent = isHome ? match.away_team : match.home_team;
-  const ourScore = isHome ? match.home_score : match.away_score;
-  const theirScore = isHome ? match.away_score : match.home_score;
-
-  return (
-    <Link href={`/calendario/${match.id}`} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-brand-blue transition flex flex-col sm:flex-row sm:items-center justify-between gap-4 block">
-      <div className="flex flex-col gap-1 min-w-0">
-        {match.competition && (
-          <span className="text-xs font-semibold uppercase tracking-widest text-brand-red">
-            {match.competition.name}
-            {match.matchday ? ` · Giornata ${match.matchday}` : ""}
-          </span>
-        )}
-        <div className="flex items-center gap-2 flex-wrap">
-          {match.opponent_logo_url && (
-            <img src={match.opponent_logo_url} alt={opponent} className="w-6 h-6 object-contain rounded" />
-          )}
-          <span className="font-bold text-brand-blue text-sm">Victoria Casa Hirta</span>
-          <span className="text-gray-400 text-xs">vs</span>
-          <span className="font-semibold text-gray-700 text-sm">{opponent}</span>
-          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${isHome ? "bg-brand-blue text-white" : "bg-gray-100 text-gray-500"}`}>
-            {isHome ? "Casa" : "Trasferta"}
-          </span>
-        </div>
-        <div className="text-xs text-gray-400">
-          📅 {formatDate(match.match_date)} · {formatTime(match.match_date)}
-          {match.venue ? ` · ${match.venue.name}` : ""}
-        </div>
-      </div>
-      <div className="shrink-0 text-center">
-        {isLive ? (
-          <div className="flex items-center gap-2 justify-center">
-            <span className="w-2 h-2 rounded-full bg-brand-red animate-pulse inline-block" />
-            <span className="text-brand-red font-bold text-lg">{ourScore ?? 0} – {theirScore ?? 0}</span>
-          </div>
-        ) : (
-          <span className="text-sm text-gray-400 font-medium">{formatTime(match.match_date)}</span>
-        )}
-      </div>
-    </Link>
-  );
-}
-
-function ResultCard({ match }: { match: Match }) {
-  const isHome = match.is_home;
-  const opponent = isHome ? match.away_team : match.home_team;
-  const ourScore = isHome ? match.home_score : match.away_score;
-  const theirScore = isHome ? match.away_score : match.home_score;
-  const hasReels = match.instagram_reels && match.instagram_reels.length > 0;
-
-  let result: "win" | "loss" | "draw" | null = null;
-  if (ourScore !== null && theirScore !== null) {
-    if (ourScore > theirScore) result = "win";
-    else if (ourScore < theirScore) result = "loss";
-    else result = "draw";
+/** Raggruppa per competizione e, all'interno, per "Girone X · Nª giornata", mantenendo l'ordine di apparizione. */
+function groupByCompetition(matches: Match[]): CompetitionGroup[] {
+  const comps: CompetitionGroup[] = [];
+  for (const m of matches) {
+    const compKey = m.competition?.id ?? "amichevoli";
+    let c = comps.find((x) => x.key === compKey);
+    if (!c) {
+      c = { key: compKey, name: m.competition?.name ?? "Amichevoli", rounds: [] };
+      comps.push(c);
+    }
+    const roundKey = `${m.group_name ?? ""}-${m.matchday ?? ""}`;
+    let r = c.rounds.find((x) => x.key === roundKey);
+    if (!r) {
+      const label = [groupLabel(m.group_name), matchdayLabel(m.matchday)].filter(Boolean).join(" · ") || null;
+      r = { key: roundKey, label, items: [] };
+      c.rounds.push(r);
+    }
+    r.items.push(m);
   }
+  return comps;
+}
 
-  const styles = {
-    win:  { stripe: "border-l-green-500",  bg: "from-green-50/60 to-white",  badge: "bg-green-100 text-green-700",   score: "text-green-600", label: "VITTORIA"  },
-    loss: { stripe: "border-l-red-500",    bg: "from-red-50/60 to-white",    badge: "bg-red-100 text-red-600",      score: "text-red-600",   label: "SCONFITTA" },
-    draw: { stripe: "border-l-yellow-400", bg: "from-yellow-50/60 to-white", badge: "bg-yellow-100 text-yellow-700", score: "text-yellow-600", label: "PAREGGIO" },
-  };
-  const s = result ? styles[result] : {
-    stripe: "border-l-gray-200", bg: "from-gray-50/40 to-white",
-    badge: "bg-gray-100 text-gray-500", score: "text-gray-700", label: "",
-  };
+function MatchRow({ m }: { m: Match }) {
+  const isLive = m.status === "live";
+  const isFinished = m.status === "finished";
+  const opponent = getOpponent(m);
+  const ours = m.is_home ? m.home_score : m.away_score;
+  const theirs = m.is_home ? m.away_score : m.home_score;
+  const outcome = isFinished ? getOutcome(ours, theirs) : null;
+  const d = new Date(m.match_date);
+  const reels = m.instagram_reels?.length ?? 0;
+
+  const scoreColor =
+    outcome === "win" ? "text-win" : outcome === "loss" ? "text-loss" : outcome === "draw" ? "text-draw" : "text-text";
 
   return (
-    <Link
-      href={`/calendario/${match.id}`}
-      className={`group block bg-gradient-to-r ${s.bg} border border-gray-100 border-l-4 ${s.stripe} rounded-2xl p-4 shadow-sm hover:shadow-md transition`}
-    >
-      {/* Competition + date */}
-      <div className="flex items-center justify-between mb-3">
-        <span className="text-[11px] font-bold uppercase tracking-widest text-brand-red truncate mr-2">
-          {match.competition?.name ?? "Amichevole"}{match.matchday ? ` · G${match.matchday}` : ""}
-        </span>
-        <span className="text-[11px] text-gray-400 shrink-0">{formatDate(match.match_date)}</span>
-      </div>
-
-      {/* Logos + score */}
-      <div className="flex items-center gap-3 mb-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <img src="/logo.jpeg" alt="VCH" className="w-10 h-10 rounded-full shadow-sm shrink-0 border border-white object-contain" />
-          <span className="text-xs font-bold text-brand-blue hidden sm:block">VCH</span>
+    <li>
+      <Link
+        href={`/calendario/${m.id}`}
+        className={`bento-card flex items-center gap-3 p-3 sm:p-4 hover:bg-surface-2/60 transition ${
+          isLive ? "ring-1 ring-accent/50" : ""
+        } ${outcome ? `border-l-4 ${outcome === "win" ? "border-l-win" : outcome === "loss" ? "border-l-loss" : "border-l-draw"}` : ""}`}
+      >
+        {/* Data */}
+        <div className="flex flex-col items-center w-12 shrink-0 rounded-xl bg-surface-2 border border-border py-1.5">
+          <span className="text-[10px] uppercase text-muted leading-none">{formatWeekday(m.match_date)}</span>
+          <span className="font-display text-lg font-bold leading-tight tabular">{d.getDate()}</span>
+          <span className="text-[10px] text-muted leading-none">{formatDateShort(m.match_date).split(" ")[1]}</span>
         </div>
 
-        <div className="flex flex-col items-center shrink-0">
-          <div className={`text-3xl font-extrabold tabular-nums leading-none ${s.score}`}>
-            <span>{ourScore ?? "–"}</span>
-            <span className="text-gray-200 mx-1.5 font-light">–</span>
-            <span>{theirScore ?? "–"}</span>
+        {/* Squadre */}
+        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <VCHLogo size={24} />
+            <span className="text-sm font-semibold truncate">Victoria Casa Hirta</span>
+            {m.is_home && <Pill tone="brand" className="!py-px hidden xs:inline-flex">Casa</Pill>}
           </div>
-          {result && (
-            <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full mt-1.5 ${s.badge}`}>
-              {s.label}
-            </span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-          <span className="text-xs font-semibold text-gray-700 truncate hidden sm:block text-right">{opponent}</span>
-          <div className="w-10 h-10 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center shrink-0">
-            {match.opponent_logo_url
-              ? <img src={match.opponent_logo_url} alt={opponent} className="w-full h-full object-contain p-0.5 rounded-full" />
-              : <span className="text-xs font-bold text-gray-400">{opponent.slice(0, 2).toUpperCase()}</span>
-            }
+          <div className="flex items-center gap-2 min-w-0">
+            <TeamLogo src={m.opponent_logo_url} name={opponent} size={24} />
+            <span className="text-sm font-semibold truncate">{opponent}</span>
+            {!m.is_home && <Pill tone="neutral" className="!py-px hidden xs:inline-flex">Casa</Pill>}
           </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-2.5 border-t border-black/5">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-xs font-semibold text-gray-600 truncate">{opponent}</span>
-          <span className="text-gray-300 text-xs shrink-0">·</span>
-          <span className="text-xs text-gray-400 shrink-0">{isHome ? "🏠 Casa" : "✈️ Trasferta"}</span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {hasReels && (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full">
-              <InstagramIcon />
-              {match.instagram_reels!.length} {match.instagram_reels!.length === 1 ? "reel" : "reels"}
-            </span>
+        {/* Punteggio / orario */}
+        <div className="flex flex-col items-end gap-1 shrink-0 min-w-[64px]">
+          {isLive ? (
+            <>
+              <span className="font-display text-2xl font-bold tabular leading-none text-accent-soft">
+                {ours ?? 0}<span className="text-muted mx-1">–</span>{theirs ?? 0}
+              </span>
+              <LiveBadge />
+            </>
+          ) : isFinished ? (
+            <>
+              <span className={`font-display text-2xl font-bold tabular leading-none ${scoreColor}`}>
+                {ours ?? "–"}<span className="text-muted mx-1">–</span>{theirs ?? "–"}
+              </span>
+              <span className="flex items-center gap-1.5">
+                {reels > 0 && (
+                  <span className="inline-flex items-center gap-0.5 text-[10px] text-muted" title={`${reels} reel`}>
+                    <Clapperboard className="w-3 h-3" aria-hidden />
+                    {reels}
+                  </span>
+                )}
+                {outcome && (
+                  <span className={`text-[11px] font-bold ${scoreColor}`}>{outcomeShort[outcome]}</span>
+                )}
+              </span>
+            </>
+          ) : (
+            <>
+              <span className="font-display text-lg font-bold tabular leading-none">{formatTime(m.match_date)}</span>
+              <span className="text-[11px] text-muted truncate max-w-[110px]">{m.venue?.name ?? ""}</span>
+            </>
           )}
-          <span className="text-gray-200 text-sm font-bold group-hover:text-brand-blue transition">→</span>
         </div>
+        <ChevronRight className="w-4 h-4 text-muted shrink-0 hidden sm:block" aria-hidden />
+      </Link>
+    </li>
+  );
+}
+
+function MatchList({ matches, emptyTitle, emptyDesc }: { matches: Match[]; emptyTitle: string; emptyDesc: string }) {
+  if (matches.length === 0) {
+    return (
+      <div className="bento-card">
+        <EmptyState icon={CalendarX} title={emptyTitle} description={emptyDesc} />
       </div>
-    </Link>
+    );
+  }
+  const comps = groupByCompetition(matches);
+  return (
+    <div className="flex flex-col gap-8">
+      {comps.map((c) => (
+        <section key={c.key} aria-label={c.name}>
+          <h2 className="font-display text-h3 mb-3 px-1">{c.name}</h2>
+          <div className="flex flex-col gap-5">
+            {c.rounds.map((r) => (
+              <div key={r.key}>
+                {r.label && (
+                  <h3 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 px-1">{r.label}</h3>
+                )}
+                <ul className="flex flex-col gap-2">
+                  {r.items.map((m) => (
+                    <MatchRow key={m.id} m={m} />
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
   );
 }
 
@@ -195,37 +197,44 @@ export default async function CalendarioPage() {
   const matches = await getMatches();
   const played = matches.filter((m) => m.status === "finished");
   const upcoming = matches.filter((m) => m.status !== "finished");
+  const hasLive = upcoming.some((m) => m.status === "live");
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-extrabold text-brand-blue mb-2">Calendario</h1>
-      <p className="text-gray-500 mb-6 text-sm">Partite disputate e in programma</p>
+    <div className="max-w-3xl mx-auto px-4 py-6 md:py-10">
+      <PageHeader title="Partite" subtitle="Calendario e risultati della stagione">
+        {hasLive && <LiveBadge className="mb-1" />}
+      </PageHeader>
 
-      {matches.length === 0 && (
-        <p className="text-gray-400 text-sm">Il calendario verrà caricato a breve.</p>
-      )}
-
-      {upcoming.length > 0 && (
-        <div className="mb-12">
-          <h2 className="text-xl font-bold text-brand-blue mb-4 border-b border-gray-100 pb-2">
-            Prossime partite
-          </h2>
-          <div className="flex flex-col gap-3">
-            {upcoming.map((m) => <MatchCard key={m.id} match={m} />)}
-          </div>
-        </div>
-      )}
-
-      {played.length > 0 && (
-        <div>
-          <h2 className="text-xl font-bold text-brand-blue mb-4 border-b border-gray-100 pb-2">
-            Risultati
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {[...played].reverse().map((m) => <ResultCard key={m.id} match={m} />)}
-          </div>
-        </div>
-      )}
+      <Tabs
+        variant="segmented"
+        defaultKey={upcoming.length > 0 ? "prossime" : "risultati"}
+        items={[
+          {
+            key: "prossime",
+            label: "Prossime",
+            count: upcoming.length,
+            content: (
+              <MatchList
+                matches={upcoming}
+                emptyTitle="Nessuna partita in programma"
+                emptyDesc="Il calendario verrà aggiornato a breve."
+              />
+            ),
+          },
+          {
+            key: "risultati",
+            label: "Risultati",
+            count: played.length,
+            content: (
+              <MatchList
+                matches={[...played].reverse()}
+                emptyTitle="Nessun risultato"
+                emptyDesc="I risultati compariranno dopo le prime partite."
+              />
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

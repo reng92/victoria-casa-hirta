@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Crown, Star } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import Avatar from "@/components/ui/Avatar";
 
 interface Player {
   id: string;
@@ -10,17 +12,12 @@ interface Player {
   photo_url: string | null;
 }
 
-interface VoteCount {
-  player_id: string;
-  count: number;
-}
-
 interface Props {
   matchId: string;
   awayTeam: string;
 }
 
-export default function MVPVoting({ matchId, awayTeam }: Props) {
+export default function MVPVoting({ matchId }: Props) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [voted, setVoted] = useState(false);
@@ -93,7 +90,7 @@ export default function MVPVoting({ matchId, awayTeam }: Props) {
       setVoted(true);
       setSelectedPlayer(playerId);
       localStorage.setItem(`mvp-voted-${matchId}`, playerId);
-      setMsg("Voto registrato! 🎉");
+      setMsg("Voto registrato!");
       fetchVotes();
     }
     setLoading(false);
@@ -103,81 +100,89 @@ export default function MVPVoting({ matchId, awayTeam }: Props) {
   const winner = sortedPlayers[0];
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <div>
-          <h2 className="font-bold text-brand-blue text-lg">🏆 MVP della partita</h2>
-          <p className="text-xs text-gray-400 mt-0.5">
-            {voted ? `${totalVotes} voti totali` : "Vota il migliore in campo!"}
-          </p>
+    <div className="bento-card">
+      <div className="px-5 py-4 border-b border-border flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-8 h-8 rounded-xl bg-surface-2 border border-border flex items-center justify-center shrink-0">
+            <Star className="w-4 h-4 text-draw" aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h2 className="font-display text-base font-bold leading-tight">MVP della partita</h2>
+            <p className="text-xs text-muted mt-0.5">
+              {voted ? `${totalVotes} voti totali` : "Vota il migliore in campo"}
+            </p>
+          </div>
         </div>
         {voted && winner && (
-          <div className="text-right">
-            <div className="text-xs text-gray-400">In testa</div>
-            <div className="font-bold text-brand-red text-sm">{winner.full_name}</div>
+          <div className="text-right shrink-0">
+            <p className="text-[11px] uppercase tracking-wider text-muted">In testa</p>
+            <p className="font-semibold text-accent-soft text-sm truncate max-w-[140px]">{winner.full_name}</p>
           </div>
         )}
       </div>
 
       {msg && (
-        <div className="px-6 py-2 bg-green-50 text-green-700 text-sm font-medium text-center">
+        <p className="px-5 py-2 bg-win/10 text-win text-sm font-medium text-center border-b border-border" role="status">
           {msg}
-        </div>
+        </p>
       )}
 
-      <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {sortedPlayers.map((p) => {
-          const voteCount = votes[p.id] ?? 0;
-          const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
-          const isSelected = selectedPlayer === p.id;
-          const isWinner = voted && p.id === winner?.id && voteCount > 0;
+      {players.length === 0 ? (
+        <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3" aria-busy="true">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="skeleton h-32" />
+          ))}
+        </div>
+      ) : (
+        <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {sortedPlayers.map((p) => {
+            const voteCount = votes[p.id] ?? 0;
+            const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+            const isSelected = selectedPlayer === p.id;
+            const isWinner = voted && p.id === winner?.id && voteCount > 0;
 
-          return (
-            <button
-              key={p.id}
-              onClick={() => handleVote(p.id)}
-              disabled={voted || loading}
-              className={`relative flex flex-col items-center p-4 rounded-2xl border-2 transition text-center ${
-                isWinner ? "border-yellow-400 bg-yellow-50" :
-                isSelected ? "border-brand-blue bg-brand-blue/5" :
-                voted ? "border-gray-100 bg-gray-50" :
-                "border-gray-100 hover:border-brand-blue hover:shadow-md cursor-pointer"
-              }`}
-            >
-              {isWinner && (
-                <div className="absolute -top-2 -right-2 bg-yellow-400 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  👑 MVP
-                </div>
-              )}
-              <div className="w-14 h-14 rounded-full overflow-hidden bg-gray-100 mb-2 flex items-center justify-center">
-                {p.photo_url ? (
-                  <img src={p.photo_url} alt={p.full_name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-2xl">⚽</span>
+            return (
+              <button
+                key={p.id}
+                onClick={() => handleVote(p.id)}
+                disabled={voted || loading}
+                aria-pressed={isSelected}
+                className={`relative flex flex-col items-center p-4 rounded-card border transition text-center ${
+                  isWinner ? "border-draw/60 bg-draw/10" :
+                  isSelected ? "border-brand-soft/60 bg-brand/30" :
+                  voted ? "border-border bg-surface-2/40" :
+                  "border-border bg-surface-2/40 hover:border-brand-soft/50 hover:bg-surface-2 cursor-pointer"
+                }`}
+              >
+                {isWinner && (
+                  <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 bg-draw text-black text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    <Crown className="w-3 h-3" aria-hidden /> MVP
+                  </span>
                 )}
-              </div>
-              {p.shirt_number && (
-                <div className="text-xs font-bold text-brand-red mb-0.5">#{p.shirt_number}</div>
-              )}
-              <div className="font-semibold text-brand-blue text-xs leading-tight">{p.full_name}</div>
-              {voted && (
-                <div className="mt-2 w-full">
-                  <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>{voteCount} voti</span>
-                    <span>{percentage}%</span>
+                <Avatar src={p.photo_url} name={p.full_name} size={56} className="mb-2" />
+                {p.shirt_number && (
+                  <span className="text-[11px] font-bold text-accent-soft tabular mb-0.5">#{p.shirt_number}</span>
+                )}
+                <span className="font-semibold text-xs leading-tight">{p.full_name}</span>
+                {voted && (
+                  <div className="mt-2 w-full">
+                    <div className="flex justify-between text-[11px] text-muted mb-1 tabular">
+                      <span>{voteCount} voti</span>
+                      <span>{percentage}%</span>
+                    </div>
+                    <div className="w-full bg-surface rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-accent rounded-full h-1.5 transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5">
-                    <div
-                      className="bg-brand-red rounded-full h-1.5 transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

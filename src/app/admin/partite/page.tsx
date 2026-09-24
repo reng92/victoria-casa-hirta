@@ -1,8 +1,9 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { groupLabel, groupOptions, isGroupFormat, matchdayLabel } from "@/lib/competitions";
 
-interface Competition { id: string; name: string; }
+interface Competition { id: string; name: string; format: string | null; }
 interface Venue { id: string; name: string; }
 interface Player { id: string; full_name: string; }
 interface Match {
@@ -13,6 +14,10 @@ interface Match {
   home_score: number | null;
   away_score: number | null;
   status: string;
+  matchday: number | null;
+  group_name: string | null;
+  competition_id: string | null;
+  venue_id: string | null;
   opponent_logo_url: string | null;
   instagram_reels: string[] | null;
   live_minute: number | null;
@@ -38,6 +43,7 @@ const emptyForm = {
   competition_id: "",
   venue_id: "",
   matchday: "",
+  group_name: "",
   status: "scheduled",
   home_score: "",
   away_score: "",
@@ -62,6 +68,7 @@ export default function AdminPartite() {
     competition_id: "",
     venue_id: "",
     matchday: "",
+    group_name: "",
     status: "scheduled",
     home_score: "",
     away_score: "",
@@ -96,10 +103,13 @@ export default function AdminPartite() {
     if (liveMatchId) fetchLiveEvents(liveMatchId);
   }, [liveMatchId]);
 
+  const formatOf = (competitionId: string) => competitions.find((c) => c.id === competitionId)?.format ?? null;
+  const groupSelectClass = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm";
+
   async function fetchAll() {
     const [{ data: m }, { data: c }, { data: v }, { data: p }] = await Promise.all([
-      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, opponent_logo_url, instagram_reels, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
-      supabase.from("competitions").select("id, name"),
+      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, matchday, group_name, competition_id, venue_id, opponent_logo_url, instagram_reels, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
+      supabase.from("competitions").select("id, name, format"),
       supabase.from("venues").select("id, name"),
       supabase.from("players").select("id, full_name").eq("is_active", true).order("full_name"),
     ]);
@@ -130,6 +140,7 @@ export default function AdminPartite() {
       competition_id: form.competition_id || null,
       venue_id: form.venue_id || null,
       matchday: form.matchday ? parseInt(form.matchday) : null,
+      group_name: isGroupFormat(formatOf(form.competition_id)) && form.group_name ? form.group_name : null,
       status: form.status,
       home_score: form.home_score !== "" ? parseInt(form.home_score) : null,
       away_score: form.away_score !== "" ? parseInt(form.away_score) : null,
@@ -154,9 +165,10 @@ export default function AdminPartite() {
       match_date: d.toISOString().split("T")[0],
       match_time: d.toTimeString().slice(0, 5),
       is_home: m.is_home,
-      competition_id: "",
-      venue_id: "",
-      matchday: "",
+      competition_id: m.competition_id ?? "",
+      venue_id: m.venue_id ?? "",
+      matchday: m.matchday != null ? String(m.matchday) : "",
+      group_name: m.group_name ?? "",
       status: m.status,
       home_score: m.home_score !== null ? String(m.home_score) : "",
       away_score: m.away_score !== null ? String(m.away_score) : "",
@@ -176,6 +188,10 @@ export default function AdminPartite() {
       away_team: editForm.away_team,
       match_date,
       is_home: editForm.is_home,
+      competition_id: editForm.competition_id || null,
+      venue_id: editForm.venue_id || null,
+      matchday: editForm.matchday ? parseInt(editForm.matchday) : null,
+      group_name: isGroupFormat(formatOf(editForm.competition_id)) && editForm.group_name ? editForm.group_name : null,
       status: editForm.status,
       home_score: editForm.home_score !== "" ? parseInt(editForm.home_score) : null,
       away_score: editForm.away_score !== "" ? parseInt(editForm.away_score) : null,
@@ -608,6 +624,33 @@ export default function AdminPartite() {
               </select>
             </div>
             <div>
+              <label className="text-xs text-gray-500 mb-1 block">Competizione</label>
+              <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.competition_id} onChange={e => setEditForm(f => ({ ...f, competition_id: e.target.value }))}>
+                <option value="">– Seleziona –</option>
+                {competitions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Campo</label>
+              <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.venue_id} onChange={e => setEditForm(f => ({ ...f, venue_id: e.target.value }))}>
+                <option value="">– Seleziona –</option>
+                {venues.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Giornata</label>
+              <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.matchday} onChange={e => setEditForm(f => ({ ...f, matchday: e.target.value }))} />
+            </div>
+            {isGroupFormat(formatOf(editForm.competition_id)) && (
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Girone *</label>
+                <select required className={groupSelectClass} value={editForm.group_name} onChange={e => setEditForm(f => ({ ...f, group_name: e.target.value }))}>
+                  <option value="">– Seleziona –</option>
+                  {groupOptions.map(g => <option key={g} value={g}>Girone {g}</option>)}
+                </select>
+              </div>
+            )}
+            <div>
               <label className="text-xs text-gray-500 mb-1 block">Logo avversario (URL)</label>
               <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.opponent_logo_url} onChange={e => setEditForm(f => ({ ...f, opponent_logo_url: e.target.value }))} placeholder="https://..." />
             </div>
@@ -725,6 +768,15 @@ export default function AdminPartite() {
             <label className="text-xs text-gray-500 mb-1 block">Giornata</label>
             <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.matchday} onChange={e => setForm(f => ({ ...f, matchday: e.target.value }))} />
           </div>
+          {isGroupFormat(formatOf(form.competition_id)) && (
+            <div>
+              <label className="text-xs text-gray-500 mb-1 block">Girone *</label>
+              <select required className={groupSelectClass} value={form.group_name} onChange={e => setForm(f => ({ ...f, group_name: e.target.value }))}>
+                <option value="">– Seleziona –</option>
+                {groupOptions.map(g => <option key={g} value={g}>Girone {g}</option>)}
+              </select>
+            </div>
+          )}
           <div>
             <label className="text-xs text-gray-500 mb-1 block">Stato</label>
             <select className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
@@ -784,7 +836,7 @@ export default function AdminPartite() {
                 VCH vs {m.away_team} · {m.is_home ? "Casa" : "Trasferta"}
               </div>
               <div className="text-xs text-gray-400">
-                {new Date(m.match_date).toLocaleDateString("it-IT")} · {m.competition?.name ?? "–"}
+                {new Date(m.match_date).toLocaleDateString("it-IT")} · {[m.competition?.name ?? "–", groupLabel(m.group_name), matchdayLabel(m.matchday)].filter(Boolean).join(" · ")}
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">
