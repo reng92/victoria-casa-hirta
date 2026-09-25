@@ -39,6 +39,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           <Link href="/" className="text-white/60 hover:text-white transition text-xs">← Vai al sito</Link>
           <Link href="/admin/partite" className="text-white/60 hover:text-white transition text-xs hidden md:block">Partite</Link>
+          <Link href="/admin/risultati" className="text-white/60 hover:text-white transition text-xs hidden md:block">Risultati</Link>
           <Link href="/admin/marcatori" className="text-white/60 hover:text-white transition text-xs hidden md:block">Marcatori</Link>
           <Link href="/admin/rosa" className="text-white/60 hover:text-white transition text-xs hidden md:block">Rosa</Link>
           <Link href="/admin/news" className="text-white/60 hover:text-white transition text-xs hidden md:block">News</Link>

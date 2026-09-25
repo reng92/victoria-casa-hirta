@@ -126,3 +126,128 @@ export function groupByGroupName<T extends { group_name?: string | null }>(rows:
 export function isVCH(teamName: string) {
   return teamName.toLowerCase().includes("victoria");
 }
+
+export const VCH_NAME = "Victoria Casa Hirta";
+
+/**
+ * Partita di una competizione con squadre e punteggi reali di casa/trasferta.
+ * Unisce `competition_results` (partite tra altre squadre) e `matches` della
+ * Victoria, che nel DB usano la convenzione avversario in away_team e
+ * home_score = gol Victoria.
+ */
+export interface Fixture {
+  source: "result" | "match";
+  id: string;
+  match_date: string | null;
+  matchday: number | null;
+  group_name: string | null;
+  round: string | null;
+  home_team: string;
+  away_team: string;
+  home_score: number | null;
+  away_score: number | null;
+  status: string;
+}
+
+export function fixtureFromMatch(m: {
+  id: string;
+  match_date: string | null;
+  matchday: number | null;
+  group_name: string | null;
+  away_team: string;
+  home_team?: string | null;
+  is_home: boolean;
+  home_score: number | null;
+  away_score: number | null;
+  status: string;
+}): Fixture {
+  const opponent = getOpponent(m);
+  const { ours, theirs } = getScores(m);
+  return {
+    source: "match",
+    id: m.id,
+    match_date: m.match_date,
+    matchday: m.matchday,
+    group_name: m.group_name,
+    round: null,
+    home_team: m.is_home ? VCH_NAME : opponent,
+    away_team: m.is_home ? opponent : VCH_NAME,
+    home_score: m.is_home ? ours : theirs,
+    away_score: m.is_home ? theirs : ours,
+    status: m.status,
+  };
+}
+
+/** Converte una partita con casa/trasferta reali nel formato di `matches`; null se la Victoria non gioca. */
+export function fixtureToMatchFields(f: Pick<Fixture, "home_team" | "away_team" | "home_score" | "away_score">) {
+  if (isVCH(f.home_team)) {
+    return { is_home: true, away_team: f.away_team, home_score: f.home_score, away_score: f.away_score };
+  }
+  if (isVCH(f.away_team)) {
+    return { is_home: false, away_team: f.home_team, home_score: f.away_score, away_score: f.home_score };
+  }
+  return null;
+}
+
+/** Ordina per giornata, poi data (senza giornata in fondo). */
+export function sortFixtures<T extends Pick<Fixture, "matchday" | "match_date">>(rows: T[]): T[] {
+  return [...rows].sort((a, b) => {
+    const ma = a.matchday ?? Number.MAX_SAFE_INTEGER;
+    const mb = b.matchday ?? Number.MAX_SAFE_INTEGER;
+    if (ma !== mb) return ma - mb;
+    return (a.match_date ?? "").localeCompare(b.match_date ?? "");
+  });
+}
+
+export interface ComputedStanding {
+  team_name: string;
+  group_name: string | null;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  goals_for: number;
+  goals_against: number;
+  points: number;
+}
+
+export const teamKey = (name: string) => name.trim().toLowerCase();
+
+/**
+ * Classifica calcolata dalle partite terminate (3 punti vittoria, 1 pareggio).
+ * Le partite con `round` (fase a eliminazione diretta) non contano; nei formati
+ * a gironi contano solo quelle con girone. `seed` mantiene in classifica le
+ * squadre senza partite e il loro girone.
+ */
+export function computeStandings(
+  fixtures: Pick<Fixture, "home_team" | "away_team" | "home_score" | "away_score" | "status" | "group_name" | "round">[],
+  seed: { team_name: string; group_name: string | null }[],
+  groupFormat: boolean,
+): ComputedStanding[] {
+  const table = new Map<string, ComputedStanding>();
+  const row = (name: string, group: string | null) => {
+    const k = teamKey(name);
+    let r = table.get(k);
+    if (!r) {
+      r = { team_name: name.trim(), group_name: group, played: 0, won: 0, drawn: 0, lost: 0, goals_for: 0, goals_against: 0, points: 0 };
+      table.set(k, r);
+    }
+    if (!r.group_name && group) r.group_name = group;
+    return r;
+  };
+  for (const s of seed) row(s.team_name, s.group_name);
+  for (const f of fixtures) {
+    if (f.status !== "finished" || f.home_score == null || f.away_score == null) continue;
+    if (f.round) continue;
+    if (groupFormat && !f.group_name) continue;
+    const h = row(f.home_team, f.group_name);
+    const a = row(f.away_team, f.group_name);
+    h.played++; a.played++;
+    h.goals_for += f.home_score; h.goals_against += f.away_score;
+    a.goals_for += f.away_score; a.goals_against += f.home_score;
+    if (f.home_score > f.away_score) { h.won++; a.lost++; h.points += 3; }
+    else if (f.home_score < f.away_score) { a.won++; h.lost++; a.points += 3; }
+    else { h.drawn++; a.drawn++; h.points++; a.points++; }
+  }
+  return sortStandings([...table.values()]);
+}

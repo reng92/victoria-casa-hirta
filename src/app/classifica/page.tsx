@@ -6,7 +6,12 @@ import Tabs from "@/components/ui/Tabs";
 import Bracket, { buildPlaceholderRounds } from "@/components/Bracket";
 import { Pill } from "@/components/ui/Badge";
 import {
+  Fixture,
   QUALIFIED_PER_GROUP,
+  fixtureFromMatch,
+  groupLabel,
+  matchdayLabel,
+  sortFixtures,
   groupByGroupName,
   isGroupFormat,
   isVCH,
@@ -45,6 +50,104 @@ async function getStandings(): Promise<Standing[]> {
     return sortStandings((fallback as unknown as Standing[]) ?? []);
   }
   return sortStandings((data as unknown as Standing[]) ?? []);
+}
+
+type CompFixture = Fixture & { competition_id: string };
+
+/** Tutte le partite delle competizioni: quelle tra altre squadre e quelle della Victoria. */
+async function getFixtures(): Promise<CompFixture[]> {
+  const [{ data: r }, { data: m }] = await Promise.all([
+    supabase
+      .from("competition_results")
+      .select("id, competition_id, match_date, matchday, group_name, round, home_team, away_team, home_score, away_score, status"),
+    supabase
+      .from("matches")
+      .select("id, competition_id, match_date, matchday, group_name, home_team, away_team, is_home, home_score, away_score, status")
+      .not("competition_id", "is", null),
+  ]);
+  return sortFixtures([
+    ...((r as Omit<CompFixture, "source">[]) ?? []).map((x) => ({ ...x, source: "result" as const })),
+    ...((m as (Parameters<typeof fixtureFromMatch>[0] & { competition_id: string })[]) ?? []).map((x) => ({
+      ...fixtureFromMatch(x),
+      competition_id: x.competition_id,
+    })),
+  ]);
+}
+
+/* ------------------------------------------------------------------ */
+/* Risultati per giornata                                              */
+/* ------------------------------------------------------------------ */
+
+function formatDay(iso: string | null) {
+  if (!iso) return null;
+  const [y, mo, d] = iso.slice(0, 10).split("-");
+  return `${d}/${mo}/${y.slice(2)}`;
+}
+
+function FixtureLine({ f }: { f: Fixture }) {
+  const played = f.home_score != null && f.away_score != null && f.status !== "scheduled";
+  const team = (name: string, align: string) => (
+    <span className={`truncate ${align} ${isVCH(name) ? "font-semibold text-text" : "text-text/85"}`}>{name}</span>
+  );
+  return (
+    <li className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-3 py-2.5 border-t border-border first:border-t-0 text-xs sm:text-sm">
+      {team(f.home_team, "text-right")}
+      <span className="tabular font-display font-bold text-center min-w-[52px]">
+        {played ? (
+          <>
+            {f.home_score}
+            <span className="text-muted mx-1">–</span>
+            {f.away_score}
+          </>
+        ) : (
+          <span className="text-muted font-normal text-[11px]">{formatDay(f.match_date) ?? "vs"}</span>
+        )}
+      </span>
+      {team(f.away_team, "text-left")}
+    </li>
+  );
+}
+
+function ResultsByMatchday({ fixtures }: { fixtures: Fixture[] }) {
+  const days: { label: string; date: string | null; rows: Fixture[] }[] = [];
+  for (const f of fixtures) {
+    const label = [f.round || matchdayLabel(f.matchday) || "Altre partite", groupLabel(f.group_name)].filter(Boolean).join(" · ");
+    let d = days.find((x) => x.label === label);
+    if (!d) {
+      d = { label, date: f.match_date, rows: [] };
+      days.push(d);
+    }
+    d.rows.push(f);
+  }
+  // Apre l'ultima giornata con almeno un risultato
+  let openIdx = -1;
+  days.forEach((d, i) => {
+    if (d.rows.some((f) => f.status === "finished")) openIdx = i;
+  });
+
+  return (
+    <div className="mt-6">
+      <h3 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 px-1">Risultati</h3>
+      <div className="rounded-card border border-border bg-surface shadow-card divide-y divide-border">
+        {days.map((d, i) => (
+          <details key={d.label} open={i === openIdx} className="group px-3 sm:px-4">
+            <summary className="flex items-center justify-between gap-3 py-3 cursor-pointer list-none text-sm font-semibold">
+              <span>{d.label}</span>
+              <span className="flex items-center gap-2 text-[11px] text-muted font-normal">
+                {formatDay(d.date)}
+                <span className="transition group-open:rotate-180" aria-hidden>▾</span>
+              </span>
+            </summary>
+            <ul className="pb-2">
+              {d.rows.map((f) => (
+                <FixtureLine key={`${f.source}:${f.id}`} f={f} />
+              ))}
+            </ul>
+          </details>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -201,7 +304,7 @@ function GroupStage({ compName, rows }: { compName: string; rows: Standing[] }) 
 }
 
 export default async function ClassificaPage() {
-  const standings = await getStandings();
+  const [standings, fixtures] = await Promise.all([getStandings(), getFixtures()]);
 
   // Raggruppa per competizione mantenendo l'ordine di apparizione
   const comps: { key: string; name: string; format: string | null; status: string | null; rows: Standing[] }[] = [];
@@ -256,6 +359,11 @@ export default async function ClassificaPage() {
                 {c.rows.length >= 6 && <ZoneLegend />}
               </>
             )}
+
+            {(() => {
+              const compFixtures = fixtures.filter((f) => f.competition_id === c.key);
+              return compFixtures.length > 0 ? <ResultsByMatchday fixtures={compFixtures} /> : null;
+            })()}
           </section>
         );
       })}

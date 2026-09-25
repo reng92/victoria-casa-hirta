@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const sections = [
   { href: "/admin/partite", emoji: "📅", label: "Partite", desc: "Aggiungi e gestisci le partite" },
+  { href: "/admin/risultati", emoji: "📝", label: "Risultati", desc: "Tutte le partite di campionati e coppe" },
   { href: "/admin/marcatori", emoji: "⚽", label: "Marcatori", desc: "Gol, assist e cartellini" },
   { href: "/admin/rosa", emoji: "👥", label: "Rosa", desc: "Gestisci i giocatori" },
   { href: "/admin/staff", emoji: "🧑‍💼", label: "Staff", desc: "Gestisci lo staff tecnico" },
