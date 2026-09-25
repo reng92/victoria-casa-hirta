@@ -6,7 +6,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { OutcomeBadge } from "@/components/ui/Badge";
 import { formatDateShort, getOutcome } from "@/lib/format";
-import { getOpponent, getScores, matchContextShort } from "@/lib/competitions";
+import { getHomeAwayScores, getOpponent, getScores, matchContextShort } from "@/lib/competitions";
 
 interface Match {
   id: string;
@@ -60,18 +60,20 @@ function LastResultBody({ m }: { m: Match }) {
   const context = matchContextShort(m);
   const { ours, theirs } = getScores(m);
   const outcome = getOutcome(ours, theirs);
+  const { home, away } = getHomeAwayScores(m);
   const scoreColor = outcome === "win" ? "text-win" : outcome === "loss" ? "text-loss" : outcome === "draw" ? "text-draw" : "text-text";
 
   return (
     <Link href={`/calendario/${m.id}`} className="flex-1 flex flex-col justify-center mt-4 group">
-      <div className="flex items-center justify-between gap-3">
+      {/* Squadra di casa a sinistra */}
+      <div className={`flex items-center justify-between gap-3 ${m.is_home ? "" : "flex-row-reverse"}`}>
         <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
           <VCHLogo size={48} />
           <span className="text-xs font-semibold text-center leading-tight truncate w-full">VCH</span>
         </div>
         <div className="flex flex-col items-center shrink-0">
           <span className={`font-display text-4xl font-bold tabular leading-none ${scoreColor}`}>
-            {ours ?? "–"}<span className="text-muted mx-1.5 font-normal">–</span>{theirs ?? "–"}
+            {home ?? "–"}<span className="text-muted mx-1.5 font-normal">–</span>{away ?? "–"}
           </span>
           {outcome && <OutcomeBadge outcome={outcome} className="mt-2" />}
         </div>

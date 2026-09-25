@@ -7,7 +7,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, Pill } from "@/components/ui/Badge";
 import { formatDateShort, formatTime, formatWeekday, getOutcome, outcomeShort } from "@/lib/format";
-import { getOpponent, getScores, groupLabel, matchdayLabel } from "@/lib/competitions";
+import { getHomeAwayScores, getOpponent, getScores, groupLabel, matchdayLabel } from "@/lib/competitions";
 
 export const revalidate = 60;
 
@@ -84,6 +84,7 @@ function MatchRow({ m }: { m: Match }) {
   const opponent = getOpponent(m);
   const { ours, theirs } = getScores(m);
   const outcome = isFinished ? getOutcome(ours, theirs) : null;
+  const { home, away } = getHomeAwayScores(m);
   const d = new Date(m.match_date);
   const reels = m.instagram_reels?.length ?? 0;
 
@@ -105,8 +106,8 @@ function MatchRow({ m }: { m: Match }) {
           <span className="text-[10px] text-muted leading-none">{formatDateShort(m.match_date).split(" ")[1]}</span>
         </div>
 
-        {/* Squadre */}
-        <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+        {/* Squadre: la squadra di casa sopra */}
+        <div className={`flex-1 min-w-0 flex gap-1.5 ${m.is_home ? "flex-col" : "flex-col-reverse"}`}>
           <div className="flex items-center gap-2 min-w-0">
             <VCHLogo size={24} />
             <span className="text-sm font-semibold truncate">Victoria Casa Hirta</span>
@@ -124,14 +125,14 @@ function MatchRow({ m }: { m: Match }) {
           {isLive ? (
             <>
               <span className="font-display text-2xl font-bold tabular leading-none text-accent-soft">
-                {ours ?? 0}<span className="text-muted mx-1">–</span>{theirs ?? 0}
+                {home ?? 0}<span className="text-muted mx-1">–</span>{away ?? 0}
               </span>
               <LiveBadge />
             </>
           ) : isFinished ? (
             <>
               <span className={`font-display text-2xl font-bold tabular leading-none ${scoreColor}`}>
-                {ours ?? "–"}<span className="text-muted mx-1">–</span>{theirs ?? "–"}
+                {home ?? "–"}<span className="text-muted mx-1">–</span>{away ?? "–"}
               </span>
               <span className="flex items-center gap-1.5">
                 {reels > 0 && (

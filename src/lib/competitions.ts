@@ -87,6 +87,15 @@ export function getScores(m: { home_score: number | null; away_score: number | n
   return { ours: m.home_score, theirs: m.away_score };
 }
 
+/**
+ * Punteggio nell'ordine di visualizzazione "casa – trasferta": in trasferta
+ * la Victoria va a destra, quindi i gol vanno scambiati rispetto al DB.
+ */
+export function getHomeAwayScores(m: { is_home: boolean; home_score: number | null; away_score: number | null }) {
+  const { ours, theirs } = getScores(m);
+  return m.is_home ? { home: ours, away: theirs } : { home: theirs, away: ours };
+}
+
 export interface StandingLike {
   group_name?: string | null;
   points: number;

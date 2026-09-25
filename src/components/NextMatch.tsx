@@ -7,7 +7,7 @@ import LiveCountdown from "@/components/LiveCountdown";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, Pill } from "@/components/ui/Badge";
 import { formatDateLong, formatTime } from "@/lib/format";
-import { getOpponent, matchContextLabel } from "@/lib/competitions";
+import { getHomeAwayScores, getOpponent, matchContextLabel } from "@/lib/competitions";
 import AnniversaryBadge from "@/components/AnniversaryBadge";
 
 interface Match {
@@ -106,8 +106,8 @@ export default async function NextMatch() {
             </div>
           </div>
 
-          {/* Squadre */}
-          <div className="flex-1 flex items-center justify-between gap-3 py-6 md:py-8">
+          {/* Squadre: la squadra di casa a sinistra */}
+          <div className={`flex-1 flex items-center justify-between gap-3 py-6 md:py-8 ${match.is_home ? "" : "flex-row-reverse"}`}>
             <div className="flex flex-col items-center gap-3 flex-1 min-w-0">
               <VCHLogo size={72} priority className="ring-4 ring-white/10 md:!w-24 md:!h-24" />
               <h1
@@ -121,9 +121,9 @@ export default async function NextMatch() {
             <div className="flex flex-col items-center shrink-0 px-1">
               {match.status === "live" ? (
                 <span className="font-display text-5xl md:text-6xl font-bold tabular leading-none">
-                  {match.home_score ?? 0}
+                  {getHomeAwayScores(match).home ?? 0}
                   <span className="text-white/30 mx-2">–</span>
-                  {match.away_score ?? 0}
+                  {getHomeAwayScores(match).away ?? 0}
                 </span>
               ) : (
                 <>

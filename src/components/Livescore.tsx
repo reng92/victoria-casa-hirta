@@ -4,7 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/Badge";
-import { getOpponent, getScores } from "@/lib/competitions";
+import { getHomeAwayScores, getOpponent, getScores } from "@/lib/competitions";
 
 interface LiveMatch {
   id: string;
@@ -88,6 +88,7 @@ export default function Livescore() {
       <div className="max-w-3xl mx-auto flex flex-col gap-2">
         {matches.map((m) => {
           const { ours: ourScore, theirs: theirScore } = getScores(m);
+          const { home: homeScore, away: awayScore } = getHomeAwayScores(m);
           const opponent = getOpponent(m);
           const matchEvents = events[m.id] ?? [];
           const vchGoals = matchEvents.filter(e => e.for_team === "vch" || e.for_team === null);
@@ -102,17 +103,18 @@ export default function Livescore() {
               aria-label={`Partita in corso: Victoria Casa Hirta ${ourScore ?? 0} a ${theirScore ?? 0} ${opponent}`}
             >
               <LiveBadge minute={minute > 0 ? minute : null} />
+              {/* Squadra di casa a sinistra */}
               <div className="flex-1 min-w-0 flex items-center justify-center gap-3">
                 <div className="flex items-center gap-2 min-w-0 justify-end flex-1">
-                  <span className="text-xs font-semibold truncate hidden xs:block">VCH</span>
-                  <VCHLogo size={28} />
+                  <span className="text-xs font-semibold truncate hidden xs:block">{m.is_home ? "VCH" : opponent}</span>
+                  {m.is_home ? <VCHLogo size={28} /> : <TeamLogo src={m.opponent_logo_url} name={opponent} size={28} />}
                 </div>
                 <span className="font-display text-2xl font-bold tabular leading-none shrink-0">
-                  {ourScore ?? 0}<span className="text-muted mx-1.5">–</span>{theirScore ?? 0}
+                  {homeScore ?? 0}<span className="text-muted mx-1.5">–</span>{awayScore ?? 0}
                 </span>
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <TeamLogo src={m.opponent_logo_url} name={opponent} size={28} />
-                  <span className="text-xs font-semibold truncate hidden xs:block">{opponent}</span>
+                  {m.is_home ? <TeamLogo src={m.opponent_logo_url} name={opponent} size={28} /> : <VCHLogo size={28} />}
+                  <span className="text-xs font-semibold truncate hidden xs:block">{m.is_home ? opponent : "VCH"}</span>
                 </div>
               </div>
               {(vchGoals.length > 0 || oppGoals.length > 0) && (

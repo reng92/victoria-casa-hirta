@@ -24,7 +24,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, OutcomeBadge, Pill } from "@/components/ui/Badge";
 import { formatDateFull, formatTime, getOutcome } from "@/lib/format";
-import { getOpponent, getScores, matchContextLabel } from "@/lib/competitions";
+import { getHomeAwayScores, getOpponent, getScores, matchContextLabel } from "@/lib/competitions";
 
 export const revalidate = 0;
 
@@ -179,7 +179,9 @@ export default async function PartitaPage({ params }: { params: { id: string } }
     { label: "Rigori", vch: count(vchEvents, "rigore_segnato", "rigore_sbagliato"), opp: count(oppEvents, "rigore_segnato", "rigore_sbagliato") },
   ].filter(s => s.vch + s.opp > 0);
 
-  const shareText = `VCH vs ${opponent} · ${formatDateFull(match.match_date)}${isFinished ? ` · ${ourScore}–${theirScore}` : ""} · victoriacasahirta.it/calendario/${match.id}`;
+  const { home: homeScore, away: awayScore } = getHomeAwayScores(match);
+  const shareTeams = match.is_home ? `VCH vs ${opponent}` : `${opponent} vs VCH`;
+  const shareText = `${shareTeams} · ${formatDateFull(match.match_date)}${isFinished ? ` · ${homeScore}–${awayScore}` : ""} · victoriacasahirta.it/calendario/${match.id}`;
 
   /* ---------- Tab: Cronaca ---------- */
   const cronaca = (
@@ -389,7 +391,8 @@ export default async function PartitaPage({ params }: { params: { id: string } }
           {!isFinished && !isLive && <Pill tone="glass" className="normal-case tracking-normal">Programmata</Pill>}
         </div>
 
-        <div className="flex items-center justify-between gap-3 px-5 py-7">
+        {/* Squadra di casa a sinistra */}
+        <div className={`flex items-center justify-between gap-3 px-5 py-7 ${match.is_home ? "" : "flex-row-reverse"}`}>
           <div className="flex flex-col items-center gap-3 flex-1 min-w-0">
             <VCHLogo size={72} priority className="ring-4 ring-white/10" />
             <h1 id="match-title" className="font-display text-sm sm:text-base font-bold text-center leading-tight">
@@ -402,7 +405,7 @@ export default async function PartitaPage({ params }: { params: { id: string } }
             {isFinished || isLive ? (
               <>
                 <span className="font-display text-5xl sm:text-6xl font-bold tabular leading-none">
-                  {ourScore ?? 0}<span className="text-white/30 mx-2">–</span>{theirScore ?? 0}
+                  {homeScore ?? 0}<span className="text-white/30 mx-2">–</span>{awayScore ?? 0}
                 </span>
                 {isLive && match.live_period && (
                   <span className="text-xs text-white/70 mt-2">{periodLabel[match.live_period] ?? "In corso"}</span>

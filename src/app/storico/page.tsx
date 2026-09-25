@@ -6,7 +6,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo from "@/components/ui/TeamLogo";
 import { Pill } from "@/components/ui/Badge";
 import { formatDateNumeric, getOutcome, outcomeShort } from "@/lib/format";
-import { formatLabel, getOpponent, getScores, groupLabel, isVCH, matchdayLabel, sortStandings } from "@/lib/competitions";
+import { formatLabel, getHomeAwayScores, getOpponent, getScores, groupLabel, isVCH, matchdayLabel, sortStandings } from "@/lib/competitions";
 
 export const revalidate = 60;
 
@@ -168,7 +168,7 @@ function CompetitionSection({ comp, matches, standings }: { comp: Competition; m
                   </span>
                 </div>
                 <span className={`font-display text-lg font-bold tabular leading-none ${color}`}>
-                  {ours ?? "–"}<span className="text-muted mx-1 font-normal">–</span>{theirs ?? "–"}
+                  {getHomeAwayScores(m).home ?? "–"}<span className="text-muted mx-1 font-normal">–</span>{getHomeAwayScores(m).away ?? "–"}
                 </span>
                 <span className={`w-6 h-6 rounded-full bg-surface border border-border flex items-center justify-center text-[11px] font-bold ${color}`}>
                   {outcome ? outcomeShort[outcome] : "–"}
