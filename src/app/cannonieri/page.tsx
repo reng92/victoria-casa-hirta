@@ -62,7 +62,7 @@ function ScorerRow({ s, pos, total }: { s: Scorer; pos: number; total: number })
     <li>
       <Link
         href={playerHref({ id: s.player_id, slug: s.slug })}
-        className={`flex items-center gap-3 sm:gap-4 px-4 py-3 hover:bg-surface-2/60 transition ${
+        className={`flex items-center gap-3 sm:gap-4 px-4 py-3 hover:bg-surface-2/60 tap ${
           pos === 1 ? "bg-brand/25" : ""
         }`}
       >
@@ -113,7 +113,7 @@ export default async function CannonierigPage() {
         </div>
       ) : (
         <div className="bento-card">
-          <ol className="divide-y divide-border">
+          <ol className="stagger divide-y divide-border">
             {scorers.map((s, i) => (
               <ScorerRow key={s.player_id} s={s} pos={i + 1} total={totalGoals} />
             ))}

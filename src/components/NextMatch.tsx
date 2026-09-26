@@ -193,7 +193,7 @@ export default async function NextMatch() {
               )}
               <Link
                 href={matchHref(match)}
-                className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur text-white font-semibold px-4 py-2.5 text-sm hover:bg-white/20 transition"
+                className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur text-white font-semibold px-4 py-2.5 text-sm hover:bg-white/20 tap"
               >
                 Dettagli <ArrowRight className="w-4 h-4" aria-hidden />
               </Link>

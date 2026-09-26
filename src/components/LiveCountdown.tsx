@@ -50,7 +50,7 @@ export default function LiveCountdown({ target, className = "" }: Props) {
       {cells.map((c, i) => (
         <div key={c.l} className="flex items-center gap-2">
           <div className="flex flex-col items-center rounded-xl bg-white/10 border border-white/15 backdrop-blur px-2.5 py-1.5 min-w-[58px]">
-            <span className="font-display text-2xl font-bold tabular leading-none text-white">
+            <span key={c.v ?? "x"} className="digit-roll font-display text-2xl font-bold tabular leading-none text-white">
               {c.v === undefined ? "--" : String(c.v).padStart(2, "0")}
             </span>
             <span className="text-[10px] uppercase tracking-wider text-white/60 mt-1">{c.l}</span>

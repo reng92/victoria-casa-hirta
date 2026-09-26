@@ -37,7 +37,7 @@ export default async function NewsPage() {
         </div>
       )}
 
-      <div className="flex flex-col gap-4 md:gap-5">
+      <div className="stagger flex flex-col gap-4 md:gap-5">
         {newsList.map((n, i) => (
           <article key={n.id} className="bento-card flex flex-col sm:flex-row">
             <div className="relative aspect-[16/9] sm:aspect-auto sm:w-56 md:w-64 shrink-0 bg-surface-2 overflow-hidden">

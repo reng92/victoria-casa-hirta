@@ -99,6 +99,33 @@
     max-width: 100%;
     height: auto;
   }
+  :root {
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  a, button, summary {
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Web app installata: niente rimbalzo elastico della pagina e niente
+     selezione/anteprima accidentale su barre di navigazione */
+  @media (display-mode: standalone) {
+    html, body { overscroll-behavior-y: none; }
+    header, nav { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  }
+  @keyframes page-in {
+    from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translate3d(0, 14px, 0) scale(0.985); }
+  }
+  @keyframes digit-in {
+    from { opacity: 0; transform: translate3d(0, -45%, 0); }
+  }
+  @keyframes nav-pop {
+    0% { transform: scale(0.8); }
+    60% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     *, *::before, *::after {
@@ -181,6 +208,62 @@
   /* Segmented control / tab indicator */
   .tab-indicator {
     background-color: rgb(var(--accent-rgb));
+  }
+
+  /* ---------- Motion stile app nativa ----------
+     Solo transform/opacity; uscite più rapide delle entrate; tutto
+     azzerato da prefers-reduced-motion (regola in @layer base). */
+
+  /* Ingresso pagina: dissolvenza + leggero scorrimento dal basso.
+     fill "backwards": a fine animazione non resta alcun transform,
+     così sticky/fixed dentro la pagina continuano a funzionare. */
+  .page-enter {
+    animation: page-in 0.42s var(--ease-out) backwards;
+  }
+
+  /* Comparsa a cascata dei figli diretti (card, righe di lista) */
+  .stagger > * {
+    animation: rise-in 0.5s var(--ease-out) backwards;
+  }
+  .stagger > *:nth-child(1) { animation-delay: 40ms; }
+  .stagger > *:nth-child(2) { animation-delay: 80ms; }
+  .stagger > *:nth-child(3) { animation-delay: 120ms; }
+  .stagger > *:nth-child(4) { animation-delay: 160ms; }
+  .stagger > *:nth-child(5) { animation-delay: 200ms; }
+  .stagger > *:nth-child(6) { animation-delay: 240ms; }
+  .stagger > *:nth-child(7) { animation-delay: 280ms; }
+  .stagger > *:nth-child(8) { animation-delay: 320ms; }
+  .stagger > *:nth-child(n + 9) { animation-delay: 360ms; }
+
+  /* Feedback al tocco: leggera compressione con rilascio a molla */
+  .tap {
+    transition: transform 0.28s var(--ease-spring), background-color 0.2s ease, border-color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tap:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+  }
+  @media (hover: hover) {
+    .bento-card.tap:hover { transform: translateY(-2px); }
+    .tap:active { transform: scale(0.98); }
+  }
+
+  /* Cifra del countdown che scorre quando cambia */
+  .digit-roll {
+    display: inline-block;
+    animation: digit-in 0.35s var(--ease-out);
+  }
+
+  /* Punteggio della partita: ingresso con piccola molla */
+  .score-pop {
+    display: inline-block;
+    animation: nav-pop 0.6s var(--ease-spring) 0.15s backwards;
+  }
+
+  /* Icona della bottom nav quando diventa attiva */
+  .nav-pop {
+    animation: nav-pop 0.45s var(--ease-spring);
   }
 
   /* Scrollbar sottile per righe orizzontali */

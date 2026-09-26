@@ -97,7 +97,7 @@ function MatchRow({ m }: { m: Match }) {
     <li>
       <Link
         href={matchHref(m)}
-        className={`bento-card flex items-center gap-3 p-3 sm:p-4 hover:bg-surface-2/60 transition ${
+        className={`bento-card flex items-center gap-3 p-3 sm:p-4 hover:bg-surface-2/60 tap ${
           isLive ? "ring-1 ring-accent/50" : ""
         } ${outcome ? `border-l-4 ${outcome === "win" ? "border-l-win" : outcome === "loss" ? "border-l-loss" : "border-l-draw"}` : ""}`}
       >
@@ -181,7 +181,7 @@ function MatchList({ matches, emptyTitle, emptyDesc }: { matches: Match[]; empty
                 {r.label && (
                   <h3 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 px-1">{r.label}</h3>
                 )}
-                <ul className="flex flex-col gap-2">
+                <ul className="stagger flex flex-col gap-2">
                   {r.items.map((m) => (
                     <MatchRow key={m.id} m={m} />
                   ))}

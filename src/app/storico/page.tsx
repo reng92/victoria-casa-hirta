@@ -157,7 +157,7 @@ function CompetitionSection({ comp, matches, standings }: { comp: Competition; m
             <li key={m.id}>
               <Link
                 href={matchHref(m)}
-                className={`flex items-center gap-3 rounded-xl border-l-4 ${border} bg-surface-2/40 hover:bg-surface-2/80 transition px-3 py-2 text-sm`}
+                className={`flex items-center gap-3 rounded-xl border-l-4 ${border} bg-surface-2/40 hover:bg-surface-2/80 tap px-3 py-2 text-sm`}
               >
                 <TeamLogo src={m.opponent_logo_url} name={opponent} size={28} />
                 <div className="flex flex-col min-w-0 flex-1">

@@ -60,7 +60,7 @@ export default async function UpcomingMatches() {
               <li key={m.id}>
                 <Link
                   href={matchHref(m)}
-                  className="flex items-center gap-3 py-3 hover:bg-surface-2/40 -mx-2 px-2 rounded-xl transition"
+                  className="flex items-center gap-3 py-3 hover:bg-surface-2/40 -mx-2 px-2 rounded-xl tap"
                 >
                   <div className="flex flex-col items-center w-11 shrink-0 rounded-xl bg-surface-2 border border-border py-1.5">
                     <span className="text-[10px] uppercase text-muted leading-none">{formatWeekday(m.match_date)}</span>

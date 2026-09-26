@@ -4,8 +4,8 @@
   "description": "Sito ufficiale della squadra di calcio Victoria Casa Hirta",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#102c5c",
+  "background_color": "#0b1220",
+  "theme_color": "#0b1220",
   "orientation": "portrait",
   "icons": [
     {

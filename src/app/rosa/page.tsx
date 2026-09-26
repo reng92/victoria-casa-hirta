@@ -48,7 +48,7 @@ function PlayerCard({ p, priority }: { p: Player; priority?: boolean }) {
   return (
     <Link
       href={playerHref(p)}
-      className="group bento-card block focus-visible:ring-2 focus-visible:ring-brand-soft"
+      className="group bento-card tap block focus-visible:ring-2 focus-visible:ring-brand-soft"
       aria-label={`${p.full_name}${p.shirt_number ? `, numero ${p.shirt_number}` : ""}, ${ruoloSingolare[p.role] ?? p.role}`}
     >
       <div className="relative aspect-[3/4] bg-surface-2 overflow-hidden">
@@ -117,7 +117,7 @@ export default async function RosaPage() {
               <h2 id={`role-${role}`} className="font-display text-h3">{ruoliLabel[role]}</h2>
               <span className="text-xs text-muted tabular">{group.length}</span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+            <div className="stagger grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
               {group.map((p, i) => (
                 <PlayerCard key={p.id} p={p} priority={gi === 0 && i < 2} />
               ))}

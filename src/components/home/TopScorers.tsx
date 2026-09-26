@@ -67,7 +67,7 @@ export default async function TopScorers() {
             <li key={s.player_id}>
               <Link
                 href={playerHref({ id: s.player_id, slug: s.slug })}
-                className="flex items-center gap-3 rounded-xl px-2 py-1.5 -mx-2 hover:bg-surface-2/60 transition"
+                className="flex items-center gap-3 rounded-xl px-2 py-1.5 -mx-2 hover:bg-surface-2/60 tap"
               >
                 <span className={`font-display font-bold tabular w-4 text-center ${medal[i] ?? "text-muted"}`}>{i + 1}</span>
                 <Avatar src={s.photo_url} name={s.full_name} size={40} />

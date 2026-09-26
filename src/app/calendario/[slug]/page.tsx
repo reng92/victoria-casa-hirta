@@ -487,7 +487,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
           <div className="flex flex-col items-center shrink-0">
             {isFinished || isLive ? (
               <>
-                <span className="font-display text-5xl sm:text-6xl font-bold tabular leading-none">
+                <span className="score-pop font-display text-5xl sm:text-6xl font-bold tabular leading-none">
                   {homeScore ?? 0}<span className="text-white/30 mx-2">–</span>{awayScore ?? 0}
                 </span>
                 {isLive && match.live_period && (
@@ -525,7 +525,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
 
       {isLive && <LiveRefresh matchId={match.id} />}
 
-      <div className="flex flex-col gap-8">
+      <div className="stagger flex flex-col gap-8">
         {cronaca}
         {statistiche}
         {formazione}

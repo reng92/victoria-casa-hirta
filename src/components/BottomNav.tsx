@@ -10,6 +10,13 @@ import { primaryNav, secondaryNav, moreNav, isActivePath } from "@/lib/nav";
  * Bottom navigation mobile (5 voci) con indicatore attivo animato (layoutId).
  * Rispetta env(safe-area-inset-bottom). Nascosta da md in su.
  */
+/** Vibrazione breve al tocco (Android; iOS la ignora). */
+function haptic() {
+  try {
+    navigator.vibrate?.(8);
+  } catch {}
+}
+
 export default function BottomNav() {
   const pathname = usePathname();
   const [sheet, setSheet] = useState(false);
@@ -55,7 +62,7 @@ export default function BottomNav() {
                   />
                 )}
                 <Icon
-                  className={`relative z-10 w-5 h-5 transition-colors ${active ? "text-text" : "text-muted"}`}
+                  className={`relative z-10 w-5 h-5 transition-colors ${active ? "text-text nav-pop" : "text-muted"}`}
                   strokeWidth={active ? 2.4 : 2}
                   aria-hidden
                 />
@@ -68,13 +75,13 @@ export default function BottomNav() {
                 </span>
               </>
             );
-            const cls = "relative flex flex-col items-center justify-center gap-1 h-full w-full select-none";
+            const cls = "tap relative flex flex-col items-center justify-center gap-1 h-full w-full select-none";
             return (
               <li key={l.href} className="relative">
                 {isMore ? (
                   <button
                     type="button"
-                    onClick={() => setSheet((s) => !s)}
+                    onClick={() => { haptic(); setSheet((s) => !s); }}
                     aria-expanded={sheet}
                     aria-controls="more-sheet"
                     className={cls}
@@ -82,7 +89,7 @@ export default function BottomNav() {
                     {inner}
                   </button>
                 ) : (
-                  <Link href={l.href} aria-current={active ? "page" : undefined} className={cls}>
+                  <Link href={l.href} aria-current={active ? "page" : undefined} className={cls} onClick={haptic}>
                     {inner}
                   </Link>
                 )}
@@ -137,7 +144,7 @@ export default function BottomNav() {
                     <li key={l.href}>
                       <Link
                         href={l.href}
-                        className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border transition ${
+                        className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border tap ${
                           active
                             ? "bg-brand/40 border-brand-soft/30 text-text"
                             : "bg-surface-2/60 border-border text-muted active:bg-surface-2"

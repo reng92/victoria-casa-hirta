@@ -66,7 +66,7 @@ function LastResultBody({ m }: { m: Match }) {
   const scoreColor = outcome === "win" ? "text-win" : outcome === "loss" ? "text-loss" : outcome === "draw" ? "text-draw" : "text-text";
 
   return (
-    <Link href={matchHref(m)} className="flex-1 flex flex-col justify-center mt-4 group">
+    <Link href={matchHref(m)} className="flex-1 flex flex-col justify-center mt-4 group tap">
       {/* Squadra di casa a sinistra */}
       <div className={`flex items-center justify-between gap-3 ${m.is_home ? "" : "flex-row-reverse"}`}>
         <div className="flex flex-col items-center gap-2 flex-1 min-w-0">

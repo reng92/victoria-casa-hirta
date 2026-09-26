@@ -83,7 +83,7 @@ export default async function CompetizioniPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+      <div className="stagger grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
         {competitions.map((c) => {
           const upcoming = c.status === "in_arrivo";
           return (
@@ -158,7 +158,7 @@ export default async function CompetizioniPage() {
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {s.items.map((c) => (
                   <li key={c.id}>
-                    <Link href="/storico" className="bento-card p-4 flex items-center gap-3 hover:bg-surface-2/60 transition">
+                    <Link href="/storico" className="bento-card tap p-4 flex items-center gap-3 hover:bg-surface-2/60">
                       <Avatar src={c.logo_url} name={c.name} size={40} rounded="xl" />
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-sm truncate">{c.name}</p>
