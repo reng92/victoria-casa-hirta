@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Suspense } from "react";
 import { CalendarDays, MapPin, Navigation, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
@@ -62,15 +63,22 @@ export default async function NextMatch() {
       aria-labelledby="next-match-title"
       className="relative mesh-hero rounded-hero text-white overflow-hidden min-h-[440px] md:min-h-[420px] flex flex-col shadow-card"
     >
-      {/* Trama decorativa */}
+      {/* Foto di squadra sotto un velo scuro nei colori sociali, per leggere il testo */}
+      <Image
+        src="/squadra.jpg"
+        alt=""
+        fill
+        priority
+        sizes="(min-width:1280px) 1248px, 100vw"
+        className="object-cover object-[center_35%] pointer-events-none"
+      />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, #fff 1px, transparent 1px)",
-          backgroundSize: "22px 22px",
-        }}
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0a1a3a]/80 via-[#0b1220]/55 to-[#0b1220]/90"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_85%_10%,rgb(231_13_12/0.25),transparent_70%)]"
       />
 
       {!match ? (

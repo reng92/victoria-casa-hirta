@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Flag } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import SectionHeader from "@/components/ui/SectionHeader";
@@ -42,11 +43,29 @@ async function getLastResult(): Promise<Match | null> {
   return row as unknown as Match | null;
 }
 
+async function getCoverPhoto(matchId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("gallery")
+    .select("photo_url")
+    .eq("match_id", matchId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as { photo_url: string } | null)?.photo_url ?? null;
+}
+
 export default async function LastResult() {
   const m = await getLastResult();
+  const cover = m ? await getCoverPhoto(m.id) : null;
 
   return (
-    <div className="bento-card p-5 h-full flex flex-col">
+    <div className="bento-card p-5 h-full flex flex-col overflow-hidden">
+      {m && cover && (
+        <Link href={matchHref(m)} className="relative block h-36 -mx-5 -mt-5 mb-4 bg-surface-2" aria-label="Foto della partita">
+          <Image src={cover} alt="" fill sizes="(min-width:1280px) 33vw, (min-width:768px) 50vw, 100vw" className="object-cover object-[center_40%]" />
+          <span className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" aria-hidden />
+        </Link>
+      )}
       <SectionHeader title="Ultimo risultato" icon={Flag} href="/calendario" hrefLabel="Risultati" />
       {!m ? (
         <EmptyState compact title="Nessun risultato" description="La prima partita deve ancora essere giocata." />

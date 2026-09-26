@@ -21,6 +21,16 @@ export const metadata: Metadata = {
   title: "Victoria Casa Hirta",
   description: "Sito ufficiale della squadra di calcio Victoria Casa Hirta",
   manifest: "/manifest.json",
+  metadataBase: new URL("https://victoriacasahirta.it"),
+  // Anteprima dei link condivisi su WhatsApp e social
+  openGraph: {
+    type: "website",
+    locale: "it_IT",
+    siteName: "Victoria Casa Hirta",
+    title: "Victoria Casa Hirta",
+    description: "Sito ufficiale della squadra di calcio Victoria Casa Hirta",
+    images: [{ url: "/squadra.jpg", width: 1200, height: 900, alt: "La squadra della Victoria Casa Hirta" }],
+  },
 };
 
 export const viewport: Viewport = {

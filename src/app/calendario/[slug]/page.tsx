@@ -20,8 +20,10 @@ import {
   BarChart3,
   CircleX,
   ClipboardList,
+  Camera,
 } from "lucide-react";
 import Formation from "@/components/Formation";
+import PhotoGrid from "@/components/PhotoGrid";
 import WeatherWidget from "@/components/WeatherWidget";
 import LiveRefresh from "@/components/LiveRefresh";
 import ConsentGate from "@/components/consent/ConsentGate";
@@ -94,6 +96,15 @@ interface Commentary {
   minute: number | null;
   text: string;
   created_at: string;
+}
+
+async function getPhotos(matchId: string): Promise<{ id: string; photo_url: string; caption: string | null }[]> {
+  const { data } = await supabase
+    .from("gallery")
+    .select("id, photo_url, caption")
+    .eq("match_id", matchId)
+    .order("created_at", { ascending: false });
+  return (data as { id: string; photo_url: string; caption: string | null }[]) ?? [];
 }
 
 async function getCommentary(matchId: string): Promise<Commentary[]> {
@@ -184,7 +195,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
   // Vecchi link con l'UUID: redirect permanente all'URL leggibile
   if (match.slug && params.slug !== match.slug) permanentRedirect(matchHref(match));
 
-  const [events, commentary] = await Promise.all([getEvents(match.id), getCommentary(match.id)]);
+  const [events, commentary, photos] = await Promise.all([getEvents(match.id), getCommentary(match.id), getPhotos(match.id)]);
   const { ours: ourScore, theirs: theirScore } = getScores(match);
   const isFinished = match.status === "finished";
   const isLive = match.status === "live";
@@ -360,6 +371,20 @@ export default async function PartitaPage({ params }: { params: { slug: string }
     </div>
   );
 
+  /* ---------- Foto della partita: solo se caricate ---------- */
+  const foto = photos.length > 0 && (
+    <section aria-labelledby="foto-title">
+      <h2 id="foto-title" className="font-display font-bold text-lg inline-flex items-center gap-2 mb-4">
+        <Camera className="w-4 h-4 text-accent-soft" aria-hidden /> Foto
+      </h2>
+      <PhotoGrid
+        className="grid grid-cols-2 sm:grid-cols-3 gap-2"
+        sizes="(min-width:640px) 220px, 50vw"
+        photos={photos.map((p) => ({ id: p.id, src: p.photo_url, caption: p.caption }))}
+      />
+    </section>
+  );
+
   /* ---------- Formazione: solo se inserita ---------- */
   const formazione = (
     <Suspense fallback={null}>
@@ -528,6 +553,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
 
       <div className="stagger flex flex-col gap-8">
         {cronaca}
+        {foto}
         {statistiche}
         {formazione}
         {info}
