@@ -69,6 +69,17 @@ export default function Footer() {
         <div className="mt-8 pt-6 border-t border-border text-muted text-xs flex flex-col sm:flex-row gap-1 sm:justify-between">
           <p>Associazione Sportiva di Fatto Victoria Casa Hirta · 10 anni di sport e amicizia, 2016–2026</p>
           <p>© {new Date().getFullYear()} Tutti i diritti riservati.</p>
+          <p>
+            Made with <span className="text-accent-soft" aria-label="amore">♥</span> by{" "}
+            <a
+              href="https://traccestudio.it"
+              target="_blank"
+              rel="noopener"
+              className="font-semibold text-text/80 hover:text-text underline-offset-2 hover:underline transition-colors"
+            >
+              Tracce Web Agency
+            </a>
+          </p>
         </div>
       </div>
     </footer>
