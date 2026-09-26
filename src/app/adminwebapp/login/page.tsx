@@ -50,7 +50,7 @@ export default function AdminLogin() {
 
     if (data.session) {
       if (!(await isCurrentUserAdmin())) {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: "local" });
         setError("Questo account non è abilitato all'area admin.");
         setLoading(false);
         return;

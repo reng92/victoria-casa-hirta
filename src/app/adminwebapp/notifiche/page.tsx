@@ -71,7 +71,8 @@ export default function AdminNotifiche() {
         }),
       });
       const json = await res.json();
-      if (!res.ok) setMsg("Errore: " + (json.error ?? res.statusText));
+      if (res.status === 401) setMsg("Errore: la sessione è scaduta. Fai Logout e rientra, la notifica compilata va reinserita.");
+      else if (!res.ok) setMsg("Errore: " + (json.error ?? res.statusText));
       else {
         setMsg(`Notifica inviata a ${json.sent} dispositivi${json.failed ? ` (${json.failed} non raggiunti)` : ""}`);
         setForm(emptyForm);

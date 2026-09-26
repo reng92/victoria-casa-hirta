@@ -19,8 +19,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         router.push("/adminwebapp/login");
         return;
       }
-      if (!(await isCurrentUserAdmin())) {
-        await supabase.auth.signOut();
+      // getUser chiede al server se la sessione è ancora valida: il token in
+      // memoria può sopravvivere a un logout fatto da un altro dispositivo
+      const { error: userError } = await supabase.auth.getUser();
+      if (userError || !(await isCurrentUserAdmin())) {
+        await supabase.auth.signOut({ scope: "local" });
         document.cookie = "vch-admin=; path=/; max-age=0";
         router.push("/adminwebapp/login");
         return;
@@ -31,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [isLoginPage, router]);
 
   async function handleLogout() {
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
     document.cookie = "vch-admin=; path=/; max-age=0";
     router.push("/adminwebapp/login");
     router.refresh();
