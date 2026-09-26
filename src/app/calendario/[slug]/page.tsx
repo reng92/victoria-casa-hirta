@@ -21,7 +21,6 @@ import {
   CircleX,
   ClipboardList,
 } from "lucide-react";
-import MVPVoting from "@/components/MVPVoting";
 import Formation from "@/components/Formation";
 import WeatherWidget from "@/components/WeatherWidget";
 import LiveRefresh from "@/components/LiveRefresh";
@@ -412,10 +411,6 @@ export default async function PartitaPage({ params }: { params: { slug: string }
   /* ---------- Info: MVP, meteo, campo ---------- */
   const info = (
     <div className="flex flex-col gap-4">
-
-      {isFinished && (
-        <MVPVoting matchId={match.id} awayTeam={opponent} />
-      )}
 
       {match.venue?.city && !isFinished && (
         <Suspense fallback={<div className="skeleton h-40" aria-busy="true" />}>
