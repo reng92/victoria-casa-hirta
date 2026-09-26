@@ -70,7 +70,7 @@ export default async function NextMatch() {
         fill
         priority
         sizes="(min-width:1280px) 1248px, 100vw"
-        className="object-cover object-[center_35%] pointer-events-none"
+        className="object-cover object-[center_22%] pointer-events-none"
       />
       <div
         aria-hidden

@@ -103,6 +103,7 @@ async function getPhotos(matchId: string): Promise<{ id: string; photo_url: stri
     .from("gallery")
     .select("id, photo_url, caption")
     .eq("match_id", matchId)
+    .order("is_cover", { ascending: false })
     .order("created_at", { ascending: false });
   return (data as { id: string; photo_url: string; caption: string | null }[]) ?? [];
 }
@@ -378,7 +379,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
         <Camera className="w-4 h-4 text-accent-soft" aria-hidden /> Foto
       </h2>
       <PhotoGrid
-        className="grid grid-cols-2 sm:grid-cols-3 gap-2"
+        className="columns-2 sm:columns-3"
         sizes="(min-width:640px) 220px, 50vw"
         photos={photos.map((p) => ({ id: p.id, src: p.photo_url, caption: p.caption }))}
       />

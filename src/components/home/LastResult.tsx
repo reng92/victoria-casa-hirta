@@ -48,6 +48,8 @@ async function getCoverPhoto(matchId: string): Promise<string | null> {
     .from("gallery")
     .select("photo_url")
     .eq("match_id", matchId)
+    // La copertina scelta dall'admin, altrimenti l'ultima foto caricata
+    .order("is_cover", { ascending: false })
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -61,8 +63,8 @@ export default async function LastResult() {
   return (
     <div className="bento-card p-5 h-full flex flex-col overflow-hidden">
       {m && cover && (
-        <Link href={matchHref(m)} className="relative block h-36 -mx-5 -mt-5 mb-4 bg-surface-2" aria-label="Foto della partita">
-          <Image src={cover} alt="" fill sizes="(min-width:1280px) 33vw, (min-width:768px) 50vw, 100vw" className="object-cover object-[center_40%]" />
+        <Link href={matchHref(m)} className="relative block h-44 -mx-5 -mt-5 mb-4 bg-surface-2" aria-label="Foto della partita">
+          <Image src={cover} alt="" fill sizes="(min-width:1280px) 33vw, (min-width:768px) 50vw, 100vw" className="object-cover object-[center_38%]" />
           <span className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" aria-hidden />
         </Link>
       )}

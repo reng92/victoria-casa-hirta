@@ -13,17 +13,20 @@ export interface GridPhoto {
 
 interface Props {
   photos: GridPhoto[];
-  /** Classi della griglia (colonne). */
+  /** Classi delle colonne: le foto si impilano intere, senza ritagli. */
   className?: string;
   /** Quante immagini caricare subito (sopra la piega). */
   priorityCount?: number;
   sizes?: string;
 }
 
-/** Griglia di foto quadrate; al tocco la foto si apre a tutto schermo e si scorre. */
+/**
+ * Foto a colonne con le proporzioni originali (nessuna testa tagliata);
+ * al tocco la foto si apre a tutto schermo e si scorre.
+ */
 export default function PhotoGrid({
   photos,
-  className = "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2",
+  className = "columns-2 sm:columns-3 md:columns-4",
   priorityCount = 0,
   sizes = "(min-width:768px) 25vw, (min-width:640px) 33vw, 50vw",
 }: Props) {
@@ -56,17 +59,18 @@ export default function PhotoGrid({
 
   return (
     <>
-      <ul className={className}>
+      <ul className={`gap-2 ${className}`}>
         {photos.map((p, i) => (
-          <li key={p.id} className="group relative aspect-square rounded-card overflow-hidden bg-surface-2 border border-border">
-            <button type="button" onClick={() => setOpen(i)} className="absolute inset-0 w-full h-full" aria-label={`Apri foto${p.caption ? `: ${p.caption}` : ""}`}>
+          <li key={p.id} className="group relative mb-2 break-inside-avoid rounded-card overflow-hidden bg-surface-2 border border-border">
+            <button type="button" onClick={() => setOpen(i)} className="relative block w-full" aria-label={`Apri foto${p.caption ? `: ${p.caption}` : ""}`}>
               <Image
                 src={p.src}
                 alt={p.caption ?? p.label ?? "Foto della squadra"}
-                fill
+                width={800}
+                height={1000}
                 sizes={sizes}
                 priority={i < priorityCount}
-                className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+                className="block w-full h-auto transition-transform duration-500 group-hover:scale-[1.03]"
               />
               {p.caption && (
                 <span className="absolute inset-x-0 bottom-0 pt-10 pb-2.5 px-3 bg-gradient-to-t from-black/75 to-transparent text-left">

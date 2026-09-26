@@ -5,7 +5,8 @@ export async function uploadImage(
   folder: string
 ): Promise<string | null> {
   const ext = file.name.split(".").pop();
-  const filename = `${folder}/${Date.now()}.${ext}`;
+  // Il suffisso casuale evita che due foto caricate insieme si sovrascrivano
+  const filename = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
 
   const { error } = await supabase.storage
     .from("media")

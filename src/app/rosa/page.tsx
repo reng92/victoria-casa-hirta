@@ -101,14 +101,14 @@ export default async function RosaPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
       <PageHeader title="Rosa" subtitle={`Stagione in corso · ${players.length} giocatori`} />
-      <div className="relative h-56 sm:h-72 md:h-96 rounded-hero overflow-hidden mb-8 shadow-card bg-surface-2">
+      <div className="relative aspect-[16/9] md:aspect-[2/1] rounded-hero overflow-hidden mb-8 shadow-card bg-surface-2">
         <Image
           src="/squadra2.jpg"
           alt="Foto di squadra della Victoria Casa Hirta"
           fill
           priority
           sizes="(min-width:1152px) 1120px, 100vw"
-          className="object-cover object-[center_52%]"
+          className="object-cover object-[center_40%]"
         />
       </div>
 
