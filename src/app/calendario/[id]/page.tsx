@@ -13,13 +13,16 @@ import {
   StickyNote,
   Target,
   Users,
+  Radio,
+  NotebookPen,
+  BarChart3,
   CircleX,
   ClipboardList,
 } from "lucide-react";
 import MVPVoting from "@/components/MVPVoting";
 import Formation from "@/components/Formation";
 import WeatherWidget from "@/components/WeatherWidget";
-import Tabs from "@/components/ui/Tabs";
+import LiveRefresh from "@/components/LiveRefresh";
 import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, OutcomeBadge, Pill } from "@/components/ui/Badge";
@@ -44,6 +47,7 @@ interface Match {
   instagram_reels: string[] | null;
   live_minute: number | null;
   live_period: string | null;
+  match_report: string | null;
   venue: { name: string; address: string; city: string | null; maps_url: string | null } | null;
   competition: { name: string; type: string | null; level: string | null } | null;
 }
@@ -60,7 +64,7 @@ interface MatchEvent {
 async function getMatch(id: string): Promise<Match | null> {
   const { data, error } = await supabase
     .from("matches")
-    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, notes, opponent_logo_url, instagram_reels, live_minute, live_period, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
+    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, notes, opponent_logo_url, instagram_reels, live_minute, live_period, match_report, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
     .eq("id", id)
     .single();
   if (error) {
@@ -79,6 +83,21 @@ function getInstagramEmbedUrl(url: string): string | null {
   const match = url.match(/instagram\.com\/(p|reel|tv)\/([A-Za-z0-9_-]+)/);
   if (!match) return null;
   return `https://www.instagram.com/${match[1]}/${match[2]}/embed/`;
+}
+
+interface Commentary {
+  id: string;
+  minute: number | null;
+  text: string;
+  created_at: string;
+}
+
+async function getCommentary(matchId: string): Promise<Commentary[]> {
+  const { data } = await supabase
+    .from("match_commentary")
+    .select("id, minute, text, created_at")
+    .eq("match_id", matchId);
+  return (data as Commentary[] | null) ?? [];
 }
 
 async function getEvents(matchId: string): Promise<MatchEvent[]> {
@@ -158,7 +177,7 @@ export default async function PartitaPage({ params }: { params: { id: string } }
     );
   }
 
-  const events = await getEvents(match.id);
+  const [events, commentary] = await Promise.all([getEvents(match.id), getCommentary(match.id)]);
   const { ours: ourScore, theirs: theirScore } = getScores(match);
   const isFinished = match.status === "finished";
   const isLive = match.status === "live";
@@ -167,7 +186,16 @@ export default async function PartitaPage({ params }: { params: { id: string } }
 
   const vchEvents = events.filter(e => e.for_team === "vch" || e.for_team === null);
   const oppEvents = events.filter(e => e.for_team === "opponent");
-  const timeline = [...events].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0));
+  // Livescore: eventi e commenti live in un unico feed per minuto.
+  // In diretta il più recente sta in alto, a partita finita si legge in ordine.
+  type FeedItem =
+    | { kind: "event"; id: string; minute: number | null; order: string; event: MatchEvent }
+    | { kind: "comment"; id: string; minute: number | null; order: string; text: string };
+  const feed: FeedItem[] = [
+    ...events.map((e): FeedItem => ({ kind: "event", id: e.id, minute: e.minute, order: "", event: e })),
+    ...commentary.map((c): FeedItem => ({ kind: "comment", id: c.id, minute: c.minute, order: c.created_at, text: c.text })),
+  ].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0) || a.order.localeCompare(b.order));
+  if (isLive) feed.reverse();
 
   const count = (list: MatchEvent[], ...types: string[]) => list.filter(e => types.includes(e.event_type)).length;
   const stats = [
@@ -183,35 +211,58 @@ export default async function PartitaPage({ params }: { params: { id: string } }
   const shareTeams = match.is_home ? `VCH vs ${opponent}` : `${opponent} vs VCH`;
   const shareText = `${shareTeams} · ${formatDateFull(match.match_date)}${isFinished ? ` · ${homeScore}–${awayScore}` : ""} · victoriacasahirta.it/calendario/${match.id}`;
 
-  /* ---------- Tab: Cronaca ---------- */
+  /* ---------- Cronaca: livescore minuto per minuto + resoconto ---------- */
   const cronaca = (
-    <div className="flex flex-col gap-4">
+    <section className="flex flex-col gap-4" aria-labelledby="cronaca-title">
+      <h2 id="cronaca-title" className="font-display font-bold text-lg inline-flex items-center gap-2">
+        <Radio className="w-4 h-4 text-accent-soft" aria-hidden /> Cronaca della partita
+      </h2>
+
       <div className="bento-card">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h2 className="font-display font-bold">Tabellino</h2>
+          <h3 className="font-display font-bold">Livescore</h3>
           {isLive && match.live_period && (
             <span className="text-xs text-muted">{periodLabel[match.live_period] ?? "In corso"}</span>
           )}
         </div>
-        {timeline.length === 0 ? (
-          <EmptyState compact icon={ClipboardList} title="Nessun evento registrato" description={isFinished ? "Il tabellino non è disponibile." : "Gli eventi compariranno durante la partita."} />
+        {feed.length === 0 ? (
+          <EmptyState
+            compact
+            icon={ClipboardList}
+            title="Nessun aggiornamento"
+            description={isFinished ? "La cronaca live non è disponibile." : "Gli aggiornamenti minuto per minuto compariranno durante la partita."}
+          />
         ) : (
-          <ol className="relative py-3">
-            <span className="absolute left-1/2 top-3 bottom-3 w-px bg-border -translate-x-1/2" aria-hidden />
-            {timeline.map((ev) => {
+          <ol className="relative py-2">
+            <span className="absolute left-[38px] top-4 bottom-4 w-px bg-border" aria-hidden />
+            {feed.map((item) => {
+              const minute = (
+                <span className="relative z-10 shrink-0 min-w-[42px] text-center text-[11px] font-bold tabular bg-surface-2 border border-border rounded-full px-1.5 py-0.5 mt-0.5">
+                  {item.minute != null ? `${item.minute}'` : "–"}
+                </span>
+              );
+              if (item.kind === "comment") {
+                return (
+                  <li key={`c-${item.id}`} className="flex items-start gap-3 px-4 py-2.5">
+                    {minute}
+                    <p className="text-sm leading-relaxed whitespace-pre-line min-w-0">{item.text}</p>
+                  </li>
+                );
+              }
+              const ev = item.event;
               const isVch = ev.for_team === "vch" || ev.for_team === null;
               const name = ev.player?.full_name ?? (isVch ? "–" : opponent);
               return (
-                <li key={ev.id} className={`relative flex items-start gap-3 px-4 py-2 ${isVch ? "justify-start pr-[52%]" : "justify-end pl-[52%]"}`}>
-                  <span className="absolute left-1/2 top-2.5 -translate-x-1/2 min-w-[34px] text-center text-[11px] font-bold tabular bg-surface-2 border border-border rounded-full px-1.5 py-0.5">
-                    {ev.minute ? `${ev.minute}'` : "–"}
-                  </span>
-                  <div className={`flex items-center gap-2 min-w-0 ${isVch ? "" : "flex-row-reverse text-right"}`}>
+                <li key={`e-${ev.id}`} className="flex items-start gap-3 px-4 py-2.5">
+                  {minute}
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <EventIcon type={ev.event_type} />
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate">{name}</p>
+                      <p className="text-sm font-semibold truncate">
+                        {eventLabel[ev.event_type] ?? ev.event_type} · {name}
+                      </p>
                       <p className="text-[11px] text-muted truncate">
-                        {eventLabel[ev.event_type] ?? ev.event_type}
+                        {isVch ? "Victoria Casa Hirta" : opponent}
                         {ev.player_out ? ` · esce ${ev.player_out.full_name}` : ""}
                       </p>
                     </div>
@@ -223,6 +274,16 @@ export default async function PartitaPage({ params }: { params: { id: string } }
         )}
       </div>
 
+      {match.match_report && (
+        <article className="bento-card">
+          <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+            <NotebookPen className="w-4 h-4 text-accent-soft" aria-hidden />
+            <h3 className="font-display font-bold">Resoconto</h3>
+          </div>
+          <div className="px-5 py-4 text-sm leading-relaxed whitespace-pre-line">{match.match_report}</div>
+        </article>
+      )}
+
       {match.notes && (
         <div className="bento-card p-5">
           <p className="inline-flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted font-semibold mb-2">
@@ -231,7 +292,12 @@ export default async function PartitaPage({ params }: { params: { id: string } }
           <p className="text-sm">{match.notes}</p>
         </div>
       )}
+    </section>
+  );
 
+  /* ---------- Media e condivisione ---------- */
+  const media = (
+    <div className="flex flex-col gap-4">
       {match.instagram_reels && match.instagram_reels.length > 0 && (
         <div className="bento-card">
           <div className="px-5 py-4 border-b border-border flex items-center gap-2">
@@ -287,48 +353,62 @@ export default async function PartitaPage({ params }: { params: { id: string } }
     </div>
   );
 
-  /* ---------- Tab: Formazioni ---------- */
-  const formazioni = (
-    <Suspense fallback={<div className="skeleton w-full" style={{ aspectRatio: "2 / 3" }} aria-busy="true" />}>
-      <FormazioniTab matchId={match.id} />
+  /* ---------- Formazione: solo se inserita ---------- */
+  const formazione = (
+    <Suspense fallback={null}>
+      <FormazioneSection matchId={match.id} />
     </Suspense>
   );
 
-  /* ---------- Tab: Statistiche ---------- */
-  const statistiche = (
-    <div className="flex flex-col gap-4">
+  /* ---------- Statistiche (squadra di casa a sinistra) ---------- */
+  const homeSide = match.is_home
+    ? { label: "VCH", logo: <VCHLogo size={22} />, key: "vch" as const }
+    : { label: opponent, logo: <TeamLogo src={match.opponent_logo_url} name={opponent} size={22} />, key: "opp" as const };
+  const awaySide = match.is_home
+    ? { label: opponent, logo: <TeamLogo src={match.opponent_logo_url} name={opponent} size={22} />, key: "opp" as const }
+    : { label: "VCH", logo: <VCHLogo size={22} />, key: "vch" as const };
+
+  const statistiche = stats.length > 0 && (
+    <section aria-labelledby="stats-title">
+      <h2 id="stats-title" className="font-display font-bold text-lg inline-flex items-center gap-2 mb-4">
+        <BarChart3 className="w-4 h-4 text-accent-soft" aria-hidden /> Statistiche
+      </h2>
       <div className="bento-card p-5">
         <div className="flex items-center justify-between mb-4">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold"><VCHLogo size={22} /> VCH</span>
-          <span className="inline-flex items-center gap-2 text-sm font-semibold">{opponent} <TeamLogo src={match.opponent_logo_url} name={opponent} size={22} /></span>
+          <span className="inline-flex items-center gap-2 text-sm font-semibold">{homeSide.logo} {homeSide.label}</span>
+          <span className="inline-flex items-center gap-2 text-sm font-semibold">{awaySide.label} {awaySide.logo}</span>
         </div>
-        {stats.length === 0 ? (
-          <EmptyState compact title="Statistiche non disponibili" description="Verranno calcolate dagli eventi della partita." />
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {stats.map((s) => {
-              const total = s.vch + s.opp || 1;
-              return (
-                <li key={s.label}>
-                  <div className="flex items-center justify-between text-sm mb-1.5">
-                    <span className="font-display font-bold tabular w-8">{s.vch}</span>
-                    <span className="text-[11px] uppercase tracking-wider text-muted">{s.label}</span>
-                    <span className="font-display font-bold tabular w-8 text-right">{s.opp}</span>
+        <ul className="flex flex-col gap-3">
+          {stats.map((s) => {
+            const home = s[homeSide.key];
+            const away = s[awaySide.key];
+            const total = home + away || 1;
+            return (
+              <li key={s.label}>
+                <div className="flex items-center justify-between text-sm mb-1.5">
+                  <span className="font-display font-bold tabular w-8">{home}</span>
+                  <span className="text-[11px] uppercase tracking-wider text-muted">{s.label}</span>
+                  <span className="font-display font-bold tabular w-8 text-right">{away}</span>
+                </div>
+                <div className="flex gap-1 h-1.5">
+                  <div className="flex-1 rounded-full bg-surface-2 overflow-hidden flex justify-end">
+                    <span className="h-full bg-brand-soft rounded-full" style={{ width: `${(home / total) * 100}%` }} />
                   </div>
-                  <div className="flex gap-1 h-1.5">
-                    <div className="flex-1 rounded-full bg-surface-2 overflow-hidden flex justify-end">
-                      <span className="h-full bg-brand-soft rounded-full" style={{ width: `${(s.vch / total) * 100}%` }} />
-                    </div>
-                    <div className="flex-1 rounded-full bg-surface-2 overflow-hidden">
-                      <span className="block h-full bg-accent rounded-full" style={{ width: `${(s.opp / total) * 100}%` }} />
-                    </div>
+                  <div className="flex-1 rounded-full bg-surface-2 overflow-hidden">
+                    <span className="block h-full bg-accent rounded-full" style={{ width: `${(away / total) * 100}%` }} />
                   </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </div>
+    </section>
+  );
+
+  /* ---------- Info: MVP, meteo, campo ---------- */
+  const info = (
+    <div className="flex flex-col gap-4">
 
       {isFinished && (
         <MVPVoting matchId={match.id} awayTeam={opponent} />
@@ -440,27 +520,29 @@ export default async function PartitaPage({ params }: { params: { id: string } }
         </div>
       </section>
 
-      <Tabs
-        variant="underline"
-        items={[
-          { key: "cronaca", label: "Cronaca", content: cronaca },
-          { key: "formazioni", label: "Formazioni", content: formazioni },
-          { key: "statistiche", label: "Statistiche", content: statistiche },
-        ]}
-      />
+      {isLive && <LiveRefresh matchId={match.id} />}
+
+      <div className="flex flex-col gap-8">
+        {cronaca}
+        {statistiche}
+        {formazione}
+        {info}
+        {media}
+      </div>
     </div>
   );
 }
 
-/** Tab formazioni: campo con giocatori o stato vuoto. */
-async function FormazioniTab({ matchId }: { matchId: string }) {
+/** Formazione schierata: la sezione compare solo se è stata inserita. */
+async function FormazioneSection({ matchId }: { matchId: string }) {
   const field = await Formation({ matchId });
-  if (!field) {
-    return (
-      <div className="bento-card">
-        <EmptyState icon={Users} title="Formazione non disponibile" description="La formazione verrà pubblicata prima del calcio d'inizio." />
-      </div>
-    );
-  }
-  return field;
+  if (!field) return null;
+  return (
+    <section aria-labelledby="formazione-title">
+      <h2 id="formazione-title" className="font-display font-bold text-lg inline-flex items-center gap-2 mb-4">
+        <Users className="w-4 h-4 text-accent-soft" aria-hidden /> Formazione
+      </h2>
+      {field}
+    </section>
+  );
 }

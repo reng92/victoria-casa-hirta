@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { groupLabel, groupOptions, isGroupFormat, matchdayLabel } from "@/lib/competitions";
 import LogoField from "@/components/admin/LogoField";
+import CommentaryEditor from "@/components/admin/CommentaryEditor";
 
 interface Competition { id: string; name: string; format: string | null; }
 interface Venue { id: string; name: string; }
@@ -21,6 +22,7 @@ interface Match {
   venue_id: string | null;
   opponent_logo_url: string | null;
   instagram_reels: string[] | null;
+  match_report: string | null;
   live_minute: number | null;
   live_minute_set_at: string | null;
   live_period: string | null;
@@ -74,6 +76,7 @@ export default function AdminPartite() {
     away_score: "",
     opponent_logo_url: "",
   });
+  const [editReport, setEditReport] = useState("");
   const [editReels, setEditReels] = useState<string[]>([]);
   const [editNewReel, setEditNewReel] = useState("");
   const [editLoading, setEditLoading] = useState(false);
@@ -108,7 +111,7 @@ export default function AdminPartite() {
 
   async function fetchAll() {
     const [{ data: m }, { data: c }, { data: v }, { data: p }] = await Promise.all([
-      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, matchday, group_name, competition_id, venue_id, opponent_logo_url, instagram_reels, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
+      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, matchday, group_name, competition_id, venue_id, opponent_logo_url, instagram_reels, match_report, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
       supabase.from("competitions").select("id, name, format"),
       supabase.from("venues").select("id, name"),
       supabase.from("players").select("id, full_name").eq("is_active", true).order("full_name"),
@@ -180,6 +183,8 @@ export default function AdminPartite() {
     });
     setEditReels(m.instagram_reels ?? []);
     setEditNewReel("");
+    setEditReport(m.match_report ?? "");
+    setEditMsg("");
   }
 
   async function handleEdit(e: React.FormEvent) {
@@ -201,6 +206,7 @@ export default function AdminPartite() {
       away_score: editForm.away_score !== "" ? parseInt(editForm.away_score) : null,
       opponent_logo_url: editForm.opponent_logo_url || null,
       instagram_reels: editReels.length > 0 ? editReels : null,
+      match_report: editReport.trim() || null,
     }).eq("id", editMatch.id);
     if (error) setEditMsg("Errore: " + error.message);
     else { setEditMsg("Partita aggiornata!"); fetchAll(); setTimeout(() => setEditMatch(null), 1000); }
@@ -562,6 +568,12 @@ export default function AdminPartite() {
             </button>
           </div>
 
+          {/* Cronaca live */}
+          <div className="bg-white/10 rounded-xl p-4 mb-4">
+            <div className="text-sm font-semibold mb-3">🎙️ Cronaca live</div>
+            <CommentaryEditor matchId={liveMatchId} defaultMinute={liveMinuteDisplay} dark />
+          </div>
+
           {/* Lista eventi live */}
           {liveEvents.length > 0 && (
             <div className="bg-white/10 rounded-xl p-4 mb-4">
@@ -723,6 +735,25 @@ export default function AdminPartite() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Cronaca della partita */}
+            <div className="sm:col-span-2">
+              <label className="text-xs text-gray-500 mb-1 block font-semibold">📝 Cronaca della partita (resoconto)</label>
+              <textarea
+                rows={8}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-y"
+                placeholder="Racconta la partita: primo tempo, gol, episodi chiave..."
+                value={editReport}
+                onChange={e => setEditReport(e.target.value)}
+              />
+              <p className="text-[11px] text-gray-400 mt-1">Compare nella pagina della partita solo se compilato. Salva con &quot;Salva modifiche&quot;.</p>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="text-xs text-gray-500 mb-2 block font-semibold">🎙️ Cronaca live minuto per minuto</label>
+              <CommentaryEditor matchId={editMatch.id} />
+              <p className="text-[11px] text-gray-400 mt-1">Gli aggiornamenti si pubblicano subito, senza bisogno di salvare.</p>
             </div>
 
             <div className="sm:col-span-2">
