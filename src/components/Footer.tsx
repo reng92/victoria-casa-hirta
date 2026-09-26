@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { primaryNav, secondaryNav } from "@/lib/nav";
 import AnniversaryBadge from "./AnniversaryBadge";
+import CookieSettingsButton from "./consent/CookieSettingsButton";
 
 function FacebookIcon() {
   return (
@@ -68,7 +69,12 @@ export default function Footer() {
 
         <div className="mt-8 pt-6 border-t border-border text-muted text-xs flex flex-col sm:flex-row gap-1 sm:justify-between">
           <p>Associazione Sportiva di Fatto Victoria Casa Hirta · 10 anni di sport e amicizia, 2016–2026</p>
-          <p>© {new Date().getFullYear()} Tutti i diritti riservati.</p>
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>© {new Date().getFullYear()} Tutti i diritti riservati.</span>
+            <Link href="/privacy-policy" className="hover:text-text transition-colors">Privacy Policy</Link>
+            <Link href="/cookie-policy" className="hover:text-text transition-colors">Cookie Policy</Link>
+            <CookieSettingsButton className="hover:text-text transition-colors" />
+          </p>
           <p>
             Made with <span className="text-accent-soft" aria-label="amore">♥</span> by{" "}
             <a

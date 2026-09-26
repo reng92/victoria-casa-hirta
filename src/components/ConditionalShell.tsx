@@ -4,6 +4,8 @@ import Header from "./Header";
 import BottomNav from "./BottomNav";
 import Footer from "./Footer";
 import Livescore from "./Livescore";
+import CookieBanner from "./consent/CookieBanner";
+import Analytics from "./consent/Analytics";
 
 export default function ConditionalShell({ children }: { children: import("react").ReactNode }) {
   const pathname = usePathname();
@@ -18,6 +20,8 @@ export default function ConditionalShell({ children }: { children: import("react
       </main>
       {!isAdmin && <Footer />}
       {!isAdmin && <BottomNav />}
+      {!isAdmin && <CookieBanner />}
+      {!isAdmin && <Analytics />}
     </>
   );
 }

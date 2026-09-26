@@ -24,6 +24,7 @@ import {
 import Formation from "@/components/Formation";
 import WeatherWidget from "@/components/WeatherWidget";
 import LiveRefresh from "@/components/LiveRefresh";
+import ConsentGate from "@/components/consent/ConsentGate";
 import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, OutcomeBadge, Pill } from "@/components/ui/Badge";
@@ -316,7 +317,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
               return (
                 <div key={i} className="w-full">
                   {embedUrl ? (
-                    <iframe
+                    <ConsentGate service="Instagram" height={520}><iframe
                       src={embedUrl}
                       className="w-full rounded-xl border-0 bg-surface-2"
                       height="520"
@@ -325,7 +326,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
                       allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
                       title={`Reel ${i + 1}`}
                       loading="lazy"
-                    />
+                    /></ConsentGate>
                   ) : (
                     <a
                       href={url}
@@ -429,7 +430,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
             <h2 className="font-display font-bold inline-flex items-center gap-2"><MapPin className="w-4 h-4 text-accent-soft" aria-hidden />{match.venue.name}</h2>
             {match.venue.address && <p className="text-sm text-muted mt-0.5">{match.venue.address}{match.venue.city ? `, ${match.venue.city}` : ""}</p>}
           </div>
-          <iframe
+          <ConsentGate service="Google Maps" height={200}><iframe
             src={`https://maps.google.com/maps?q=${encodeURIComponent(match.venue.address + (match.venue.city ? ", " + match.venue.city : ""))}&output=embed&z=15`}
             width="100%"
             height="200"
@@ -439,7 +440,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
             referrerPolicy="no-referrer-when-downgrade"
             title={`Mappa ${match.venue.name}`}
             className="block bg-surface-2 grayscale-[0.3]"
-          />
+          /></ConsentGate>
           <a
             href={match.venue.maps_url}
             target="_blank"

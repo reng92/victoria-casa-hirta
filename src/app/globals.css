@@ -266,6 +266,17 @@
     animation: nav-pop 0.45s var(--ease-spring);
   }
 
+  /* Testi legali (privacy / cookie policy) */
+  .legal-prose { @apply text-sm leading-relaxed text-text/85; }
+  .legal-prose h2 { @apply font-display font-bold text-lg text-text mt-8 mb-2 first:mt-0; }
+  .legal-prose p { @apply mb-3; }
+  .legal-prose ul { @apply list-disc pl-5 mb-3 space-y-1; }
+  .legal-prose a { @apply text-accent-soft underline underline-offset-2 hover:text-text; }
+  .legal-prose table { @apply w-full text-xs mb-4 border-collapse; }
+  .legal-prose th { @apply text-left font-semibold text-text border-b border-border py-2 pr-3 align-top; }
+  .legal-prose td { @apply border-b border-border py-2 pr-3 align-top; }
+  .legal-prose .table-wrap { @apply overflow-x-auto -mx-1 px-1; }
+
   /* Scrollbar sottile per righe orizzontali */
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
