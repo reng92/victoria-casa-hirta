@@ -7,10 +7,7 @@ import Livescore from "./Livescore";
 
 export default function ConditionalShell({ children }: { children: import("react").ReactNode }) {
   const pathname = usePathname();
-  const isComingSoon = pathname === "/coming-soon";
   const isAdmin = pathname.startsWith("/admin");
-
-  if (isComingSoon) return <main>{children}</main>;
 
   return (
     <>

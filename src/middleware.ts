@@ -4,20 +4,9 @@ import type { NextRequest } from "next/server";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Routes that bypass the coming-soon wall
-  const isPublic =
-    pathname.startsWith("/coming-soon") ||
-    pathname.startsWith("/api/unlock") ||
-    pathname.startsWith("/admin") ||
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/api") ||
-    /\.(jpeg|jpg|png|svg|ico|webp|gif|woff2?|ttf)$/.test(pathname);
-
-  if (!isPublic) {
-    const bypassCookie = req.cookies.get("vch-bypass")?.value;
-    if (!bypassCookie) {
-      return NextResponse.redirect(new URL("/coming-soon", req.url));
-    }
+  // Il sito è pubblico: la vecchia pagina "coming soon" rimanda alla home
+  if (pathname.startsWith("/coming-soon")) {
+    return NextResponse.redirect(new URL("/", req.url), 308);
   }
 
   // Vecchi URL con l'UUID di partite e giocatori: 308 verso lo slug leggibile.
