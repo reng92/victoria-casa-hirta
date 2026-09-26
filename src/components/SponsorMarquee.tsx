@@ -1,6 +1,6 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Handshake } from "lucide-react";
+import SponsorLogo from "./SponsorLogo";
 
 export interface SponsorItem {
   id: string;
@@ -10,9 +10,35 @@ export interface SponsorItem {
 }
 
 /**
- * Marquee orizzontale infinito: loghi in grayscale → colore on hover.
- * Il track è duplicato per ottenere il loop continuo via CSS.
+ * Sponsor in home. Loghi sempre a colori su tessera chiara o scura in base al
+ * logo (vedi SponsorLogo), così restano leggibili in entrambi i temi.
+ * Mobile: griglia a 2 colonne. Da sm in su: marquee orizzontale infinito
+ * (track duplicato per il loop continuo via CSS).
  */
+function SponsorTile({ s, hidden = false, className = "" }: { s: SponsorItem; hidden?: boolean; className?: string }) {
+  const content = s.logo_url ? (
+    <SponsorLogo src={s.logo_url} alt={s.name} className={className} />
+  ) : (
+    <span className={`flex items-center justify-center rounded-xl bg-white p-3 ring-1 ring-black/5 ${className}`}>
+      <span className="font-display font-semibold text-sm text-neutral-900 text-center leading-tight">{s.name}</span>
+    </span>
+  );
+  return s.website_url ? (
+    <a
+      href={s.website_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={s.name}
+      tabIndex={hidden ? -1 : 0}
+      className="tap block"
+    >
+      {content}
+    </a>
+  ) : (
+    content
+  );
+}
+
 export default function SponsorMarquee({ sponsors }: { sponsors: SponsorItem[] }) {
   if (sponsors.length === 0) return null;
   const loop = [...sponsors, ...sponsors];
@@ -28,37 +54,22 @@ export default function SponsorMarquee({ sponsors }: { sponsors: SponsorItem[] }
           Tutti
         </Link>
       </div>
-      <div className="marquee overflow-hidden">
-        <ul className="marquee-track gap-10 px-5" aria-hidden={false}>
-          {loop.map((s, i) => {
-            const content = (
-              <span className="flex items-center justify-center h-12 w-28 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition duration-300">
-                {s.logo_url ? (
-                  <Image
-                    src={s.logo_url}
-                    alt={s.name}
-                    width={112}
-                    height={48}
-                    sizes="112px"
-                    className="object-contain max-h-12 w-auto"
-                  />
-                ) : (
-                  <span className="font-display font-semibold text-sm text-muted whitespace-nowrap">{s.name}</span>
-                )}
-              </span>
-            );
-            return (
-              <li key={`${s.id}-${i}`} className="shrink-0" aria-hidden={i >= sponsors.length}>
-                {s.website_url ? (
-                  <a href={s.website_url} target="_blank" rel="noopener noreferrer" aria-label={s.name} tabIndex={i >= sponsors.length ? -1 : 0}>
-                    {content}
-                  </a>
-                ) : (
-                  content
-                )}
-              </li>
-            );
-          })}
+
+      <ul className="grid grid-cols-2 gap-3 px-5 sm:hidden">
+        {sponsors.map((s) => (
+          <li key={s.id}>
+            <SponsorTile s={s} className="h-20 w-full" />
+          </li>
+        ))}
+      </ul>
+
+      <div className="marquee overflow-hidden hidden sm:block">
+        <ul className="marquee-track gap-4 px-5">
+          {loop.map((s, i) => (
+            <li key={`${s.id}-${i}`} className="shrink-0" aria-hidden={i >= sponsors.length}>
+              <SponsorTile s={s} hidden={i >= sponsors.length} className="h-16 w-36" />
+            </li>
+          ))}
         </ul>
       </div>
     </section>

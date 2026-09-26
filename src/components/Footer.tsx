@@ -25,7 +25,7 @@ function InstagramIcon() {
 export default function Footer() {
   const links = [...primaryNav, ...secondaryNav];
   return (
-    <footer className="mt-16 border-t border-border bg-surface/40">
+    <footer className="mt-16 border-t border-border bg-surface/40 pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0">
       <div className="max-w-7xl mx-auto px-4 py-10">
         <div className="grid gap-8 md:grid-cols-[1.2fr_2fr_auto] md:items-start">
           <div className="flex items-center gap-3">
@@ -67,14 +67,16 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-border text-muted text-xs flex flex-col sm:flex-row gap-1 sm:justify-between">
+        <div className="mt-8 pt-6 border-t border-border text-muted text-xs flex flex-col sm:flex-row gap-3 sm:gap-1 sm:justify-between">
           <p>Associazione Sportiva di Fatto Victoria Casa Hirta · 10 anni di sport e amicizia, 2016–2026</p>
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>© {new Date().getFullYear()} Tutti i diritti riservati.</span>
-            <Link href="/privacy-policy" className="hover:text-text transition-colors">Privacy Policy</Link>
-            <Link href="/cookie-policy" className="hover:text-text transition-colors">Cookie Policy</Link>
-            <CookieSettingsButton className="hover:text-text transition-colors" />
-          </p>
+          <div className="flex flex-col gap-2 sm:gap-1">
+            <p>© {new Date().getFullYear()} Tutti i diritti riservati.</p>
+            <p className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm sm:text-xs font-medium text-text/80">
+              <Link href="/privacy-policy" className="py-1 underline underline-offset-4 decoration-text/30 hover:text-text transition-colors">Privacy Policy</Link>
+              <Link href="/cookie-policy" className="py-1 underline underline-offset-4 decoration-text/30 hover:text-text transition-colors">Cookie Policy</Link>
+              <CookieSettingsButton className="py-1 underline underline-offset-4 decoration-text/30 hover:text-text transition-colors" />
+            </p>
+          </div>
           <p>
             Made with <span className="text-accent-soft" aria-label="amore">♥</span> by{" "}
             <a

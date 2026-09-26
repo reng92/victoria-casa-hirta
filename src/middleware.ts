@@ -18,10 +18,10 @@ export async function middleware(req: NextRequest) {
   }
 
   // Admin auth
-  const isAdminRoute = pathname.startsWith("/admin");
+  const isAdminRoute = pathname.startsWith("/adminwebapp");
   // Login e recupero password sono raggiungibili senza sessione: il link di
   // recupero porta i token nel frammento dell'URL, che il server non vede.
-  const isAuthPage = pathname === "/admin/login" || pathname === "/admin/reset-password";
+  const isAuthPage = pathname === "/adminwebapp/login" || pathname === "/adminwebapp/reset-password";
 
   if (isAdminRoute && !isAuthPage) {
     const adminCookie = req.cookies.get("vch-admin")?.value;
@@ -29,7 +29,7 @@ export async function middleware(req: NextRequest) {
       c.name.includes("supabase") || c.name.includes("sb-")
     );
     if (!adminCookie && !hasSupabaseSession) {
-      return NextResponse.redirect(new URL("/admin/login", req.url));
+      return NextResponse.redirect(new URL("/adminwebapp/login", req.url));
     }
   }
 

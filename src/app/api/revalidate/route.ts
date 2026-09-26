@@ -11,9 +11,13 @@ export async function POST(req: NextRequest) {
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return NextResponse.json({ ok: false }, { status: 401 });
 
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) return NextResponse.json({ ok: false }, { status: 401 });
+  const { data: isAdmin } = await supabase.rpc("is_admin");
+  if (isAdmin !== true) return NextResponse.json({ ok: false }, { status: 403 });
 
   const { paths } = (await req.json().catch(() => ({}))) as { paths?: unknown };
   const list = Array.isArray(paths) ? paths.filter((p): p is string => typeof p === "string" && p.startsWith("/")) : [];

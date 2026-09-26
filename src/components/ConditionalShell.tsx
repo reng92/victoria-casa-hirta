@@ -9,13 +9,13 @@ import Analytics from "./consent/Analytics";
 
 export default function ConditionalShell({ children }: { children: import("react").ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname.startsWith("/admin");
+  const isAdmin = pathname.startsWith("/adminwebapp");
 
   return (
     <>
       <Header />
       <Livescore />
-      <main className={isAdmin ? "" : "pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom))] md:pb-0"}>
+      <main>
         {children}
       </main>
       {!isAdmin && <Footer />}

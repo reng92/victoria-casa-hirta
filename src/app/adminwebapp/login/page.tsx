@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { isCurrentUserAdmin } from "@/lib/admin";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -18,7 +19,7 @@ export default function AdminLogin() {
     setLoading(true);
     setError("");
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/admin/reset-password`,
+      redirectTo: `${window.location.origin}/adminwebapp/reset-password`,
     });
     setLoading(false);
     if (error) {
@@ -48,8 +49,14 @@ export default function AdminLogin() {
     }
 
     if (data.session) {
+      if (!(await isCurrentUserAdmin())) {
+        await supabase.auth.signOut();
+        setError("Questo account non è abilitato all'area admin.");
+        setLoading(false);
+        return;
+      }
       document.cookie = `vch-admin=1; path=/; max-age=86400`;
-      router.push("/admin");
+      router.push("/adminwebapp");
       router.refresh();
     }
   }

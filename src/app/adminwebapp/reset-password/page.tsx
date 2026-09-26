@@ -68,7 +68,7 @@ export default function AdminResetPassword() {
     setDone(true);
     document.cookie = "vch-admin=1; path=/; max-age=86400";
     setTimeout(() => {
-      router.push("/admin");
+      router.push("/adminwebapp");
       router.refresh();
     }, 1200);
   }
@@ -91,7 +91,7 @@ export default function AdminResetPassword() {
             <p className="text-sm text-brand-red bg-red-50 p-3 rounded-lg">
               Link non valido o scaduto. Richiedi un nuovo link di recupero.
             </p>
-            <Link href="/admin/login" className="text-sm font-semibold text-brand-blue hover:underline">
+            <Link href="/adminwebapp/login" className="text-sm font-semibold text-brand-blue hover:underline">
               Torna al login
             </Link>
           </div>
