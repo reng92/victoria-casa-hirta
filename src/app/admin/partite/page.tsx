@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { groupLabel, groupOptions, isGroupFormat, matchdayLabel } from "@/lib/competitions";
 import LogoField from "@/components/admin/LogoField";
 import CommentaryEditor from "@/components/admin/CommentaryEditor";
+import MatchEventsEditor from "@/components/admin/MatchEventsEditor";
 
 interface Competition { id: string; name: string; format: string | null; }
 interface Venue { id: string; name: string; }
@@ -735,6 +736,13 @@ export default function AdminPartite() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Marcatori ed eventi */}
+            <div className="sm:col-span-2">
+              <label className="text-xs text-gray-500 mb-2 block font-semibold">⚽ Marcatori ed eventi</label>
+              <MatchEventsEditor matchId={editMatch.id} opponent={editForm.away_team} players={players} />
+              <p className="text-[11px] text-gray-400 mt-1">Il minuto è facoltativo. Gli eventi si salvano subito; il punteggio resta quello dei campi &quot;Gol&quot;.</p>
             </div>
 
             {/* Cronaca della partita */}

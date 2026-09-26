@@ -194,7 +194,7 @@ export default async function PartitaPage({ params }: { params: { id: string } }
   const feed: FeedItem[] = [
     ...events.map((e): FeedItem => ({ kind: "event", id: e.id, minute: e.minute, order: "", event: e })),
     ...commentary.map((c): FeedItem => ({ kind: "comment", id: c.id, minute: c.minute, order: c.created_at, text: c.text })),
-  ].sort((a, b) => (a.minute ?? 0) - (b.minute ?? 0) || a.order.localeCompare(b.order));
+  ].sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999) || a.order.localeCompare(b.order));
   if (isLive) feed.reverse();
 
   const count = (list: MatchEvent[], ...types: string[]) => list.filter(e => types.includes(e.event_type)).length;
@@ -212,27 +212,23 @@ export default async function PartitaPage({ params }: { params: { id: string } }
   const shareText = `${shareTeams} · ${formatDateFull(match.match_date)}${isFinished ? ` · ${homeScore}–${awayScore}` : ""} · victoriacasahirta.it/calendario/${match.id}`;
 
   /* ---------- Cronaca: livescore minuto per minuto + resoconto ---------- */
-  const cronaca = (
+  // Ogni blocco compare solo se ha contenuto: senza commenti live il feed
+  // diventa il tabellino dei marcatori, senza nulla la sezione sparisce.
+  const hasCronaca = feed.length > 0 || !!match.match_report || !!match.notes;
+  const cronaca = hasCronaca && (
     <section className="flex flex-col gap-4" aria-labelledby="cronaca-title">
       <h2 id="cronaca-title" className="font-display font-bold text-lg inline-flex items-center gap-2">
         <Radio className="w-4 h-4 text-accent-soft" aria-hidden /> Cronaca della partita
       </h2>
 
+      {feed.length > 0 && (
       <div className="bento-card">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-display font-bold">Livescore</h3>
+          <h3 className="font-display font-bold">{commentary.length > 0 ? "Livescore" : "Marcatori ed eventi"}</h3>
           {isLive && match.live_period && (
             <span className="text-xs text-muted">{periodLabel[match.live_period] ?? "In corso"}</span>
           )}
         </div>
-        {feed.length === 0 ? (
-          <EmptyState
-            compact
-            icon={ClipboardList}
-            title="Nessun aggiornamento"
-            description={isFinished ? "La cronaca live non è disponibile." : "Gli aggiornamenti minuto per minuto compariranno durante la partita."}
-          />
-        ) : (
           <ol className="relative py-2">
             <span className="absolute left-[38px] top-4 bottom-4 w-px bg-border" aria-hidden />
             {feed.map((item) => {
@@ -271,8 +267,8 @@ export default async function PartitaPage({ params }: { params: { id: string } }
               );
             })}
           </ol>
-        )}
       </div>
+      )}
 
       {match.match_report && (
         <article className="bento-card">

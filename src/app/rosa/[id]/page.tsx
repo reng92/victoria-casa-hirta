@@ -39,6 +39,7 @@ async function getStats(playerId: string) {
     .from("match_events")
     .select("id, event_type, minute, match:matches(match_date, away_team, home_score, away_score, is_home)")
     .eq("player_id", playerId)
+    .or("for_team.eq.vch,for_team.is.null")
     .order("created_at", { ascending: false });
 
   const { data: lineups } = await supabase
@@ -47,7 +48,7 @@ async function getStats(playerId: string) {
     .eq("player_id", playerId);
 
   const allEvents = (events as unknown as MatchEvent[]) ?? [];
-  const gol = allEvents.filter(e => e.event_type === "gol").length;
+  const gol = allEvents.filter(e => e.event_type === "gol" || e.event_type === "rigore_segnato").length;
   const assist = allEvents.filter(e => e.event_type === "assist").length;
   const ammonizioni = allEvents.filter(e => e.event_type === "ammonizione").length;
   const espulsioni = allEvents.filter(e => e.event_type === "espulsione").length;

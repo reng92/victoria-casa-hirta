@@ -19,7 +19,9 @@ async function getScorers(): Promise<Scorer[]> {
   const { data: events } = await supabase
     .from("match_events")
     .select("player_id")
-    .eq("event_type", "gol");
+    .or("for_team.eq.vch,for_team.is.null")
+    .not("player_id", "is", null)
+    .in("event_type", ["gol", "rigore_segnato"]);
 
   if (!events || events.length === 0) return [];
 
