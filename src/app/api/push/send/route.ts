@@ -63,7 +63,11 @@ export async function POST(req: NextRequest) {
     await Promise.all(
       list.slice(i, i + 50).map(async (s) => {
         try {
-          await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, { TTL: 60 * 60 * 24 });
+          await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, payload, {
+            TTL: 60 * 60 * 24,
+            // Con urgenza "normal" Android in risparmio energetico trattiene il messaggio anche per ore
+            urgency: "high",
+          });
           sent++;
         } catch (err) {
           failed++;
