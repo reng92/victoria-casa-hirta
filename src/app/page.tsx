@@ -18,7 +18,7 @@ async function getSponsors(): Promise<SponsorItem[]> {
 }
 
 function HeroSkeleton() {
-  return <div className="skeleton rounded-hero min-h-[440px] md:min-h-[420px]" aria-hidden />;
+  return <div className="skeleton rounded-hero min-h-[440px] xl:min-h-[420px]" aria-hidden />;
 }
 
 function ListSkeleton({ rows = 3 }: { rows?: number }) {

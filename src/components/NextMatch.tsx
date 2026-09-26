@@ -29,6 +29,9 @@ interface Match {
   competition: { name: string } | null;
 }
 
+/** Foto di squadra della stagione in corso. */
+const TEAM_PHOTO = "/vch-2627.jpeg";
+
 const BASE_SELECT =
   "id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, venue:venues(name, address, city, maps_url), competition:competitions(name)";
 
@@ -61,25 +64,29 @@ export default async function NextMatch() {
   return (
     <section
       aria-labelledby="next-match-title"
-      className="relative mesh-hero rounded-hero text-white overflow-hidden min-h-[440px] md:min-h-[420px] flex flex-col shadow-card"
+      className="relative mesh-hero rounded-hero text-white overflow-hidden xl:min-h-[420px] flex flex-col xl:flex-row shadow-card"
     >
-      {/* Foto di squadra sotto un velo scuro nei colori sociali, per leggere il testo */}
-      <Image
-        src="/squadra.jpg"
-        alt=""
-        fill
-        priority
-        sizes="(min-width:1280px) 1248px, 100vw"
-        className="object-cover object-[center_22%] pointer-events-none"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0a1a3a]/80 via-[#0b1220]/55 to-[#0b1220]/90"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_85%_10%,rgb(231_13_12/0.25),transparent_70%)]"
-      />
+      {/* Foto di squadra intera: 4:3 come l'originale su mobile e tablet; su desktop largo la
+          colonna segue l'altezza del contenuto, quindi la foto è "contain" e i
+          margini sono riempiti dalla stessa foto sfocata. Nessuno viene tagliato. */}
+      <div className="relative w-full aspect-[4/3] md:aspect-auto md:h-[480px] xl:h-auto xl:w-[560px] shrink-0 overflow-hidden bg-[#0b1220]">
+        <Image
+          src={TEAM_PHOTO}
+          alt=""
+          aria-hidden
+          fill
+          sizes="(min-width:1280px) 560px, 100vw"
+          className="object-cover scale-110 blur-2xl opacity-50 pointer-events-none"
+        />
+        <Image
+          src={TEAM_PHOTO}
+          alt="La squadra della Victoria Casa Hirta, stagione 2026/27"
+          fill
+          priority
+          sizes="(min-width:1280px) 560px, 100vw"
+          className="object-contain"
+        />
+      </div>
 
       {!match ? (
         <div className="relative flex-1 flex flex-col items-center justify-center text-center p-8">

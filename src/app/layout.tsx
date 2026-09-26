@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     siteName: "Victoria Casa Hirta",
     title: "Victoria Casa Hirta",
     description: "Sito ufficiale della squadra di calcio Victoria Casa Hirta",
-    images: [{ url: "/squadra.jpg", width: 1200, height: 900, alt: "La squadra della Victoria Casa Hirta" }],
+    images: [{ url: "/vch-2627.jpeg", width: 2048, height: 1536, alt: "La squadra della Victoria Casa Hirta" }],
   },
 };
 
