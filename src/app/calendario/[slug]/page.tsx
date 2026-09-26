@@ -202,6 +202,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
     ...commentary.map((c): FeedItem => ({ kind: "comment", id: c.id, minute: c.minute, order: c.created_at, text: c.text })),
   ].sort((a, b) => (a.minute ?? 999) - (b.minute ?? 999) || a.order.localeCompare(b.order));
   if (isLive) feed.reverse();
+  const hasMinutes = feed.some(i => i.minute != null);
 
   const count = (list: MatchEvent[], ...types: string[]) => list.filter(e => types.includes(e.event_type)).length;
   const stats = [
@@ -236,13 +237,16 @@ export default async function PartitaPage({ params }: { params: { slug: string }
           )}
         </div>
           <ol className="relative py-2">
-            <span className="absolute left-[38px] top-4 bottom-4 w-px bg-border" aria-hidden />
+            {hasMinutes && <span className="absolute left-[38px] top-4 bottom-4 w-px bg-border" aria-hidden />}
             {feed.map((item) => {
-              const minute = (
+              // Senza minuto (es. marcatori di partite vecchie) niente pastiglia
+              const minute = item.minute != null ? (
                 <span className="relative z-10 shrink-0 min-w-[42px] text-center text-[11px] font-bold tabular bg-surface-2 border border-border rounded-full px-1.5 py-0.5 mt-0.5">
-                  {item.minute != null ? `${item.minute}'` : "–"}
+                  {item.minute}&apos;
                 </span>
-              );
+              ) : hasMinutes ? (
+                <span className="shrink-0 min-w-[42px]" aria-hidden />
+              ) : null;
               if (item.kind === "comment") {
                 return (
                   <li key={`c-${item.id}`} className="flex items-start gap-3 px-4 py-2.5">
@@ -409,7 +413,8 @@ export default async function PartitaPage({ params }: { params: { slug: string }
   );
 
   /* ---------- Info: meteo, campo ---------- */
-  const info = (
+  const hasInfo = !!(match.venue?.city && !isFinished) || !!match.venue?.maps_url;
+  const info = hasInfo && (
     <div className="flex flex-col gap-4">
 
       {match.venue?.city && !isFinished && (
