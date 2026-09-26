@@ -61,7 +61,7 @@ export default async function NewsPage() {
                 <time dateTime={n.published_at} className="capitalize">{formatDateFull(n.published_at)}</time>
               </Pill>
               <h2 className="font-display text-h3 text-balance">{n.title}</h2>
-              {n.body && <p className="text-sm text-muted mt-2 line-clamp-3">{n.body}</p>}
+              {n.body && <p className="text-sm text-muted mt-2 leading-relaxed whitespace-pre-line">{n.body}</p>}
             </div>
           </article>
         ))}
