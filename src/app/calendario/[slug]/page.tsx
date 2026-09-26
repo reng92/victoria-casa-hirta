@@ -408,7 +408,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
     </section>
   );
 
-  /* ---------- Info: MVP, meteo, campo ---------- */
+  /* ---------- Info: meteo, campo ---------- */
   const info = (
     <div className="flex flex-col gap-4">
 
