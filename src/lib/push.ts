@@ -23,25 +23,27 @@ async function registration() {
   return (await navigator.serviceWorker.getRegistration("/")) ?? navigator.serviceWorker.register("/sw.js");
 }
 
-export async function getPushState(): Promise<PushState> {
-  if (!pushSupported()) return isIos() && !isStandalone() ? "ios-install" : "unsupported";
-  if (Notification.permission === "denied") return "denied";
-  const reg = await navigator.serviceWorker.getRegistration("/");
-  const sub = await reg?.pushManager.getSubscription();
-  return sub ? "on" : "off";
+/** True se l'iscrizione è stata fatta con la chiave pubblica attuale del server. */
+function sameKey(sub: PushSubscription, key: string) {
+  const current = sub.options.applicationServerKey;
+  if (!current) return false;
+  const a = new Uint8Array(current);
+  const b = urlBase64ToUint8Array(key);
+  return a.length === b.length && a.every((x, i) => x === b[i]);
 }
 
-export async function enablePush(): Promise<PushState> {
-  const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-  if (!key) throw new Error("Notifiche non configurate");
-  const permission = await Notification.requestPermission();
-  if (permission !== "granted") return permission === "denied" ? "denied" : "off";
-
-  await registration();
-  const reg = await navigator.serviceWorker.ready;
-  const sub =
-    (await reg.pushManager.getSubscription()) ??
-    (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) }));
+/**
+ * Iscrive il browser e salva l'iscrizione. Un'iscrizione fatta con una chiave
+ * VAPID precedente non riceverebbe più nulla: si cancella e si rifà.
+ */
+async function subscribe(reg: ServiceWorkerRegistration, key: string) {
+  let sub = await reg.pushManager.getSubscription();
+  if (sub && !sameKey(sub, key)) {
+    await supabase.rpc("push_unsubscribe", { p_endpoint: sub.endpoint });
+    await sub.unsubscribe();
+    sub = null;
+  }
+  sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(key) });
   const json = sub.toJSON();
   const { error } = await supabase.rpc("push_subscribe", {
     p_endpoint: sub.endpoint,
@@ -52,6 +54,34 @@ export async function enablePush(): Promise<PushState> {
     await sub.unsubscribe();
     throw new Error(error.message);
   }
+}
+
+export async function getPushState(): Promise<PushState> {
+  if (!pushSupported()) return isIos() && !isStandalone() ? "ios-install" : "unsupported";
+  if (Notification.permission === "denied") return "denied";
+  const reg = await navigator.serviceWorker.getRegistration("/");
+  const sub = await reg?.pushManager.getSubscription();
+  if (!reg || !sub) return "off";
+  const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (key && Notification.permission === "granted" && !sameKey(sub, key)) {
+    // Chiavi cambiate sul server: si rinnova senza chiedere nulla all'utente
+    try {
+      await subscribe(reg, key);
+    } catch {
+      return "off";
+    }
+  }
+  return "on";
+}
+
+export async function enablePush(): Promise<PushState> {
+  const key = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  if (!key) throw new Error("Notifiche non configurate");
+  const permission = await Notification.requestPermission();
+  if (permission !== "granted") return permission === "denied" ? "denied" : "off";
+
+  await registration();
+  await subscribe(await navigator.serviceWorker.ready, key);
   return "on";
 }
 
