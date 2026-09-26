@@ -4,10 +4,12 @@ import { Target, Medal } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Avatar from "@/components/ui/Avatar";
+import { playerHref } from "@/lib/links";
 
 export const revalidate = 0;
 
 interface Scorer {
+  slug?: string | null;
   player_id: string;
   full_name: string;
   photo_url: string | null;
@@ -34,7 +36,7 @@ async function getScorers(): Promise<Scorer[]> {
 
   const { data: players } = await supabase
     .from("players")
-    .select("id, full_name, photo_url, role")
+    .select("id, slug, full_name, photo_url, role")
     .in("id", playerIds);
 
   if (!players) return [];
@@ -42,6 +44,7 @@ async function getScorers(): Promise<Scorer[]> {
   return players
     .map(p => ({
       player_id: p.id,
+      slug: p.slug,
       full_name: p.full_name,
       photo_url: p.photo_url,
       role: p.role,
@@ -58,7 +61,7 @@ function ScorerRow({ s, pos, total }: { s: Scorer; pos: number; total: number })
   return (
     <li>
       <Link
-        href={`/rosa/${s.player_id}`}
+        href={playerHref({ id: s.player_id, slug: s.slug })}
         className={`flex items-center gap-3 sm:gap-4 px-4 py-3 hover:bg-surface-2/60 transition ${
           pos === 1 ? "bg-brand/25" : ""
         }`}

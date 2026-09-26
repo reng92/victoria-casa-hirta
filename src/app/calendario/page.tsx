@@ -8,10 +8,12 @@ import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, Pill } from "@/components/ui/Badge";
 import { formatDateShort, formatTime, formatWeekday, getOutcome, outcomeShort } from "@/lib/format";
 import { getHomeAwayScores, getOpponent, getScores, groupLabel, matchdayLabel } from "@/lib/competitions";
+import { matchHref } from "@/lib/links";
 
 export const revalidate = 60;
 
 interface Match {
+  slug?: string | null;
   id: string;
   match_date: string;
   home_team: string;
@@ -31,14 +33,14 @@ interface Match {
 async function getMatches(): Promise<Match[]> {
   const { data, error } = await supabase
     .from("matches")
-    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, opponent_logo_url, instagram_reels, venue:venues(name), competition:competitions(id, name, format)")
+    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, opponent_logo_url, instagram_reels, venue:venues(name), competition:competitions(id, name, format)")
     .order("match_date", { ascending: true });
 
   if (error) {
     // Fallback senza group_name / instagram_reels se le colonne non esistono ancora
     const { data: fallback } = await supabase
       .from("matches")
-      .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, venue:venues(name), competition:competitions(id, name)")
+      .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, venue:venues(name), competition:competitions(id, name)")
       .order("match_date", { ascending: true });
     return (fallback as unknown as Match[]) ?? [];
   }
@@ -94,7 +96,7 @@ function MatchRow({ m }: { m: Match }) {
   return (
     <li>
       <Link
-        href={`/calendario/${m.id}`}
+        href={matchHref(m)}
         className={`bento-card flex items-center gap-3 p-3 sm:p-4 hover:bg-surface-2/60 transition ${
           isLive ? "ring-1 ring-accent/50" : ""
         } ${outcome ? `border-l-4 ${outcome === "win" ? "border-l-win" : outcome === "loss" ? "border-l-loss" : "border-l-draw"}` : ""}`}

@@ -4,8 +4,10 @@ import { supabase } from "@/lib/supabase";
 import SectionHeader from "@/components/ui/SectionHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Avatar from "@/components/ui/Avatar";
+import { playerHref } from "@/lib/links";
 
 interface Scorer {
+  slug?: string | null;
   player_id: string;
   full_name: string;
   photo_url: string | null;
@@ -32,7 +34,7 @@ async function getScorers(): Promise<Scorer[]> {
 
   const { data: players } = await supabase
     .from("players")
-    .select("id, full_name, photo_url, role")
+    .select("id, slug, full_name, photo_url, role")
     .in("id", playerIds);
 
   if (!players) return [];
@@ -40,6 +42,7 @@ async function getScorers(): Promise<Scorer[]> {
   return players
     .map(p => ({
       player_id: p.id,
+      slug: p.slug,
       full_name: p.full_name,
       photo_url: p.photo_url,
       role: p.role,
@@ -63,7 +66,7 @@ export default async function TopScorers() {
           {scorers.map((s, i) => (
             <li key={s.player_id}>
               <Link
-                href={`/rosa/${s.player_id}`}
+                href={playerHref({ id: s.player_id, slug: s.slug })}
                 className="flex items-center gap-3 rounded-xl px-2 py-1.5 -mx-2 hover:bg-surface-2/60 transition"
               >
                 <span className={`font-display font-bold tabular w-4 text-center ${medal[i] ?? "text-muted"}`}>{i + 1}</span>

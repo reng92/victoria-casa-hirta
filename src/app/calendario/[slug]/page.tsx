@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { permanentRedirect } from "next/navigation";
+import { isUuid, matchHref } from "@/lib/links";
 import { Suspense } from "react";
 import {
   ArrowLeft,
@@ -32,6 +34,7 @@ import { getHomeAwayScores, getOpponent, getScores, matchContextLabel } from "@/
 export const revalidate = 0;
 
 interface Match {
+  slug: string | null;
   id: string;
   match_date: string;
   home_team: string;
@@ -61,18 +64,19 @@ interface MatchEvent {
   player_out: { full_name: string } | null;
 }
 
-async function getMatch(id: string): Promise<Match | null> {
+async function getMatch(key: string): Promise<Match | null> {
+  const column = isUuid(key) ? "id" : "slug";
   const { data, error } = await supabase
     .from("matches")
-    .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, notes, opponent_logo_url, instagram_reels, live_minute, live_period, match_report, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
-    .eq("id", id)
+    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, notes, opponent_logo_url, instagram_reels, live_minute, live_period, match_report, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
+    .eq(column, key)
     .single();
   if (error) {
     // Fallback senza group_name / instagram_reels se le colonne non esistono ancora
     const { data: fallback } = await supabase
       .from("matches")
-      .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, notes, opponent_logo_url, live_minute, live_period, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
-      .eq("id", id)
+      .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, notes, opponent_logo_url, live_minute, live_period, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
+      .eq(column, key)
       .single();
     return fallback as unknown as Match | null;
   }
@@ -156,8 +160,8 @@ function EventIcon({ type }: { type: string }) {
 
 /* ------------------------------------------------------------------ */
 
-export default async function PartitaPage({ params }: { params: { id: string } }) {
-  const match = await getMatch(params.id);
+export default async function PartitaPage({ params }: { params: { slug: string } }) {
+  const match = await getMatch(params.slug);
 
   if (!match) {
     return (
@@ -176,6 +180,9 @@ export default async function PartitaPage({ params }: { params: { id: string } }
       </div>
     );
   }
+
+  // Vecchi link con l'UUID: redirect permanente all'URL leggibile
+  if (match.slug && params.slug !== match.slug) permanentRedirect(matchHref(match));
 
   const [events, commentary] = await Promise.all([getEvents(match.id), getCommentary(match.id)]);
   const { ours: ourScore, theirs: theirScore } = getScores(match);
@@ -209,7 +216,7 @@ export default async function PartitaPage({ params }: { params: { id: string } }
 
   const { home: homeScore, away: awayScore } = getHomeAwayScores(match);
   const shareTeams = match.is_home ? `VCH vs ${opponent}` : `${opponent} vs VCH`;
-  const shareText = `${shareTeams} · ${formatDateFull(match.match_date)}${isFinished ? ` · ${homeScore}–${awayScore}` : ""} · victoriacasahirta.it/calendario/${match.id}`;
+  const shareText = `${shareTeams} · ${formatDateFull(match.match_date)}${isFinished ? ` · ${homeScore}–${awayScore}` : ""} · victoriacasahirta.it${matchHref(match)}`;
 
   /* ---------- Cronaca: livescore minuto per minuto + resoconto ---------- */
   // Ogni blocco compare solo se ha contenuto: senza commenti live il feed

@@ -5,8 +5,10 @@ import { supabase } from "@/lib/supabase";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/Badge";
 import { getHomeAwayScores, getOpponent, getScores } from "@/lib/competitions";
+import { matchHref } from "@/lib/links";
 
 interface LiveMatch {
+  slug?: string | null;
   id: string;
   home_team: string;
   away_team: string;
@@ -55,7 +57,7 @@ export default function Livescore() {
   async function fetchLive() {
     const { data } = await supabase
       .from("matches")
-      .select("id, home_team, away_team, home_score, away_score, is_home, status, opponent_logo_url, live_minute, live_minute_set_at, competition:competitions(name)")
+      .select("id, slug, home_team, away_team, home_score, away_score, is_home, status, opponent_logo_url, live_minute, live_minute_set_at, competition:competitions(name)")
       .eq("status", "live");
     const liveMatches = (data as unknown as LiveMatch[]) ?? [];
     setMatches(liveMatches);
@@ -98,7 +100,7 @@ export default function Livescore() {
           return (
             <Link
               key={m.id}
-              href={`/calendario/${m.id}`}
+              href={matchHref(m)}
               className="glass rounded-card shadow-soft px-4 py-3 flex items-center gap-3 hover:bg-surface-2/80 transition"
               aria-label={`Partita in corso: Victoria Casa Hirta ${ourScore ?? 0} a ${theirScore ?? 0} ${opponent}`}
             >

@@ -7,8 +7,10 @@ import TeamLogo from "@/components/ui/TeamLogo";
 import { Pill } from "@/components/ui/Badge";
 import { formatTime, formatWeekday } from "@/lib/format";
 import { getOpponent, matchContextShort } from "@/lib/competitions";
+import { matchHref } from "@/lib/links";
 
 interface Match {
+  slug?: string | null;
   id: string;
   match_date: string;
   home_team: string;
@@ -23,7 +25,7 @@ interface Match {
 }
 
 const SELECT =
-  "id, match_date, home_team, away_team, is_home, status, matchday, group_name, opponent_logo_url, venue:venues(name), competition:competitions(id, name)";
+  "id, slug, match_date, home_team, away_team, is_home, status, matchday, group_name, opponent_logo_url, venue:venues(name), competition:competitions(id, name)";
 
 /** Le 3 partite successive a quella in hero. */
 async function getUpcoming(): Promise<Match[]> {
@@ -57,7 +59,7 @@ export default async function UpcomingMatches() {
             return (
               <li key={m.id}>
                 <Link
-                  href={`/calendario/${m.id}`}
+                  href={matchHref(m)}
                   className="flex items-center gap-3 py-3 hover:bg-surface-2/40 -mx-2 px-2 rounded-xl transition"
                 >
                   <div className="flex flex-col items-center w-11 shrink-0 rounded-xl bg-surface-2 border border-border py-1.5">

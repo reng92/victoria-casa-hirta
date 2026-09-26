@@ -6,6 +6,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import { Pill } from "@/components/ui/Badge";
 import { initials } from "@/lib/format";
+import { playerHref } from "@/lib/links";
 
 export const revalidate = 60;
 
@@ -26,6 +27,7 @@ const ruoloSingolare: Record<string, string> = {
 };
 
 interface Player {
+  slug?: string | null;
   id: string;
   full_name: string;
   shirt_number: number | null;
@@ -36,7 +38,7 @@ interface Player {
 async function getPlayers(): Promise<Player[]> {
   const { data } = await supabase
     .from("players")
-    .select("id, full_name, shirt_number, role, photo_url")
+    .select("id, slug, full_name, shirt_number, role, photo_url")
     .eq("is_active", true)
     .order("shirt_number", { ascending: true });
   return (data as unknown as Player[]) ?? [];
@@ -45,7 +47,7 @@ async function getPlayers(): Promise<Player[]> {
 function PlayerCard({ p, priority }: { p: Player; priority?: boolean }) {
   return (
     <Link
-      href={`/rosa/${p.id}`}
+      href={playerHref(p)}
       className="group bento-card block focus-visible:ring-2 focus-visible:ring-brand-soft"
       aria-label={`${p.full_name}${p.shirt_number ? `, numero ${p.shirt_number}` : ""}, ${ruoloSingolare[p.role] ?? p.role}`}
     >

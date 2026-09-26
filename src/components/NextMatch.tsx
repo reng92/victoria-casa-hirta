@@ -9,8 +9,10 @@ import { LiveBadge, Pill } from "@/components/ui/Badge";
 import { formatDateLong, formatTime } from "@/lib/format";
 import { getHomeAwayScores, getOpponent, matchContextLabel } from "@/lib/competitions";
 import AnniversaryBadge from "@/components/AnniversaryBadge";
+import { matchHref } from "@/lib/links";
 
 interface Match {
+  slug?: string | null;
   id: string;
   match_date: string;
   home_team: string;
@@ -27,7 +29,7 @@ interface Match {
 }
 
 const BASE_SELECT =
-  "id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, venue:venues(name, address, city, maps_url), competition:competitions(name)";
+  "id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, venue:venues(name, address, city, maps_url), competition:competitions(name)";
 
 async function getNextMatch(): Promise<Match | null> {
   // Una partita "live" va mostrata anche se il calcio d'inizio è già passato.
@@ -190,7 +192,7 @@ export default async function NextMatch() {
                 </a>
               )}
               <Link
-                href={`/calendario/${match.id}`}
+                href={matchHref(match)}
                 className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 backdrop-blur text-white font-semibold px-4 py-2.5 text-sm hover:bg-white/20 transition"
               >
                 Dettagli <ArrowRight className="w-4 h-4" aria-hidden />

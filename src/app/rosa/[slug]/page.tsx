@@ -1,5 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { permanentRedirect } from "next/navigation";
+import { isUuid, playerHref } from "@/lib/links";
 import { ArrowLeft, Calendar, ClipboardList, Goal, Target, Square, ArrowLeftRight, ShieldAlert, Users, type LucideIcon } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -10,6 +12,7 @@ import { formatDateNumeric } from "@/lib/format";
 export const revalidate = 60;
 
 interface Player {
+  slug: string | null;
   id: string;
   full_name: string;
   shirt_number: number | null;
@@ -25,11 +28,11 @@ interface MatchEvent {
   match: { match_date: string; away_team: string; home_score: number | null; away_score: number | null; is_home: boolean } | null;
 }
 
-async function getPlayer(id: string): Promise<Player | null> {
+async function getPlayer(key: string): Promise<Player | null> {
   const { data } = await supabase
     .from("players")
     .select("*")
-    .eq("id", id)
+    .eq(isUuid(key) ? "id" : "slug", key)
     .single();
   return data as unknown as Player | null;
 }
@@ -82,8 +85,8 @@ const eventIcon: Record<string, { icon: LucideIcon; color: string }> = {
   autorete: { icon: ShieldAlert, color: "text-loss" },
 };
 
-export default async function GiocatorePage({ params }: { params: { id: string } }) {
-  const player = await getPlayer(params.id);
+export default async function GiocatorePage({ params }: { params: { slug: string } }) {
+  const player = await getPlayer(params.slug);
   if (!player) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-6 md:py-10">
@@ -99,6 +102,9 @@ export default async function GiocatorePage({ params }: { params: { id: string }
       </div>
     );
   }
+
+  // Vecchi link con l'UUID: redirect permanente all'URL leggibile
+  if (player.slug && params.slug !== player.slug) permanentRedirect(playerHref(player));
 
   const stats = await getStats(player.id);
 

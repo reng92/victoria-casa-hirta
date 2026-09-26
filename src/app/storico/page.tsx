@@ -7,6 +7,7 @@ import TeamLogo from "@/components/ui/TeamLogo";
 import { Pill } from "@/components/ui/Badge";
 import { formatDateNumeric, getOutcome, outcomeShort } from "@/lib/format";
 import { formatLabel, getHomeAwayScores, getOpponent, getScores, groupLabel, isVCH, matchdayLabel, sortStandings } from "@/lib/competitions";
+import { matchHref } from "@/lib/links";
 
 export const revalidate = 60;
 
@@ -29,6 +30,7 @@ interface Competition {
 }
 
 interface Match {
+  slug?: string | null;
   id: string;
   match_date: string;
   home_team: string;
@@ -64,7 +66,7 @@ async function getAll() {
     supabase.from("competitions").select("id, name, type, format, status, notes, season_id"),
     supabase
       .from("matches")
-      .select("id, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, notes, opponent_logo_url, competition_id")
+      .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, notes, opponent_logo_url, competition_id")
       .eq("status", "finished")
       .order("match_date", { ascending: true }),
     supabase.from("standings").select("*"),
@@ -154,7 +156,7 @@ function CompetitionSection({ comp, matches, standings }: { comp: Competition; m
           return (
             <li key={m.id}>
               <Link
-                href={`/calendario/${m.id}`}
+                href={matchHref(m)}
                 className={`flex items-center gap-3 rounded-xl border-l-4 ${border} bg-surface-2/40 hover:bg-surface-2/80 transition px-3 py-2 text-sm`}
               >
                 <TeamLogo src={m.opponent_logo_url} name={opponent} size={28} />
