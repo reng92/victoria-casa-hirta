@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const sections = [
   { href: "/adminwebapp/partite", emoji: "📅", label: "Partite", desc: "Aggiungi e gestisci le partite" },
-  { href: "/adminwebapp/risultati", emoji: "📝", label: "Risultati", desc: "Tutte le partite di campionati e coppe" },
+  { href: "/adminwebapp/risultati", emoji: "📝", label: "Risultati e classifiche", desc: "Partite delle altre squadre di campionati e coppe, la classifica si aggiorna da sola" },
   { href: "/adminwebapp/marcatori", emoji: "⚽", label: "Marcatori", desc: "Gol, assist e cartellini" },
   { href: "/adminwebapp/rosa", emoji: "👥", label: "Rosa", desc: "Gestisci i giocatori" },
   { href: "/adminwebapp/staff", emoji: "🧑‍💼", label: "Staff", desc: "Gestisci lo staff tecnico" },
@@ -10,6 +10,7 @@ const sections = [
   { href: "/adminwebapp/classifica", emoji: "📊", label: "Classifica", desc: "Aggiorna le classifiche" },
   { href: "/adminwebapp/campi", emoji: "🏟️", label: "Campi", desc: "Gestisci i campi di gioco" },
   { href: "/adminwebapp/news", emoji: "📰", label: "News", desc: "Pubblica comunicati" },
+  { href: "/adminwebapp/notifiche", emoji: "🔔", label: "Notifiche", desc: "Invia notifiche push ai tifosi" },
   { href: "/adminwebapp/stagioni", emoji: "📆", label: "Stagioni", desc: "Gestisci le stagioni" },
   { href: "/adminwebapp/sponsors", emoji: "💰", label: "Sponsor", desc: "Gestisci gli sponsor e i loro loghi" },
   { href: "/adminwebapp/loghi", emoji: "🛡️", label: "Loghi avversari", desc: "Un logo per ogni squadra affrontata" },

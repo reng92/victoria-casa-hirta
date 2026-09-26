@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import ThemeToggle from "./ThemeToggle";
+import PushToggle from "./PushToggle";
 import { primaryNav, secondaryNav, isActivePath } from "@/lib/nav";
 
 /**
@@ -139,7 +140,10 @@ export default function Header() {
           </div>
         </div>
 
-        <ThemeToggle />
+        <div className="flex items-center gap-2 shrink-0">
+          <PushToggle />
+          <ThemeToggle />
+        </div>
       </nav>
     </header>
   );

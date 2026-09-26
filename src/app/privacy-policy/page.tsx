@@ -41,6 +41,11 @@ export default function PrivacyPolicyPage() {
           l&apos;indirizzo IP al solo scopo di evitare voti multipli.
         </li>
         <li>
+          <strong>Notifiche push (solo se le attivi).</strong> Se attivi le notifiche dalla campanella, salviamo l&apos;indirizzo di
+          consegna e le chiavi tecniche generate dal tuo browser, senza nome né email. Le usiamo solo per inviarti le notifiche e le
+          cancelliamo quando le disattivi dalla campanella o dalle impostazioni del browser.
+        </li>
+        <li>
           <strong>Area riservata.</strong> Per gli amministratori del sito trattiamo email e credenziali di accesso.
         </li>
         <li>

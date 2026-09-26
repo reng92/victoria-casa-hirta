@@ -43,20 +43,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div data-theme="light" className="min-h-screen bg-gray-50 text-gray-900">
       <div className="bg-brand-blue text-white px-4 py-3 flex items-center justify-between text-sm sticky top-16 z-40">
-        <div className="flex items-center gap-4">
-          <Link href="/adminwebapp" className="font-bold text-white hover:text-brand-red transition">
+        <div className="flex items-center gap-4 min-w-0 overflow-x-auto">
+          <Link href="/adminwebapp" className="font-bold text-white hover:text-brand-red transition whitespace-nowrap">
             ⚙️ Admin
           </Link>
-          <Link href="/" className="text-white/60 hover:text-white transition text-xs">← Vai al sito</Link>
-          <Link href="/adminwebapp/partite" className="text-white/60 hover:text-white transition text-xs hidden md:block">Partite</Link>
-          <Link href="/adminwebapp/risultati" className="text-white/60 hover:text-white transition text-xs hidden md:block">Risultati</Link>
-          <Link href="/adminwebapp/marcatori" className="text-white/60 hover:text-white transition text-xs hidden md:block">Marcatori</Link>
-          <Link href="/adminwebapp/rosa" className="text-white/60 hover:text-white transition text-xs hidden md:block">Rosa</Link>
-          <Link href="/adminwebapp/news" className="text-white/60 hover:text-white transition text-xs hidden md:block">News</Link>
-          <Link href="/adminwebapp/loghi" className="text-white/60 hover:text-white transition text-xs hidden md:block">Loghi</Link>
-          <Link href="/adminwebapp/sponsors" className="text-white/60 hover:text-white transition text-xs hidden md:block">Sponsor</Link>
+          <Link href="/" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">← Vai al sito</Link>
+          <Link href="/adminwebapp/partite" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Partite</Link>
+          <Link href="/adminwebapp/risultati" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Risultati altre squadre</Link>
+          <Link href="/adminwebapp/marcatori" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Marcatori</Link>
+          <Link href="/adminwebapp/rosa" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Rosa</Link>
+          <Link href="/adminwebapp/news" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">News</Link>
+          <Link href="/adminwebapp/notifiche" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Notifiche</Link>
+          <Link href="/adminwebapp/loghi" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Loghi</Link>
+          <Link href="/adminwebapp/sponsors" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Sponsor</Link>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <span className="text-white/60 text-xs hidden sm:block">{email}</span>
           <button
             onClick={handleLogout}

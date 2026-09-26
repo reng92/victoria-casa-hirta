@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { syncStandings, syncMessage } from "@/lib/standings";
 import { groupLabel, groupOptions, isGroupFormat, matchdayLabel } from "@/lib/competitions";
 import LogoField from "@/components/admin/LogoField";
 import CommentaryEditor from "@/components/admin/CommentaryEditor";
@@ -155,13 +156,18 @@ export default function AdminPartite() {
       opponent_logo_url: form.opponent_logo_url || known,
     });
     if (error) setMsg("Errore: " + error.message);
-    else { setMsg("Partita salvata!"); setForm(emptyForm); fetchAll(); }
+    else {
+      const sync = await syncStandings(form.competition_id);
+      setMsg("Partita salvata!" + syncMessage(sync)); setForm(emptyForm); fetchAll();
+    }
     setLoading(false);
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Eliminare questa partita?")) return;
+    const competitionId = matches.find(m => m.id === id)?.competition_id;
     await supabase.from("matches").delete().eq("id", id);
+    await syncStandings(competitionId);
     fetchAll();
   }
 
@@ -210,7 +216,12 @@ export default function AdminPartite() {
       match_report: editReport.trim() || null,
     }).eq("id", editMatch.id);
     if (error) setEditMsg("Errore: " + error.message);
-    else { setEditMsg("Partita aggiornata!"); fetchAll(); setTimeout(() => setEditMatch(null), 1000); }
+    else {
+      // Se la competizione è cambiata va ricalcolata anche quella di prima
+      const sync = await syncStandings(editForm.competition_id);
+      if (editMatch.competition_id && editMatch.competition_id !== editForm.competition_id) await syncStandings(editMatch.competition_id);
+      setEditMsg("Partita aggiornata!" + syncMessage(sync)); fetchAll(); setTimeout(() => setEditMatch(null), 1500);
+    }
     setEditLoading(false);
   }
 
@@ -344,6 +355,7 @@ export default function AdminPartite() {
       live_period: "finished",
       live_minute_set_at: null,
     }).eq("id", liveMatchId);
+    await syncStandings(matches.find(m => m.id === liveMatchId)?.competition_id);
     setLiveMatchId(null);
     setLiveMsg("");
     fetchAll();

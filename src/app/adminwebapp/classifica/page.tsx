@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { groupOptions, isGroupFormat, sortStandings } from "@/lib/competitions";
@@ -63,7 +64,12 @@ export default function AdminClassifica() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
-      <h1 className="text-3xl font-extrabold text-brand-blue mb-8">Admin – Classifica</h1>
+      <h1 className="text-3xl font-extrabold text-brand-blue mb-4">Admin – Classifica</h1>
+      <p className="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 mb-8">
+        Per le competizioni in corso non serve compilare la classifica a mano: inserisci i risultati di tutte le partite, anche
+        tra altre squadre, in <Link href="/adminwebapp/risultati" className="font-semibold text-brand-blue underline">Risultati e classifiche</Link> e
+        la classifica si aggiorna da sola. Questa pagina serve per le classifiche importate da fuori.
+      </p>
 
       <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-10">
         <h2 className="font-bold text-lg text-brand-blue mb-4">Aggiungi riga classifica</h2>

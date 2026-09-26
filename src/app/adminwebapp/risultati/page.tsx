@@ -4,7 +4,6 @@ import { supabase } from "@/lib/supabase";
 import {
   Fixture,
   VCH_NAME,
-  computeStandings,
   fixtureFromMatch,
   fixtureToMatchFields,
   groupOptions,
@@ -14,6 +13,7 @@ import {
   sortFixtures,
   teamKey,
 } from "@/lib/competitions";
+import { syncStandings, syncMessage } from "@/lib/standings";
 
 interface Competition { id: string; name: string; format: string | null; status: string | null; }
 interface StandingRow { id: string; team_name: string; group_name: string | null; }
@@ -189,7 +189,8 @@ export default function AdminRisultati() {
       const err = await saveRow(f);
       if (err) errors.push(err);
     }
-    setMsg(errors.length ? "Errore: " + errors.join(" · ") : keys.length > 1 ? `${keys.length} partite salvate!` : "Partita salvata!");
+    const sync = await syncStandings(compId);
+    setMsg(errors.length ? "Errore: " + errors.join(" · ") : (keys.length > 1 ? `${keys.length} partite salvate!` : "Partita salvata!") + syncMessage(sync));
     await fetchCompetition(compId);
     setBusy(false);
   }
@@ -200,7 +201,7 @@ export default function AdminRisultati() {
       : "Eliminare questa partita?";
     if (!confirm(what)) return;
     const { error } = await supabase.from(f.source === "match" ? "matches" : "competition_results").delete().eq("id", f.id);
-    setMsg(error ? "Errore: " + error.message : "Partita eliminata");
+    setMsg(error ? "Errore: " + error.message : "Partita eliminata." + syncMessage(await syncStandings(compId)));
     fetchCompetition(compId);
   }
 
@@ -231,7 +232,8 @@ export default function AdminRisultati() {
     }
     if (error) setMsg("Errore: " + error.message);
     else {
-      setMsg(vch ? "Partita aggiunta anche al calendario Victoria!" : "Partita aggiunta!");
+      const sync = await syncStandings(compId);
+      setMsg((vch ? "Partita aggiunta anche al calendario Victoria!" : "Partita aggiunta!") + syncMessage(sync));
       // Tiene data, giornata e girone per inserire di seguito le altre partite della giornata
       setForm((f) => ({ ...f, home_team: "", away_team: "", home_score: "", away_score: "" }));
       fetchCompetition(compId);
@@ -245,17 +247,8 @@ export default function AdminRisultati() {
     if (finished.length === 0) { setMsg("Nessuna partita terminata con risultato: classifica non modificata"); return; }
     if (!confirm(`Ricalcolare la classifica di "${comp.name}" da ${finished.length} partite terminate? I valori inseriti a mano verranno sovrascritti.`)) return;
     setBusy(true);
-    const computed = computeStandings(fixtures, standings, groupFormat);
-    const existing = new Map(standings.map((s) => [teamKey(s.team_name), s]));
-    const errors: string[] = [];
-    for (const row of computed) {
-      const cur = existing.get(teamKey(row.team_name));
-      const { error } = cur
-        ? await supabase.from("standings").update({ ...row, team_name: cur.team_name }).eq("id", cur.id)
-        : await supabase.from("standings").insert({ ...row, competition_id: comp.id });
-      if (error) errors.push(error.message);
-    }
-    setMsg(errors.length ? "Errore: " + errors.join(" · ") : `Classifica aggiornata (${computed.length} squadre)`);
+    const res = await syncStandings(comp.id, { force: true });
+    setMsg(res.status === "error" ? "Errore: " + res.message : res.status === "updated" ? `Classifica aggiornata (${res.teams} squadre)` : "");
     await fetchCompetition(compId);
     setBusy(false);
   }
