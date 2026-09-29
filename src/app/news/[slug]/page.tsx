@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { isUuid, newsHref } from "@/lib/links";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
+import ShareBar from "@/components/ShareBar";
 import { Pill } from "@/components/ui/Badge";
 import { formatDateFull } from "@/lib/format";
 
@@ -101,6 +102,8 @@ export default async function NewsDetailPage({ params }: { params: { slug: strin
           <p className="text-base leading-relaxed whitespace-pre-line">{n.body}</p>
         </div>
       )}
+
+      <ShareBar path={newsHref(n)} title={n.title} className="mt-5 md:mt-6" />
     </article>
   );
 }
