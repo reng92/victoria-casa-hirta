@@ -3,8 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { refreshPages } from "@/lib/revalidate";
 import LogoField from "@/components/admin/LogoField";
+import { newsHref } from "@/lib/links";
 
-interface NewsItem { id: string; title: string; body: string | null; cover_url: string | null; published_at: string; }
+interface NewsItem { id: string; slug: string | null; title: string; body: string | null; cover_url: string | null; published_at: string; }
 const emptyForm = { title: "", body: "", cover_url: "" };
 
 export default function AdminNews() {
@@ -17,7 +18,7 @@ export default function AdminNews() {
   useEffect(() => { fetchNews(); }, []);
 
   async function fetchNews() {
-    const { data } = await supabase.from("news").select("id, title, body, cover_url, published_at").order("published_at", { ascending: false });
+    const { data } = await supabase.from("news").select("id, slug, title, body, cover_url, published_at").order("published_at", { ascending: false });
     setNewsList((data as unknown as NewsItem[]) ?? []);
   }
 
@@ -43,12 +44,16 @@ export default function AdminNews() {
       body: form.body || null,
       cover_url: form.cover_url || null,
     };
-    const { error } = editingId
-      ? await supabase.from("news").update(fields).eq("id", editingId)
-      : await supabase.from("news").insert({ ...fields, published_at: new Date().toISOString() });
+    // Lo slug lo genera il database dal titolo: lo rileggo per aggiornare la pagina della news
+    const previous = newsList.find(n => n.id === editingId);
+    const { data, error } = editingId
+      ? await supabase.from("news").update(fields).eq("id", editingId).select("id, slug").single()
+      : await supabase.from("news").insert({ ...fields, published_at: new Date().toISOString() }).select("id, slug").single();
     if (error) setMsg("Errore: " + error.message);
     else {
-      await refreshPages(["/", "/news"]);
+      const paths = ["/", "/news", newsHref(data)];
+      if (previous && previous.slug !== data.slug) paths.push(newsHref(previous));
+      await refreshPages(paths);
       setMsg(editingId ? "News aggiornata!" : "News pubblicata!");
       setEditingId(null);
       setForm(emptyForm);
@@ -57,11 +62,11 @@ export default function AdminNews() {
     setLoading(false);
   }
 
-  async function handleDelete(id: string) {
+  async function handleDelete(n: NewsItem) {
     if (!confirm("Eliminare questa news?")) return;
-    await supabase.from("news").delete().eq("id", id);
-    if (editingId === id) cancelEdit();
-    await refreshPages(["/", "/news"]);
+    await supabase.from("news").delete().eq("id", n.id);
+    if (editingId === n.id) cancelEdit();
+    await refreshPages(["/", "/news", newsHref(n)]);
     fetchNews();
   }
 
@@ -112,13 +117,17 @@ export default function AdminNews() {
               )}
               <div className="min-w-0">
                 <div className="font-bold text-brand-blue text-sm">{n.title}</div>
-                <div className="text-xs text-gray-400 mt-1">{new Date(n.published_at).toLocaleDateString("it-IT")}</div>
+                <div className="text-xs text-gray-400 mt-1">
+                  {new Date(n.published_at).toLocaleDateString("it-IT")}
+                  {" · "}
+                  <a href={newsHref(n)} target="_blank" rel="noopener noreferrer" className="text-brand-blue hover:underline">{newsHref(n)}</a>
+                </div>
                 {n.body && <div className="text-xs text-gray-500 mt-1 line-clamp-2">{n.body}</div>}
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <button onClick={() => startEdit(n)} className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition">✏️ Modifica</button>
-              <button onClick={() => handleDelete(n.id)} className="text-xs text-gray-400 hover:text-red-500 transition" aria-label="Elimina news">🗑️</button>
+              <button onClick={() => handleDelete(n)} className="text-xs text-gray-400 hover:text-red-500 transition" aria-label="Elimina news">🗑️</button>
             </div>
           </div>
         ))}

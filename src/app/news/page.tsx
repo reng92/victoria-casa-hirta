@@ -1,15 +1,18 @@
 import { supabase } from "@/lib/supabase";
 import Image from "next/image";
+import Link from "next/link";
 import { Newspaper } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import { Pill } from "@/components/ui/Badge";
 import { formatDateFull } from "@/lib/format";
+import { newsHref } from "@/lib/links";
 
 export const revalidate = 60;
 
 interface NewsItem {
   id: string;
+  slug: string | null;
   title: string;
   body: string | null;
   cover_url: string | null;
@@ -39,7 +42,7 @@ export default async function NewsPage() {
 
       <div className="stagger flex flex-col gap-4 md:gap-5">
         {newsList.map((n, i) => (
-          <article key={n.id} className="bento-card flex flex-col sm:flex-row">
+          <Link key={n.id} href={newsHref(n)} className="bento-card group flex flex-col sm:flex-row">
             <div className="relative aspect-[16/9] sm:aspect-auto sm:w-56 md:w-64 shrink-0 bg-surface-2 overflow-hidden">
               {n.cover_url ? (
                 <Image
@@ -48,7 +51,7 @@ export default async function NewsPage() {
                   fill
                   sizes="(min-width: 768px) 256px, (min-width: 640px) 224px, 100vw"
                   priority={i === 0}
-                  className="object-cover"
+                  className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
               ) : (
                 <div className="absolute inset-0 mesh-hero flex items-center justify-center">
@@ -60,10 +63,11 @@ export default async function NewsPage() {
               <Pill tone="neutral" className="self-start normal-case tracking-normal mb-2">
                 <time dateTime={n.published_at} className="capitalize">{formatDateFull(n.published_at)}</time>
               </Pill>
-              <h2 className="font-display text-h3 text-balance">{n.title}</h2>
-              {n.body && <p className="text-sm text-muted mt-2 leading-relaxed whitespace-pre-line">{n.body}</p>}
+              <h2 className="font-display text-h3 text-balance group-hover:text-accent-soft transition-colors">{n.title}</h2>
+              {n.body && <p className="text-sm text-muted mt-2 leading-relaxed line-clamp-3">{n.body}</p>}
+              <span className="text-sm font-semibold text-accent-soft mt-3">Leggi tutto →</span>
             </div>
-          </article>
+          </Link>
         ))}
       </div>
     </div>

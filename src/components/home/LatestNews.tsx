@@ -5,9 +5,11 @@ import { supabase } from "@/lib/supabase";
 import SectionHeader from "@/components/ui/SectionHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import { formatDateNumeric } from "@/lib/format";
+import { newsHref } from "@/lib/links";
 
 interface NewsItem {
   id: string;
+  slug: string | null;
   title: string;
   body: string | null;
   cover_url: string | null;
@@ -35,7 +37,7 @@ export default async function LatestNews() {
       {!n ? (
         <EmptyState compact title="Nessuna news" description="I comunicati compariranno qui." />
       ) : (
-        <Link href="/news" className="flex-1 flex flex-col mt-4 group">
+        <Link href={newsHref(n)} className="flex-1 flex flex-col mt-4 group">
           <div className="relative aspect-[16/9] bg-surface-2 overflow-hidden">
             {n.cover_url ? (
               <Image
