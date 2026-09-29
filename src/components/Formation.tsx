@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { playerHref } from "@/lib/links";
-import { inferModule, shortName } from "@/lib/formation";
+import { firstName, inferModule, shortName } from "@/lib/formation";
 import { VCHLogo } from "@/components/ui/TeamLogo";
 import { initials } from "@/lib/format";
 
@@ -175,9 +175,13 @@ function PitchPlayer({ row, stats, isKeeper, rowSize }: { row: FormationRow; sta
         )}
       </span>
 
-      <span className={`mt-1.5 max-w-full truncate ${rowSize >= 5 ? "text-[10px]" : "text-[11px]"} sm:text-xs font-semibold text-white leading-tight [text-shadow:0_1px_2px_rgb(0_0_0/0.6)]`}>
-        {p.shirt_number != null && <span className="text-white/70 tabular mr-1">{p.shirt_number}</span>}
-        {shortName(p.full_name)}
+      {/* Nome completo: nome sopra, cognome (anche composto, "De Rosa") sotto */}
+      <span className={`mt-1.5 max-w-full text-center ${rowSize >= 5 ? "text-[10px]" : "text-[11px]"} sm:text-xs font-semibold text-white leading-tight [text-shadow:0_1px_2px_rgb(0_0_0/0.6)]`}>
+        <span className="block truncate font-medium text-white/85">{firstName(p.full_name)}</span>
+        <span className="block truncate">
+          {p.shirt_number != null && <span className="text-white/70 tabular mr-1">{p.shirt_number}</span>}
+          {shortName(p.full_name)}
+        </span>
       </span>
     </Link>
   );
@@ -191,7 +195,7 @@ function Pitch({ children }: { children: React.ReactNode }) {
     <div
       className="relative w-full overflow-hidden"
       style={{
-        aspectRatio: "3 / 4",
+        aspectRatio: "2 / 3",
         background: "repeating-linear-gradient(180deg, #2e8b57 0 12.5%, #2a8150 12.5% 25%)",
       }}
     >

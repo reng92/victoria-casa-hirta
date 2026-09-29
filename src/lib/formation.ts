@@ -40,6 +40,12 @@ export function inferModule(positions: Slot[]): string | null {
   return rows.map(r => r.length).join("-");
 }
 
+/** Nome di battesimo ("Mario De Luca" → "Mario"); vuoto se c'è una sola parola. */
+export function firstName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  return parts.length > 1 ? parts[0] : "";
+}
+
 /** Cognome per le etichette in campo ("Mario De Luca" → "De Luca"). */
 export function shortName(fullName: string): string {
   const parts = fullName.trim().split(/\s+/);
