@@ -11,6 +11,16 @@ interface NotificationItem {
   sent_count: number; failed_count: number; created_at: string;
 }
 type LinkType = "none" | "match" | "url";
+type Platform = "android" | "ios" | "pc";
+interface DeviceStats { push: Record<Platform | "unknown", number>; installs: Record<Platform, number> }
+
+const PLATFORMS: [Platform, string][] = [["android", "Android"], ["ios", "iPhone/iPad"], ["pc", "PC/Mac"]];
+
+function countBy<T>(rows: T[], key: (r: T) => string) {
+  const out: Record<string, number> = {};
+  for (const r of rows) out[key(r)] = (out[key(r)] ?? 0) + 1;
+  return out;
+}
 
 const emptyForm = { title: "", body: "", image_url: "", linkType: "none" as LinkType, url: "", match_id: "" };
 
@@ -25,6 +35,7 @@ export default function AdminNotifiche() {
   const [matches, setMatches] = useState<MatchOption[]>([]);
   const [history, setHistory] = useState<NotificationItem[]>([]);
   const [subscribers, setSubscribers] = useState<number | null>(null);
+  const [stats, setStats] = useState<DeviceStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -38,11 +49,17 @@ export default function AdminNotifiche() {
   }, []);
 
   async function fetchStatus() {
-    const [{ count }, { data }] = await Promise.all([
-      supabase.from("push_subscriptions").select("id", { count: "exact", head: true }),
+    const [{ data: subs }, { data }, { data: installs }] = await Promise.all([
+      supabase.from("push_subscriptions").select("platform"),
       supabase.from("notifications").select("id, title, body, image_url, url, sent_count, failed_count, created_at").order("created_at", { ascending: false }).limit(30),
+      supabase.from("app_installs").select("platform"),
     ]);
-    setSubscribers(count ?? 0);
+    const subRows = (subs as { platform: Platform | null }[]) ?? [];
+    setSubscribers(subRows.length);
+    setStats({
+      push: { android: 0, ios: 0, pc: 0, unknown: 0, ...countBy(subRows, (r) => r.platform ?? "unknown") },
+      installs: { android: 0, ios: 0, pc: 0, ...countBy((installs as { platform: Platform }[]) ?? [], (r) => r.platform) },
+    });
     setHistory((data as NotificationItem[]) ?? []);
   }
 
@@ -92,6 +109,41 @@ export default function AdminNotifiche() {
       <p className="text-gray-500 text-sm mb-8">
         {subscribers === null ? "…" : `${subscribers} dispositivi iscritti alle notifiche push`}
       </p>
+
+      {stats && (
+        <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-6">
+          <h2 className="font-bold text-lg text-brand-blue mb-4">Dispositivi</h2>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-gray-500 text-left">
+                <th className="font-medium pb-2"></th>
+                <th className="font-medium pb-2 text-right">Notifiche attive</th>
+                <th className="font-medium pb-2 text-right">App installata</th>
+              </tr>
+            </thead>
+            <tbody>
+              {PLATFORMS.map(([key, label]) => (
+                <tr key={key} className="border-t border-gray-100">
+                  <td className="py-2">{label}</td>
+                  <td className="py-2 text-right font-semibold">{stats.push[key]}</td>
+                  <td className="py-2 text-right font-semibold">{stats.installs[key]}</td>
+                </tr>
+              ))}
+              {stats.push.unknown > 0 && (
+                <tr className="border-t border-gray-100 text-gray-400">
+                  <td className="py-2">Non ancora rilevato</td>
+                  <td className="py-2 text-right">{stats.push.unknown}</td>
+                  <td></td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          <p className="text-[11px] text-gray-400 mt-3">
+            Dati anonimi raccolti dal 3 ottobre 2026. &quot;App installata&quot; conta i dispositivi che hanno aperto l&apos;app dalla schermata Home almeno una volta.
+            Le iscrizioni precedenti vengono classificate alla prossima visita del dispositivo.
+          </p>
+        </div>
+      )}
 
       <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-6 mb-10">
         <h2 className="font-bold text-lg text-brand-blue mb-4">Nuova notifica</h2>

@@ -1,6 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Smartphone } from "lucide-react";
+import { supabase } from "@/lib/supabase";
+import { detectPlatform, isStandalone } from "@/lib/push";
+
+// Conta in forma anonima i dispositivi che usano l'app installata:
+// un id casuale salvato nel browser, registrato una volta al giorno.
+function trackInstall() {
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem("vch-install-seen") === today) return;
+    let id = localStorage.getItem("vch-device-id");
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem("vch-device-id", id);
+    }
+    supabase.rpc("track_install", { p_device_id: id, p_platform: detectPlatform() }).then(({ error }) => {
+      if (!error) localStorage.setItem("vch-install-seen", today);
+    });
+  } catch {}
+}
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -22,8 +41,14 @@ export default function PWAInstaller() {
       setShow(true);
     };
 
+    if (isStandalone()) trackInstall();
+
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    window.addEventListener("appinstalled", trackInstall);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", trackInstall);
+    };
   }, []);
 
   async function handleInstall() {

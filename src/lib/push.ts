@@ -6,8 +6,18 @@ import { supabase } from "@/lib/supabase";
 export type PushState = "unsupported" | "ios-install" | "denied" | "off" | "on";
 
 const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
-const isStandalone = () =>
+export const isStandalone = () =>
   window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone === true;
+
+/** Piattaforma per le statistiche anonime; gli iPad recenti si presentano come Mac. */
+export function detectPlatform(): "android" | "ios" | "pc" {
+  const ua = navigator.userAgent;
+  if (/android/i.test(ua)) return "android";
+  if (isIos() || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1)) return "ios";
+  return "pc";
+}
+
+const PLATFORM_SAVED = "vch-push-platform";
 
 export function pushSupported() {
   return typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
@@ -49,11 +59,14 @@ async function subscribe(reg: ServiceWorkerRegistration, key: string) {
     p_endpoint: sub.endpoint,
     p_p256dh: json.keys?.p256dh ?? "",
     p_auth: json.keys?.auth ?? "",
+    p_platform: detectPlatform(),
+    p_standalone: isStandalone(),
   });
   if (error) {
     await sub.unsubscribe();
     throw new Error(error.message);
   }
+  try { localStorage.setItem(PLATFORM_SAVED, "1"); } catch {}
 }
 
 export async function getPushState(): Promise<PushState> {
@@ -70,6 +83,11 @@ export async function getPushState(): Promise<PushState> {
     } catch {
       return "off";
     }
+  } else if (key && Notification.permission === "granted") {
+    // Iscrizioni fatte prima delle statistiche: si salva una volta la piattaforma
+    let saved = true;
+    try { saved = localStorage.getItem(PLATFORM_SAVED) === "1"; } catch {}
+    if (!saved) subscribe(reg, key).catch(() => {});
   }
   return "on";
 }
