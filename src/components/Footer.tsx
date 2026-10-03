@@ -77,17 +77,42 @@ export default function Footer() {
               <CookieSettingsButton className="py-1 underline underline-offset-4 decoration-text/30 hover:text-text transition-colors" />
             </p>
           </div>
-          <p>
-            Made with <span className="text-accent-soft" aria-label="amore">♥</span> by{" "}
+          <div className="flex flex-col gap-2 sm:gap-1 sm:items-end">
             <a
-              href="https://traccestudio.it"
+              href="https://palloo.it/?utm_source=victoriacasahirta&utm_medium=footer&utm_campaign=powered_by"
               target="_blank"
               rel="noopener"
-              className="font-semibold text-text/80 hover:text-text underline-offset-2 hover:underline transition-colors"
+              className="inline-flex items-center gap-2 py-1 opacity-85 hover:opacity-100 transition-opacity"
             >
-              Tracce Web Agency
+              <span>App realizzata con</span>
+              {/* Logo Palloo: scritta bianca sul tema scuro (default), navy sul tema chiaro. */}
+              <Image
+                src="/palloo-logo-dark.png"
+                alt="Palloo"
+                width={83}
+                height={20}
+                className="h-5 w-auto [[data-theme=light]_&]:hidden"
+              />
+              <Image
+                src="/palloo-logo-light.png"
+                alt="Palloo"
+                width={82}
+                height={20}
+                className="hidden h-5 w-auto [[data-theme=light]_&]:block"
+              />
             </a>
-          </p>
+            <p>
+              Made with <span className="text-accent-soft" aria-label="amore">♥</span> by{" "}
+              <a
+                href="https://traccestudio.it"
+                target="_blank"
+                rel="noopener"
+                className="font-semibold text-text/80 hover:text-text underline-offset-2 hover:underline transition-colors"
+              >
+                Tracce Web Agency
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </footer>
