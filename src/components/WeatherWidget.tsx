@@ -2,6 +2,7 @@ import { Droplets, Wind } from "lucide-react";
 
 interface WeatherData {
   temperature: number;
+  rain: boolean;
   description: string;
   icon: string;
   humidity: number;
@@ -19,19 +20,22 @@ interface Props {
 async function getWeather(city: string): Promise<WeatherData | null> {
   try {
     const res = await fetch(
-      `https://wttr.in/${encodeURIComponent(city)}?format=j1`,
+      `https://wttr.in/${encodeURIComponent(city)}?format=j1&lang=it`,
       { next: { revalidate: 3600 } }
     );
     if (!res.ok) return null;
     const data = await res.json();
     const current = data.current_condition?.[0];
     if (!current) return null;
+    const code = parseInt(current.weatherCode);
 
     return {
       temperature: parseInt(current.temp_C),
       feelsLike: parseInt(current.FeelsLikeC),
-      description: current.weatherDesc?.[0]?.value ?? "",
-      icon: getWeatherEmoji(parseInt(current.weatherCode)),
+      // Con lang=it wttr.in mette la descrizione tradotta in lang_it
+      description: (current.lang_it?.[0]?.value ?? current.weatherDesc?.[0]?.value ?? "").trim(),
+      icon: getWeatherEmoji(code),
+      rain: RAIN_CODES.includes(code) || STORM_CODES.includes(code),
       humidity: parseInt(current.humidity),
       wind: parseInt(current.windspeedKmph),
     };
@@ -40,14 +44,17 @@ async function getWeather(city: string): Promise<WeatherData | null> {
   }
 }
 
+const RAIN_CODES = [176, 263, 266, 281, 284, 293, 296, 299, 302, 305, 308, 311, 314, 317, 320, 353, 356, 359, 362, 365, 374, 377];
+const STORM_CODES = [200, 386, 389, 392];
+
 function getWeatherEmoji(code: number): string {
   if (code === 113) return "☀️";
   if (code === 116) return "⛅";
   if (code === 119 || code === 122) return "☁️";
   if ([143, 248, 260].includes(code)) return "🌫️";
-  if ([176, 263, 266, 281, 284, 293, 296, 299, 302, 305, 308, 311, 314, 317, 320, 353, 356, 359, 362, 365, 374, 377].includes(code)) return "🌧️";
+  if (RAIN_CODES.includes(code)) return "🌧️";
   if ([179, 182, 185, 227, 230, 323, 326, 329, 332, 335, 338, 350, 368, 371, 395].includes(code)) return "❄️";
-  if ([200, 386, 389, 392].includes(code)) return "⛈️";
+  if (STORM_CODES.includes(code)) return "⛈️";
   return "🌤️";
 }
 
@@ -55,7 +62,7 @@ function getMatchDayAdvice(weather: WeatherData): string {
   if (weather.temperature < 5) return "Freddo intenso, scaldate bene!";
   if (weather.temperature > 32) return "Caldo estremo, idratarsi molto!";
   if (weather.wind > 40) return "Vento forte, attenzione ai cross!";
-  if (weather.description.toLowerCase().includes("rain")) return "Campo potenzialmente pesante";
+  if (weather.rain) return "Campo potenzialmente pesante";
   if (weather.temperature >= 15 && weather.temperature <= 22) return "Condizioni ideali per giocare!";
   return "Condizioni nella norma";
 }

@@ -117,7 +117,7 @@ function SubIcon({ out, className = "" }: { out: boolean; className?: string }) 
 
 /* ---------- Giocatore in campo ---------- */
 
-function PitchPlayer({ row, stats, isKeeper, rowSize }: { row: FormationRow; stats: Stats; isKeeper: boolean; rowSize: number }) {
+function PitchPlayer({ row, top, stats, isKeeper, rowSize }: { row: FormationRow; top: number; stats: Stats; isKeeper: boolean; rowSize: number }) {
   const p = row.player!;
   const label = `${p.shirt_number != null ? `${p.shirt_number}, ` : ""}${p.full_name}`;
   // Larghezza dell'etichetta: non oltre lo spazio del giocatore nella sua riga
@@ -127,11 +127,11 @@ function PitchPlayer({ row, stats, isKeeper, rowSize }: { row: FormationRow; sta
       href={playerHref(p)}
       aria-label={label}
       className="absolute flex flex-col items-center -translate-x-1/2 -translate-y-[30%] group"
-      style={{ left: `${row.position_x}%`, top: `${row.position_y}%`, width }}
+      style={{ left: `${row.position_x}%`, top: `${top}%`, width }}
     >
       <span className="relative">
         <span
-          className={`relative block w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 shadow-lg transition-transform group-hover:scale-105 ${
+          className={`relative block w-9 h-9 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 shadow-lg transition-transform group-hover:scale-105 ${
             isKeeper ? "border-draw bg-[#facc15]" : "border-white bg-brand"
           }`}
         >
@@ -193,9 +193,9 @@ function Pitch({ children }: { children: React.ReactNode }) {
   const line = "border-white/35";
   return (
     <div
-      className="relative w-full overflow-hidden"
+      className="relative w-full overflow-hidden [--pitch-ratio:3/4] sm:[--pitch-ratio:1/1]"
       style={{
-        aspectRatio: "2 / 3",
+        aspectRatio: "var(--pitch-ratio)",
         background: "repeating-linear-gradient(180deg, #2e8b57 0 12.5%, #2a8150 12.5% 25%)",
       }}
     >
@@ -275,9 +275,18 @@ export default async function Formation({ matchId }: { matchId: string }) {
 
 export type LineupData = Awaited<ReturnType<typeof getLineup>>;
 
+// Fascia verticale (in % del campo) occupata dai giocatori: dagli attaccanti in
+// alto al portiere in basso, lasciando spazio per foto ed etichette.
+const PITCH_TOP = 9;
+const PITCH_BOTTOM = 84;
+
 export function FormationView({ formation, bench, events, coach }: LineupData) {
   const module = formation.length === 11 ? inferModule(formation.map(f => ({ x: f.position_x, y: f.position_y }))) : null;
   const keeperY = Math.max(...formation.map(f => f.position_y));
+  const forwardY = Math.min(...formation.map(f => f.position_y));
+  // Le righe si distribuiscono su tutto il campo invece di lasciare vuota la parte alta
+  const spread = keeperY - forwardY;
+  const topOf = (y: number) => (spread > 0 ? PITCH_TOP + ((y - forwardY) / spread) * (PITCH_BOTTOM - PITCH_TOP) : 50);
 
   // Chi è entrato dalla panchina ma non è stato segnato tra le riserve
   const onPitch = new Set(formation.map(f => f.player!.id));
@@ -310,6 +319,7 @@ export function FormationView({ formation, bench, events, coach }: LineupData) {
               <li key={f.id}>
                 <PitchPlayer
                   row={f}
+                  top={topOf(f.position_y)}
                   stats={playerStats(events, f.player!.id)}
                   isKeeper={f.player!.role === "portiere" || f.position_y === keeperY}
                   rowSize={formation.filter(o => Math.abs(o.position_y - f.position_y) <= 6).length}
@@ -323,7 +333,7 @@ export function FormationView({ formation, bench, events, coach }: LineupData) {
       {benchAll.length > 0 && (
         <div className="border-t border-border">
           <h3 className="px-5 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wider text-muted">Panchina</h3>
-          <ul className="pb-2">
+          <ul className="pb-2 sm:grid sm:grid-cols-2">
             {benchAll.map(b => <BenchPlayer key={b.player.id} player={b.player} stats={b.stats} />)}
           </ul>
         </div>
