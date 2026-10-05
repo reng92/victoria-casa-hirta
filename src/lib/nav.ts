@@ -10,7 +10,6 @@ import {
   UserCog,
   Handshake,
   MapPin,
-  Medal,
   History,
   type LucideIcon,
 } from "lucide-react";
@@ -25,7 +24,7 @@ export interface NavItem {
 export const primaryNav: NavItem[] = [
   { href: "/", label: "Home", icon: Home },
   { href: "/calendario", label: "Partite", icon: CalendarDays },
-  { href: "/classifica", label: "Classifica", icon: Trophy },
+  { href: "/competizioni", label: "Competizioni", icon: Trophy },
   { href: "/rosa", label: "Rosa", icon: Users },
 ];
 
@@ -37,7 +36,6 @@ export const secondaryNav: NavItem[] = [
   { href: "/staff", label: "Staff", icon: UserCog },
   { href: "/sponsors", label: "Sponsor", icon: Handshake },
   { href: "/campi", label: "Campi", icon: MapPin },
-  { href: "/competizioni", label: "Competizioni", icon: Medal },
   { href: "/storico", label: "Storico", icon: History },
 ];
 

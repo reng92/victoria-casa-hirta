@@ -4,6 +4,7 @@ import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ConditionalShell from "@/components/ConditionalShell";
 import PWAInstaller from "@/components/PWAInstaller";
+import { DEFAULT_OG_IMAGE, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/seo";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -18,19 +19,48 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Victoria Casa Hirta",
-  description: "Sito ufficiale della squadra di calcio Victoria Casa Hirta",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Victoria Casa Hirta · Squadra di calcio amatoriale in Campania",
+    template: "%s · Victoria Casa Hirta",
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  keywords: ["Victoria Casa Hirta", "VCH", "calcio amatoriale", "Campania", "Over 35", "Campania Cup", "risultati", "classifica"],
   manifest: "/manifest.json",
-  metadataBase: new URL("https://victoriacasahirta.it"),
-  // Anteprima dei link condivisi su WhatsApp e social
+  robots: { index: true, follow: true },
+  // Anteprima dei link condivisi su WhatsApp, Facebook e altri social
   openGraph: {
     type: "website",
     locale: "it_IT",
-    siteName: "Victoria Casa Hirta",
-    title: "Victoria Casa Hirta",
-    description: "Sito ufficiale della squadra di calcio Victoria Casa Hirta",
-    images: [{ url: "/vch-2627.jpeg", width: 2048, height: 1536, alt: "La squadra della Victoria Casa Hirta" }],
+    siteName: SITE_NAME,
+    url: "/",
+    title: "Victoria Casa Hirta · Squadra di calcio amatoriale in Campania",
+    description: SITE_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE],
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Victoria Casa Hirta · Squadra di calcio amatoriale in Campania",
+    description: SITE_DESCRIPTION,
+    images: [DEFAULT_OG_IMAGE.url],
+  },
+};
+
+// Dati strutturati per Google: la squadra e il sito
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SportsTeam",
+  name: SITE_NAME,
+  alternateName: "VCH",
+  sport: "Calcio",
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.jpeg`,
+  image: `${SITE_URL}${DEFAULT_OG_IMAGE.url}`,
+  foundingDate: "2016",
+  description: SITE_DESCRIPTION,
+  location: { "@type": "Place", address: { "@type": "PostalAddress", addressRegion: "Campania", addressCountry: "IT" } },
+  sameAs: ["https://www.facebook.com/victoriacasahirta/", "https://www.instagram.com/victoriacasahirta"],
 };
 
 export const viewport: Viewport = {
@@ -57,6 +87,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </head>
       <body className="min-h-dvh bg-bg text-text font-sans">
         <ConditionalShell>{children}</ConditionalShell>

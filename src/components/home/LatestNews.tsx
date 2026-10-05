@@ -42,7 +42,7 @@ export default async function LatestNews() {
             {n.cover_url ? (
               <Image
                 src={n.cover_url}
-                alt=""
+                alt={n.title}
                 fill
                 sizes="(min-width: 1280px) 40vw, (min-width: 768px) 60vw, 100vw"
                 className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"

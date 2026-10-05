@@ -4,7 +4,10 @@ import LegalPage, { LegalContact } from "@/components/LegalPage";
 import { legal } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy · Victoria Casa Hirta",
+  title: "Privacy Policy",
+  alternates: { canonical: "/privacy-policy" },
+  // Pagine legali: raggiungibili dal footer ma fuori dai risultati di Google
+  robots: { index: false, follow: true },
   description: "Informativa sul trattamento dei dati personali del sito victoriacasahirta.it",
 };
 

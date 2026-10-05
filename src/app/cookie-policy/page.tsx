@@ -5,7 +5,10 @@ import CookieSettingsButton from "@/components/consent/CookieSettingsButton";
 import { legal } from "@/lib/legal";
 
 export const metadata: Metadata = {
-  title: "Cookie Policy · Victoria Casa Hirta",
+  title: "Cookie Policy",
+  alternates: { canonical: "/cookie-policy" },
+  // Pagine legali: raggiungibili dal footer ma fuori dai risultati di Google
+  robots: { index: false, follow: true },
   description: "Informativa sui cookie del sito victoriacasahirta.it",
 };
 

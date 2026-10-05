@@ -9,6 +9,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL("/", req.url), 308);
   }
 
+  // Le classifiche ora sono nelle pagine delle competizioni
+  if (pathname === "/classifica" || pathname === "/classifica/") {
+    return NextResponse.redirect(new URL("/competizioni", req.url), 308);
+  }
+
   // Vecchi URL con l'UUID di partite e giocatori: 308 verso lo slug leggibile.
   // La pagina reindirizza anche da sola, ma con lo streaming risponderebbe 200.
   const legacy = pathname.match(/^\/(calendario|rosa)\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/?$/i);
@@ -33,7 +38,10 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  return NextResponse.next();
+  const res = NextResponse.next();
+  // L'area admin non deve finire nei risultati di Google
+  if (isAdminRoute) res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return res;
 }
 
 async function lookupSlug(table: "matches" | "players", id: string): Promise<string | null> {

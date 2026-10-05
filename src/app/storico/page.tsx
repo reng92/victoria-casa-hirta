@@ -8,8 +8,15 @@ import { Pill } from "@/components/ui/Badge";
 import { formatDateNumeric, getOutcome, outcomeShort } from "@/lib/format";
 import { formatLabel, getHomeAwayScores, getOpponent, getScores, groupLabel, isVCH, matchdayLabel, sortStandings } from "@/lib/competitions";
 import { matchHref } from "@/lib/links";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Storico",
+  description: "La storia della Victoria Casa Hirta dal 2016: stagioni, competizioni, classifiche finali e risultati.",
+  path: "/storico",
+});
 
 interface Season {
   id: string;

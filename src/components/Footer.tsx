@@ -29,7 +29,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 py-10">
         <div className="grid gap-8 md:grid-cols-[1.2fr_2fr_auto] md:items-start">
           <div className="flex items-center gap-3">
-            <Image src="/logo.jpeg" alt="" width={44} height={44} className="rounded-full ring-2 ring-white/10" />
+            <Image src="/logo.jpeg" alt="Logo Victoria Casa Hirta" width={44} height={44} className="rounded-full ring-2 ring-white/10" />
             <div>
               <p className="font-display font-bold leading-tight">Victoria Casa Hirta</p>
               <p className="text-muted text-xs">A.S.D. dal 2016 · Campania</p>

@@ -21,7 +21,11 @@ export async function POST(req: NextRequest) {
 
   const { paths } = (await req.json().catch(() => ({}))) as { paths?: unknown };
   const list = Array.isArray(paths) ? paths.filter((p): p is string => typeof p === "string" && p.startsWith("/")) : [];
-  for (const p of list.slice(0, 20)) revalidatePath(p);
+  // Le route dinamiche ("/competizioni/[slug]") vanno rigenerate tutte
+  for (const p of list.slice(0, 20)) {
+    if (p.includes("[")) revalidatePath(p, "page");
+    else revalidatePath(p);
+  }
 
   return NextResponse.json({ ok: true, revalidated: list });
 }

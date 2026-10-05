@@ -11,6 +11,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import ShareBar from "@/components/ShareBar";
 import { Pill } from "@/components/ui/Badge";
 import { formatDateFull } from "@/lib/format";
+import { excerpt, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -36,21 +37,16 @@ const getNews = cache(async (key: string): Promise<NewsItem | null> => {
 // Anteprima del link condiviso su WhatsApp e social
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const n = await getNews(params.slug);
-  if (!n) return { title: "News non trovata · Victoria Casa Hirta" };
-  const description = n.body ? n.body.replace(/\s+/g, " ").trim().slice(0, 160) : "News della Victoria Casa Hirta";
-  return {
-    title: `${n.title} · Victoria Casa Hirta`,
-    description,
-    alternates: { canonical: newsHref(n) },
-    openGraph: {
-      type: "article",
-      title: n.title,
-      description,
-      url: newsHref(n),
-      publishedTime: n.published_at,
-      ...(n.cover_url ? { images: [{ url: n.cover_url }] } : {}),
-    },
-  };
+  if (!n) return { title: "News non trovata", robots: { index: false } };
+  const meta = pageMetadata({
+    title: n.title,
+    socialTitle: n.title,
+    description: excerpt(n.body) || `News della Victoria Casa Hirta del ${formatDateFull(n.published_at)}.`,
+    path: newsHref(n),
+    type: "article",
+    image: n.cover_url ? { url: n.cover_url, alt: n.title } : null,
+  });
+  return { ...meta, openGraph: { ...meta.openGraph, type: "article", publishedTime: n.published_at } };
 }
 
 export default async function NewsDetailPage({ params }: { params: { slug: string } }) {
@@ -87,7 +83,7 @@ export default async function NewsDetailPage({ params }: { params: { slug: strin
           {/* Foto intera nelle sue proporzioni, senza ritagli */}
           <Image
             src={n.cover_url}
-            alt=""
+            alt={n.title}
             width={1600}
             height={900}
             sizes="(min-width: 768px) 768px, 100vw"

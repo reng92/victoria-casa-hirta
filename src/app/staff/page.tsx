@@ -5,8 +5,15 @@ import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import { Pill } from "@/components/ui/Badge";
 import { initials } from "@/lib/format";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Staff",
+  description: "Lo staff tecnico e la dirigenza della Victoria Casa Hirta.",
+  path: "/staff",
+});
 
 interface StaffMember {
   id: string;
@@ -30,7 +37,7 @@ function StaffCard({ s, priority }: { s: StaffMember; priority?: boolean }) {
         {s.photo_url ? (
           <Image
             src={s.photo_url}
-            alt=""
+            alt={`${s.full_name}, ${s.role} della Victoria Casa Hirta`}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
             priority={priority}

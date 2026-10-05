@@ -5,8 +5,15 @@ import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Avatar from "@/components/ui/Avatar";
 import { playerHref } from "@/lib/links";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 0;
+
+export const metadata = pageMetadata({
+  title: "Cannonieri",
+  description: "La classifica marcatori della Victoria Casa Hirta: gol, assist e statistiche dei giocatori in tutte le competizioni.",
+  path: "/cannonieri",
+});
 
 interface Scorer {
   slug?: string | null;

@@ -5,8 +5,15 @@ import EmptyState from "@/components/ui/EmptyState";
 import PhotoGrid from "@/components/PhotoGrid";
 import { getOpponent } from "@/lib/competitions";
 import { formatDateShort } from "@/lib/format";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Galleria foto",
+  description: "Le foto delle partite e della squadra della Victoria Casa Hirta.",
+  path: "/galleria",
+});
 
 interface Photo {
   id: string;

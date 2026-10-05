@@ -4,8 +4,15 @@ import { MapPin, Navigation, Landmark } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import { Pill } from "@/components/ui/Badge";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Campi di gioco",
+  description: "Indirizzi e indicazioni stradali dei campi dove gioca la Victoria Casa Hirta.",
+  path: "/campi",
+});
 
 interface Venue {
   id: string;

@@ -4,8 +4,15 @@ import { Handshake, ExternalLink } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import { initials } from "@/lib/format";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Sponsor",
+  description: "Le aziende e i partner che sostengono la Victoria Casa Hirta.",
+  path: "/sponsors",
+});
 
 interface Sponsor {
   id: string;

@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
@@ -8,6 +10,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import Avatar from "@/components/ui/Avatar";
 import { Pill } from "@/components/ui/Badge";
 import { formatDateNumeric } from "@/lib/format";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
 
@@ -28,14 +31,15 @@ interface MatchEvent {
   match: { match_date: string; away_team: string; home_score: number | null; away_score: number | null; is_home: boolean } | null;
 }
 
-async function getPlayer(key: string): Promise<Player | null> {
+// Condivisa tra generateMetadata e la pagina: una sola query per richiesta
+const getPlayer = cache(async (key: string): Promise<Player | null> => {
   const { data } = await supabase
     .from("players")
     .select("*")
     .eq(isUuid(key) ? "id" : "slug", key)
     .single();
   return data as unknown as Player | null;
-}
+});
 
 async function getStats(playerId: string) {
   const { data: events } = await supabase
@@ -84,6 +88,20 @@ const eventIcon: Record<string, { icon: LucideIcon; color: string }> = {
   cambio: { icon: ArrowLeftRight, color: "text-muted" },
   autorete: { icon: ShieldAlert, color: "text-loss" },
 };
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const p = await getPlayer(params.slug);
+  if (!p) return { title: "Giocatore non trovato", robots: { index: false } };
+  const role = (roleLabel[p.role] ?? p.role ?? "").toLowerCase();
+  const number = p.shirt_number != null ? ` con la maglia numero ${p.shirt_number}` : "";
+  return pageMetadata({
+    title: p.shirt_number != null ? `${p.full_name} #${p.shirt_number}` : p.full_name,
+    description: `${p.full_name}${role ? `, ${role}` : ""} della Victoria Casa Hirta${number}: presenze, gol, assist e statistiche della stagione.`,
+    path: playerHref(p),
+    type: "profile",
+    image: p.photo_url ? { url: p.photo_url, alt: `${p.full_name}, giocatore della Victoria Casa Hirta` } : null,
+  });
+}
 
 export default async function GiocatorePage({ params }: { params: { slug: string } }) {
   const player = await getPlayer(params.slug);

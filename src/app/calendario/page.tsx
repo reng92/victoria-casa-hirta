@@ -9,8 +9,17 @@ import { LiveBadge, Pill } from "@/components/ui/Badge";
 import { formatDateShort, formatTime, formatWeekday, getOutcome, outcomeShort } from "@/lib/format";
 import { getHomeAwayScores, getOpponent, getScores, groupLabel, matchdayLabel } from "@/lib/competitions";
 import { matchHref } from "@/lib/links";
+import { competitionHref, getTeamLogos, getUnscheduledVCH } from "@/lib/competition-data";
+import { isVCH, teamKey } from "@/lib/competitions";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Partite e risultati",
+  description: "Calendario, risultati e prossime partite della Victoria Casa Hirta in campionato e nelle coppe, con date, orari e campi.",
+  path: "/calendario",
+});
 
 interface Match {
   slug?: string | null;
@@ -196,8 +205,49 @@ function MatchList({ matches, emptyTitle, emptyDesc }: { matches: Match[]; empty
   );
 }
 
+type Unscheduled = Awaited<ReturnType<typeof getUnscheduledVCH>>[number];
+
+/** Partite della Victoria già in calendario ma senza data e orario (es. un turno di coppa appena sorteggiato). */
+function UnscheduledList({ fixtures, logos }: { fixtures: Unscheduled[]; logos: Record<string, string> }) {
+  if (fixtures.length === 0) return null;
+  return (
+    <section aria-labelledby="da-programmare" className="mt-8">
+      <h2 id="da-programmare" className="font-display text-h3 mb-3 px-1">Data da definire</h2>
+      <ul className="stagger flex flex-col gap-2">
+        {fixtures.map((f) => {
+          const label = [f.competition?.name, f.round || [groupLabel(f.group_name), matchdayLabel(f.matchday)].filter(Boolean).join(" · ")].filter(Boolean).join(" · ");
+          const team = (name: string) => (
+            <div className="flex items-center gap-2 min-w-0">
+              {isVCH(name) ? <VCHLogo size={24} /> : <TeamLogo src={logos[teamKey(name)]} name={name} size={24} />}
+              <span className="text-sm font-semibold truncate">{name}</span>
+            </div>
+          );
+          return (
+            <li key={f.id}>
+              <Link
+                href={f.competition ? competitionHref(f.competition) : "/competizioni"}
+                className="bento-card flex items-center gap-3 p-3 sm:p-4 hover:bg-surface-2/60 tap"
+              >
+                <div className="flex flex-col items-center justify-center w-12 self-stretch shrink-0 rounded-xl bg-surface-2 border border-dashed border-border">
+                  <span className="text-[10px] uppercase text-muted leading-tight text-center">Data<br />da def.</span>
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+                  <span className="text-[11px] text-muted truncate">{label}</span>
+                  {team(f.home_team)}
+                  {team(f.away_team)}
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted shrink-0 hidden sm:block" aria-hidden />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
 export default async function CalendarioPage() {
-  const matches = await getMatches();
+  const [matches, unscheduled, logos] = await Promise.all([getMatches(), getUnscheduledVCH(), getTeamLogos()]);
   const played = matches.filter((m) => m.status === "finished");
   const upcoming = matches.filter((m) => m.status !== "finished");
   const hasLive = upcoming.some((m) => m.status === "live");
@@ -210,18 +260,23 @@ export default async function CalendarioPage() {
 
       <Tabs
         variant="segmented"
-        defaultKey={upcoming.length > 0 ? "prossime" : "risultati"}
+        defaultKey={upcoming.length + unscheduled.length > 0 ? "prossime" : "risultati"}
         items={[
           {
             key: "prossime",
             label: "Prossime",
-            count: upcoming.length,
+            count: upcoming.length + unscheduled.length,
             content: (
-              <MatchList
-                matches={upcoming}
-                emptyTitle="Nessuna partita in programma"
-                emptyDesc="Il calendario verrà aggiornato a breve."
-              />
+              <>
+                {(upcoming.length > 0 || unscheduled.length === 0) && (
+                  <MatchList
+                    matches={upcoming}
+                    emptyTitle="Nessuna partita in programma"
+                    emptyDesc="Il calendario verrà aggiornato a breve."
+                  />
+                )}
+                <UnscheduledList fixtures={unscheduled} logos={logos} />
+              </>
             ),
           },
           {

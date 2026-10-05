@@ -28,7 +28,7 @@ export async function syncStandings(competitionId: string | null | undefined, { 
 
   const computed = computeStandings(fixtures, seeds, isGroupFormat(competition?.format));
   if (!force && totalPlayed(seeds) > totalPlayed(computed) + 2) {
-    await refreshPages(["/", "/classifica", "/calendario"]);
+    await refreshPages(["/", "/competizioni", "/competizioni/[slug]", "/calendario"]);
     return errors.length ? { status: "error", message: errors.join(" · ") } : { status: "manual" };
   }
 
@@ -40,7 +40,7 @@ export async function syncStandings(competitionId: string | null | undefined, { 
       : await supabase.from("standings").insert({ ...row, competition_id: competitionId });
     if (error) errors.push(error.message);
   }
-  await refreshPages(["/", "/classifica", "/competizioni", "/storico", "/calendario"]);
+  await refreshPages(["/", "/competizioni", "/competizioni/[slug]", "/storico", "/calendario"]);
   return errors.length ? { status: "error", message: errors.join(" · ") } : { status: "updated", teams: computed.length };
 }
 

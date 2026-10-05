@@ -7,8 +7,15 @@ import EmptyState from "@/components/ui/EmptyState";
 import { Pill } from "@/components/ui/Badge";
 import { formatDateFull } from "@/lib/format";
 import { newsHref } from "@/lib/links";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "News",
+  description: "Notizie, comunicati e racconti delle partite dalla Victoria Casa Hirta.",
+  path: "/news",
+});
 
 interface NewsItem {
   id: string;
@@ -47,7 +54,7 @@ export default async function NewsPage() {
               {n.cover_url ? (
                 <Image
                   src={n.cover_url}
-                  alt=""
+                  alt={n.title}
                   fill
                   sizes="(min-width: 768px) 256px, (min-width: 640px) 224px, 100vw"
                   priority={i === 0}

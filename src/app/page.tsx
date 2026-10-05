@@ -1,9 +1,9 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { supabase } from "@/lib/supabase";
 import NextMatch from "@/components/NextMatch";
 import LastResult from "@/components/home/LastResult";
-import MiniStandings from "@/components/home/MiniStandings";
-import TopScorers from "@/components/home/TopScorers";
+import HomeCompetitions from "@/components/home/HomeCompetitions";
 import UpcomingMatches from "@/components/home/UpcomingMatches";
 import LatestNews from "@/components/home/LatestNews";
 import SponsorMarquee, { type SponsorItem } from "@/components/SponsorMarquee";
@@ -11,6 +11,10 @@ import Reveal from "@/components/ui/Reveal";
 import Skeleton, { SkeletonCard } from "@/components/ui/Skeleton";
 
 export const revalidate = 60;
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 async function getSponsors(): Promise<SponsorItem[]> {
   const { data } = await supabase.from("sponsors").select("*").order("name");
@@ -60,29 +64,22 @@ export default async function HomePage() {
           </Suspense>
         </Reveal>
 
-        {/* Classifica compatta */}
-        <Reveal index={2} className="md:col-span-2 xl:col-span-2 min-h-[220px]">
+        {/* Competizioni in corso: classifica del girone o sfida del tabellone */}
+        <Reveal index={2} className="md:col-span-2 xl:col-span-4 min-h-[220px]">
           <Suspense fallback={<ListSkeleton rows={4} />}>
-            <MiniStandings />
-          </Suspense>
-        </Reveal>
-
-        {/* Cannonieri top 3 */}
-        <Reveal index={3} className="md:col-span-2 xl:col-span-2 min-h-[220px]">
-          <Suspense fallback={<ListSkeleton rows={3} />}>
-            <TopScorers />
+            <HomeCompetitions />
           </Suspense>
         </Reveal>
 
         {/* Prossime 3 partite */}
-        <Reveal index={4} className="md:col-span-2 xl:col-span-3 min-h-[220px]">
+        <Reveal index={3} className="md:col-span-2 xl:col-span-3 min-h-[220px]">
           <Suspense fallback={<ListSkeleton rows={3} />}>
             <UpcomingMatches />
           </Suspense>
         </Reveal>
 
         {/* Ultima news */}
-        <Reveal index={5} className="md:col-span-4 xl:col-span-3 min-h-[220px]">
+        <Reveal index={4} className="md:col-span-2 xl:col-span-3 min-h-[220px]">
           <Suspense fallback={<SkeletonCard className="h-full" />}>
             <LatestNews />
           </Suspense>
@@ -90,13 +87,13 @@ export default async function HomePage() {
 
         {/* Sponsor marquee */}
         {sponsors.length > 0 && (
-          <Reveal index={6} className="md:col-span-4 xl:col-span-6">
+          <Reveal index={5} className="md:col-span-4 xl:col-span-6">
             <SponsorMarquee sponsors={sponsors} />
           </Reveal>
         )}
 
         {/* Social */}
-        <Reveal index={7} className="md:col-span-4 xl:col-span-6">
+        <Reveal index={6} className="md:col-span-4 xl:col-span-6">
           <section className="bento-card p-6 md:p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
             <div>
               <h2 className="font-display text-h2">Seguici sui social</h2>

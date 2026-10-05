@@ -99,9 +99,11 @@ function TieCard({ tie, logos }: { tie: Tie; logos?: TeamLogos }) {
           );
         })}
       </div>
-      {(penalties || (tie.date && rows.every((s) => s?.score == null))) && (
-        <p className="px-3 py-1 text-[10px] text-muted border-t border-border/70">{penalties ?? formatDay(tie.date)}</p>
-      )}
+      {(() => {
+        const toPlay = rows.every((s) => s?.score == null);
+        const info = penalties ?? (toPlay && known ? formatDay(tie.date) ?? "Data da definire" : null);
+        return info && <p className="px-3 py-1 text-[10px] text-muted border-t border-border/70">{info}</p>;
+      })()}
     </div>
   );
 }

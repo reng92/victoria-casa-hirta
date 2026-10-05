@@ -1,3 +1,5 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
@@ -32,6 +34,7 @@ import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, OutcomeBadge, Pill } from "@/components/ui/Badge";
 import { formatDateFull, formatTime, getOutcome } from "@/lib/format";
 import { getHomeAwayScores, getOpponent, getScores, matchContextLabel } from "@/lib/competitions";
+import { excerpt, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 0;
 
@@ -67,7 +70,8 @@ interface MatchEvent {
   player_out: { full_name: string } | null;
 }
 
-async function getMatch(key: string): Promise<Match | null> {
+// Condivisa tra generateMetadata e la pagina: una sola query per richiesta
+const getMatch = cache(async (key: string): Promise<Match | null> => {
   const column = isUuid(key) ? "id" : "slug";
   const { data, error } = await supabase
     .from("matches")
@@ -84,6 +88,30 @@ async function getMatch(key: string): Promise<Match | null> {
     return fallback as unknown as Match | null;
   }
   return data as unknown as Match | null;
+});
+
+// Anteprima del link condiviso: "Victoria Casa Hirta 6-1 Falegnameria Cosenza" e la foto di copertina della partita
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const m = await getMatch(params.slug);
+  if (!m) return { title: "Partita non trovata", robots: { index: false } };
+  const opponent = getOpponent(m);
+  const [home, away] = m.is_home ? ["Victoria Casa Hirta", opponent] : [opponent, "Victoria Casa Hirta"];
+  const scores = getHomeAwayScores(m);
+  const played = m.status !== "scheduled" && scores.home != null && scores.away != null;
+  const title = played ? `${home} ${scores.home}-${scores.away} ${away}` : `${home} - ${away}`;
+  const when = `${formatDateFull(m.match_date)}${played ? "" : ` ore ${formatTime(m.match_date)}`}`;
+  const where = m.venue ? ` · ${m.venue.name}${m.venue.city ? `, ${m.venue.city}` : ""}` : "";
+  const intro = `${matchContextLabel(m)} · ${when}${where}.`;
+  const description = excerpt(`${intro} ${played ? excerpt(m.match_report, 110) || "Risultato, marcatori, formazione e foto della partita." : "Orario, campo, formazione e meteo della partita."}`);
+  const [cover] = await getPhotos(m.id);
+  return pageMetadata({
+    title,
+    absolute: true,
+    description,
+    path: matchHref(m),
+    type: "article",
+    image: cover ? { url: cover.photo_url, alt: `${title}, ${formatDateFull(m.match_date)}` } : null,
+  });
 }
 
 function getInstagramEmbedUrl(url: string): string | null {

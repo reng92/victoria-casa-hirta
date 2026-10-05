@@ -7,8 +7,15 @@ import EmptyState from "@/components/ui/EmptyState";
 import { Pill } from "@/components/ui/Badge";
 import { initials } from "@/lib/format";
 import { playerHref } from "@/lib/links";
+import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 60;
+
+export const metadata = pageMetadata({
+  title: "Rosa",
+  description: "I giocatori della Victoria Casa Hirta: portieri, difensori, centrocampisti e attaccanti con numeri di maglia e statistiche.",
+  path: "/rosa",
+});
 
 const ruoliOrder = ["portiere", "difensore", "centrocampista", "attaccante"];
 
@@ -55,7 +62,7 @@ function PlayerCard({ p, priority }: { p: Player; priority?: boolean }) {
         {p.photo_url ? (
           <Image
             src={p.photo_url}
-            alt=""
+            alt={`${p.full_name}, ${(ruoloSingolare[p.role] ?? p.role).toLowerCase()} della Victoria Casa Hirta`}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
             priority={priority}
@@ -101,14 +108,15 @@ export default async function RosaPage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 md:py-10">
       <PageHeader title="Rosa" subtitle={`Stagione in corso · ${players.length} giocatori`} />
-      <div className="relative aspect-[16/9] md:aspect-[2/1] rounded-hero overflow-hidden mb-8 shadow-card bg-surface-2">
+      {/* Foto squadra 2026/27 (4:3): intera su mobile, su schermi larghi si taglia solo il cielo */}
+      <div className="relative aspect-[4/3] md:aspect-[16/9] rounded-hero overflow-hidden mb-8 shadow-card bg-surface-2">
         <Image
-          src="/squadra2.jpg"
-          alt="Foto di squadra della Victoria Casa Hirta"
+          src="/vch-2627.jpeg"
+          alt="Foto di squadra della Victoria Casa Hirta, stagione 2026/27"
           fill
           priority
           sizes="(min-width:1152px) 1120px, 100vw"
-          className="object-cover object-[center_40%]"
+          className="object-cover object-[center_90%]"
         />
       </div>
 
