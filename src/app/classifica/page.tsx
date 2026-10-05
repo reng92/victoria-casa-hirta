@@ -3,7 +3,7 @@ import { Trophy } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Tabs from "@/components/ui/Tabs";
-import Bracket, { buildBracketRounds, buildPlaceholderRounds } from "@/components/Bracket";
+import Bracket, { TeamLogos, buildBracketRounds, buildPlaceholderRounds } from "@/components/Bracket";
 import { Pill } from "@/components/ui/Badge";
 import {
   Fixture,
@@ -21,6 +21,7 @@ import {
   isVCH,
   sortStandings,
   statusLabel,
+  teamKey,
 } from "@/lib/competitions";
 import { isPlaceholderName } from "@/lib/schedule";
 
@@ -68,6 +69,11 @@ async function getStandings(): Promise<Standing[]> {
     return sortStandings((fallback as unknown as Standing[]) ?? []);
   }
   return sortStandings((data as unknown as Standing[]) ?? []);
+}
+
+async function getTeamLogos(): Promise<TeamLogos> {
+  const { data } = await supabase.from("team_logos").select("team_name, logo_url");
+  return Object.fromEntries(((data as { team_name: string; logo_url: string }[]) ?? []).map((r) => [teamKey(r.team_name), r.logo_url]));
 }
 
 type CompFixture = Fixture & { competition_id: string };
@@ -297,11 +303,13 @@ function GroupStage({
   rows,
   fixtures,
   qualifiedPerGroup,
+  logos,
 }: {
   compName: string;
   rows: Standing[];
   fixtures: Fixture[];
   qualifiedPerGroup: number;
+  logos: TeamLogos;
 }) {
   const groups = groupByGroupName(rows);
   const knockout = fixtures.filter((f) => f.round);
@@ -330,7 +338,7 @@ function GroupStage({
       />
       <div className="mt-6">
         {knockout.length > 0 ? (
-          <Bracket rounds={buildBracketRounds(knockout)} note={waitingGroups ? "Le qualificate compaiono a fine gironi" : undefined} />
+          <Bracket rounds={buildBracketRounds(knockout)} logos={logos} note={waitingGroups ? "Le qualificate compaiono a fine gironi" : undefined} />
         ) : (
           <Bracket rounds={buildPlaceholderRounds(groups.length * qualifiedPerGroup)} note="In attesa della fine dei gironi" />
         )}
@@ -340,7 +348,7 @@ function GroupStage({
 }
 
 export default async function ClassificaPage() {
-  const [standings, fixtures, competitions] = await Promise.all([getStandings(), getFixtures(), getCompetitions()]);
+  const [standings, fixtures, competitions, logos] = await Promise.all([getStandings(), getFixtures(), getCompetitions(), getTeamLogos()]);
 
   // Competizioni con classifica o partite, in corso per prime, poi in arrivo, infine concluse
   const statusOrder: Record<string, number> = { attiva: 0, in_arrivo: 1, conclusa: 2 };
@@ -384,9 +392,10 @@ export default async function ClassificaPage() {
                 rows={c.rows}
                 fixtures={c.fixtures}
                 qualifiedPerGroup={c.qualified_per_group ?? QUALIFIED_PER_GROUP}
+                logos={logos}
               />
             ) : knockoutOnly ? (
-              knockout.length > 0 ? <Bracket rounds={buildBracketRounds(knockout)} /> : null
+              knockout.length > 0 ? <Bracket rounds={buildBracketRounds(knockout)} logos={logos} /> : null
             ) : (
               <>
                 {c.rows.length > 0 && <StandingsTable rows={c.rows} mode="zones" caption={c.name} />}
@@ -394,7 +403,7 @@ export default async function ClassificaPage() {
                 <ResultsByMatchday fixtures={c.fixtures.filter((f) => !f.round)} />
                 {knockout.length > 0 && (
                   <div className="mt-6">
-                    <Bracket rounds={buildBracketRounds(knockout)} />
+                    <Bracket rounds={buildBracketRounds(knockout)} logos={logos} />
                   </div>
                 )}
               </>

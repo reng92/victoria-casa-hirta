@@ -94,7 +94,11 @@ async function knownLogo(opponent: string) {
   const { data } = await supabase
     .from("matches").select("opponent_logo_url")
     .ilike("away_team", opponent).not("opponent_logo_url", "is", null).limit(1);
-  return (data?.[0]?.opponent_logo_url as string | undefined) ?? null;
+  if (data?.[0]?.opponent_logo_url) return data[0].opponent_logo_url as string;
+  // Altrimenti il logo della squadra caricato per le competizioni (team_logos)
+  const { data: team } = await supabase
+    .from("team_logos").select("logo_url").ilike("team_name", opponent.trim()).limit(1);
+  return (team?.[0]?.logo_url as string | undefined) ?? null;
 }
 
 async function insertMatch(competitionId: string, f: FixtureFields) {

@@ -67,7 +67,16 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-border text-muted text-xs flex flex-col sm:flex-row gap-3 sm:gap-1 sm:justify-between">
+        <Link
+          href="/competizioni"
+          className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3 opacity-70 hover:opacity-100 transition-opacity w-fit"
+        >
+          <span className="text-muted text-xs">Partecipiamo a</span>
+          <Image src="/loghi/comp-campania-felix.webp" alt="Campania Felix" width={139} height={160} className="h-11 w-auto" />
+          <Image src="/loghi/comp-campania-cup.webp" alt="Campania Cup" width={304} height={160} className="h-11 w-auto" />
+        </Link>
+
+        <div className="mt-6 pt-6 border-t border-border text-muted text-xs flex flex-col sm:flex-row gap-3 sm:gap-1 sm:justify-between">
           <p>Associazione Sportiva di Fatto Victoria Casa Hirta · 10 anni di sport e amicizia, 2016–2026</p>
           <div className="flex flex-col gap-2 sm:gap-1">
             <p>© {new Date().getFullYear()} Tutti i diritti riservati.</p>

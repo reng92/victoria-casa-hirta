@@ -1,5 +1,6 @@
 import { Trophy } from "lucide-react";
-import { Fixture, fixtureWinner, isVCH, roundOrder } from "@/lib/competitions";
+import TeamLogo from "@/components/ui/TeamLogo";
+import { Fixture, fixtureWinner, isVCH, roundOrder, teamKey } from "@/lib/competitions";
 import { isPlaceholderName } from "@/lib/schedule";
 
 interface Slot {
@@ -67,7 +68,10 @@ function formatDay(iso?: string | null) {
   return `${d}/${mo}${time && time !== "00:00" ? ` · ${time}` : ""}`;
 }
 
-function TieCard({ tie }: { tie: Tie }) {
+/** Loghi per squadra, con chiave `teamKey(nome)` (tabella team_logos). */
+export type TeamLogos = Record<string, string>;
+
+function TieCard({ tie, logos }: { tie: Tie; logos?: TeamLogos }) {
   const rows = [tie.home, tie.away];
   const decided = rows.some((s) => s?.winner);
   const penalties = rows.every((s) => s?.penalties != null) ? `d.c.r. ${tie.home?.penalties}-${tie.away?.penalties}` : null;
@@ -82,6 +86,7 @@ function TieCard({ tie }: { tie: Tie }) {
               key={i}
               className={`flex items-center gap-2 px-3 py-2 text-sm min-h-[38px] ${vch ? "bg-brand/30" : ""} ${decided && !slot?.winner ? "opacity-55" : ""}`}
             >
+              {logos && slot?.name && !slot.pending && <TeamLogo src={logos[teamKey(slot.name)]} name={slot.name} size={20} />}
               <span
                 className={`flex-1 min-w-0 truncate ${
                   !slot?.name || slot.pending ? "text-muted text-xs italic" : slot.winner || vch ? "font-semibold" : ""
@@ -104,9 +109,11 @@ function TieCard({ tie }: { tie: Tie }) {
 export default function Bracket({
   rounds,
   note,
+  logos,
 }: {
   rounds: BracketRound[];
   note?: string;
+  logos?: TeamLogos;
 }) {
   return (
     <div className="bento-card p-5">
@@ -125,7 +132,7 @@ export default function Bracket({
               <h4 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 truncate">{round.label}</h4>
               <div className="flex flex-col justify-around flex-1 gap-3">
                 {round.ties.map((tie, i) => (
-                  <TieCard key={i} tie={tie} />
+                  <TieCard key={i} tie={tie} logos={logos} />
                 ))}
               </div>
             </section>
