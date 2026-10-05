@@ -54,14 +54,16 @@ export function matchContextLabel(m: {
   competition?: { name: string } | null;
   group_name?: string | null;
   matchday?: number | null;
+  round?: string | null;
 }) {
-  return [m.competition?.name ?? "Amichevole", groupLabel(m.group_name), matchdayLabel(m.matchday)]
+  return [m.competition?.name ?? "Amichevole", m.round || groupLabel(m.group_name), m.round ? null : matchdayLabel(m.matchday)]
     .filter(Boolean)
     .join(" · ");
 }
 
 /** Versione breve per liste compatte: "Girone A · G1". */
-export function matchContextShort(m: { group_name?: string | null; matchday?: number | null }) {
+export function matchContextShort(m: { group_name?: string | null; matchday?: number | null; round?: string | null }) {
+  if (m.round) return m.round;
   return [groupLabel(m.group_name), m.matchday ? `G${m.matchday}` : null].filter(Boolean).join(" · ");
 }
 
@@ -156,51 +158,122 @@ export interface Fixture {
   home_score: number | null;
   away_score: number | null;
   status: string;
+  /** Fase finale: posizione nel tabellone (1, 2, ...) e rigori in caso di pareggio. */
+  bracket_slot: number | null;
+  home_penalties: number | null;
+  away_penalties: number | null;
+  /** Provenienza della squadra nel tabellone ('G:A:1', 'W:Semifinale:1'), vedi src/lib/schedule.ts. */
+  home_source: string | null;
+  away_source: string | null;
 }
 
-export function fixtureFromMatch(m: {
+/** Colonne da selezionare per costruire un Fixture. */
+export const RESULT_COLUMNS =
+  "id, match_date, matchday, group_name, round, bracket_slot, home_team, away_team, home_score, away_score, home_penalties, away_penalties, home_source, away_source, status";
+export const MATCH_FIXTURE_COLUMNS =
+  "id, match_date, matchday, group_name, round, bracket_slot, home_team, away_team, is_home, home_score, away_score, home_penalties, away_penalties, home_source, away_source, status";
+
+export interface MatchFixtureRow {
   id: string;
   match_date: string | null;
   matchday: number | null;
   group_name: string | null;
+  round?: string | null;
+  bracket_slot?: number | null;
   away_team: string;
   home_team?: string | null;
   is_home: boolean;
   home_score: number | null;
   away_score: number | null;
+  home_penalties?: number | null;
+  away_penalties?: number | null;
+  home_source?: string | null;
+  away_source?: string | null;
   status: string;
-}): Fixture {
+}
+
+export function fixtureFromMatch(m: MatchFixtureRow): Fixture {
   const opponent = getOpponent(m);
   const { ours, theirs } = getScores(m);
+  // Come i gol, anche i rigori in `matches` sono home_* = Victoria
+  const pOurs = m.home_penalties ?? null;
+  const pTheirs = m.away_penalties ?? null;
   return {
     source: "match",
     id: m.id,
     match_date: m.match_date,
     matchday: m.matchday,
     group_name: m.group_name,
-    round: null,
+    round: m.round ?? null,
+    bracket_slot: m.bracket_slot ?? null,
     home_team: m.is_home ? VCH_NAME : opponent,
     away_team: m.is_home ? opponent : VCH_NAME,
     home_score: m.is_home ? ours : theirs,
     away_score: m.is_home ? theirs : ours,
+    home_penalties: m.is_home ? pOurs : pTheirs,
+    away_penalties: m.is_home ? pTheirs : pOurs,
+    home_source: m.home_source ?? null,
+    away_source: m.away_source ?? null,
     status: m.status,
   };
 }
 
-/** Converte una partita con casa/trasferta reali nel formato di `matches`; null se la Victoria non gioca. */
-export function fixtureToMatchFields(f: Pick<Fixture, "home_team" | "away_team" | "home_score" | "away_score">) {
+/** Riga di `competition_results` letta con RESULT_COLUMNS. */
+export function fixtureFromResult(r: Omit<Fixture, "source">): Fixture {
+  return { ...r, source: "result" };
+}
+
+/**
+ * Converte una partita con casa/trasferta reali nel formato di `matches`
+ * (avversario in away_team, gol e rigori della Victoria in home_*); null se la
+ * Victoria non gioca.
+ */
+export function fixtureToMatchFields(
+  f: Pick<Fixture, "home_team" | "away_team" | "home_score" | "away_score"> &
+    Partial<Pick<Fixture, "home_penalties" | "away_penalties">>,
+) {
+  const hp = f.home_penalties ?? null;
+  const ap = f.away_penalties ?? null;
   if (isVCH(f.home_team)) {
-    return { is_home: true, away_team: f.away_team, home_score: f.home_score, away_score: f.away_score };
+    return { is_home: true, away_team: f.away_team, home_score: f.home_score, away_score: f.away_score, home_penalties: hp, away_penalties: ap };
   }
   if (isVCH(f.away_team)) {
-    return { is_home: false, away_team: f.home_team, home_score: f.away_score, away_score: f.home_score };
+    return { is_home: false, away_team: f.home_team, home_score: f.away_score, away_score: f.home_score, home_penalties: ap, away_penalties: hp };
   }
   return null;
 }
 
-/** Ordina per giornata, poi data (senza giornata in fondo). */
-export function sortFixtures<T extends Pick<Fixture, "matchday" | "match_date">>(rows: T[]): T[] {
+/**
+ * Vincente di una partita a eliminazione diretta (rigori in caso di pareggio);
+ * null finché non è terminata o se manca l'esito dei rigori.
+ */
+export function fixtureWinner(
+  f: Pick<Fixture, "home_score" | "away_score" | "home_penalties" | "away_penalties" | "status">,
+): "home" | "away" | null {
+  if (f.status !== "finished" || f.home_score == null || f.away_score == null) return null;
+  if (f.home_score !== f.away_score) return f.home_score > f.away_score ? "home" : "away";
+  if (f.home_penalties == null || f.away_penalties == null || f.home_penalties === f.away_penalties) return null;
+  return f.home_penalties > f.away_penalties ? "home" : "away";
+}
+
+const ROUND_ORDER = ["Trentaduesimi di finale", "Sedicesimi di finale", "Ottavi di finale", "Quarti di finale", "Semifinale", "Finale 3°/4° posto", "Finale"];
+
+/** Ordine dei turni della fase finale (quelli con nomi non previsti subito prima delle semifinali). */
+export function roundOrder(round: string) {
+  const i = ROUND_ORDER.indexOf(round);
+  return i === -1 ? 3.5 : i;
+}
+
+/** Ordina per giornata, poi data (senza giornata in fondo); la fase finale in coda, per turno e posizione nel tabellone. */
+export function sortFixtures<T extends Pick<Fixture, "matchday" | "match_date"> & Partial<Pick<Fixture, "round" | "bracket_slot">>>(rows: T[]): T[] {
   return [...rows].sort((a, b) => {
+    if (!!a.round !== !!b.round) return a.round ? 1 : -1;
+    if (a.round && b.round) {
+      const ra = roundOrder(a.round), rb = roundOrder(b.round);
+      if (ra !== rb) return ra - rb;
+      const sa = a.bracket_slot ?? 0, sb = b.bracket_slot ?? 0;
+      if (sa !== sb) return sa - sb;
+    }
     const ma = a.matchday ?? Number.MAX_SAFE_INTEGER;
     const mb = b.matchday ?? Number.MAX_SAFE_INTEGER;
     if (ma !== mb) return ma - mb;

@@ -20,6 +20,7 @@ interface Match {
   status: string;
   matchday: number | null;
   group_name: string | null;
+  round: string | null;
   competition_id: string | null;
   venue_id: string | null;
   opponent_logo_url: string | null;
@@ -113,7 +114,7 @@ export default function AdminPartite() {
 
   async function fetchAll() {
     const [{ data: m }, { data: c }, { data: v }, { data: p }] = await Promise.all([
-      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, matchday, group_name, competition_id, venue_id, opponent_logo_url, instagram_reels, match_report, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
+      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, matchday, group_name, round, competition_id, venue_id, opponent_logo_url, instagram_reels, match_report, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
       supabase.from("competitions").select("id, name, format"),
       supabase.from("venues").select("id, name"),
       supabase.from("players").select("id, full_name").eq("is_active", true).order("full_name"),
@@ -879,7 +880,7 @@ export default function AdminPartite() {
                 VCH vs {m.away_team} · {m.is_home ? "Casa" : "Trasferta"}
               </div>
               <div className="text-xs text-gray-400">
-                {new Date(m.match_date).toLocaleDateString("it-IT")} · {[m.competition?.name ?? "–", groupLabel(m.group_name), matchdayLabel(m.matchday)].filter(Boolean).join(" · ")}
+                {new Date(m.match_date).toLocaleDateString("it-IT")} · {[m.competition?.name ?? "–", m.round || groupLabel(m.group_name), m.round ? null : matchdayLabel(m.matchday)].filter(Boolean).join(" · ")}
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap">

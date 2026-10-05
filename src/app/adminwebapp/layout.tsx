@@ -52,7 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </Link>
           <Link href="/" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">← Vai al sito</Link>
           <Link href="/adminwebapp/partite" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Partite</Link>
-          <Link href="/adminwebapp/risultati" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Risultati altre squadre</Link>
+          <Link href="/adminwebapp/risultati" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Risultati e classifiche</Link>
           <Link href="/adminwebapp/marcatori" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Marcatori</Link>
           <Link href="/adminwebapp/rosa" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">Rosa</Link>
           <Link href="/adminwebapp/news" className="text-white/60 hover:text-white transition text-xs whitespace-nowrap">News</Link>

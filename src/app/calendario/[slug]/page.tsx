@@ -47,6 +47,7 @@ interface Match {
   status: string;
   matchday: number | null;
   group_name: string | null;
+  round?: string | null;
   notes: string | null;
   opponent_logo_url: string | null;
   instagram_reels: string[] | null;
@@ -70,7 +71,7 @@ async function getMatch(key: string): Promise<Match | null> {
   const column = isUuid(key) ? "id" : "slug";
   const { data, error } = await supabase
     .from("matches")
-    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, notes, opponent_logo_url, instagram_reels, live_minute, live_period, match_report, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
+    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, round, notes, opponent_logo_url, instagram_reels, live_minute, live_period, match_report, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
     .eq(column, key)
     .single();
   if (error) {

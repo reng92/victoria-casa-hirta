@@ -19,13 +19,14 @@ interface Match {
   status: string;
   matchday: number | null;
   group_name: string | null;
+  round?: string | null;
   opponent_logo_url: string | null;
   venue: { name: string } | null;
   competition: { id: string; name: string } | null;
 }
 
 const SELECT =
-  "id, slug, match_date, home_team, away_team, is_home, status, matchday, group_name, opponent_logo_url, venue:venues(name), competition:competitions(id, name)";
+  "id, slug, match_date, home_team, away_team, is_home, status, matchday, group_name, round, opponent_logo_url, venue:venues(name), competition:competitions(id, name)";
 
 /** Le 3 partite successive a quella in hero. */
 async function getUpcoming(): Promise<Match[]> {

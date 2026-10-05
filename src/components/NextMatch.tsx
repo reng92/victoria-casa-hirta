@@ -24,6 +24,7 @@ interface Match {
   status: string;
   matchday: number | null;
   group_name: string | null;
+  round?: string | null;
   opponent_logo_url: string | null;
   venue: { name: string; address: string; city: string | null; maps_url: string | null } | null;
   competition: { name: string } | null;
@@ -47,7 +48,7 @@ async function getNextMatch(): Promise<Match | null> {
       .limit(1)
       .maybeSingle();
 
-  const { data, error } = await query(BASE_SELECT.replace("matchday,", "matchday, group_name,"));
+  const { data, error } = await query(BASE_SELECT.replace("matchday,", "matchday, group_name, round,"));
   if (error) {
     // Fallback se group_name non esiste ancora
     const { data: fallback } = await query(BASE_SELECT);

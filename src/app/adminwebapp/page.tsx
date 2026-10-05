@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const sections = [
   { href: "/adminwebapp/partite", emoji: "📅", label: "Partite", desc: "Aggiungi e gestisci le partite" },
-  { href: "/adminwebapp/risultati", emoji: "📝", label: "Risultati e classifiche", desc: "Partite delle altre squadre di campionati e coppe, la classifica si aggiorna da sola" },
+  { href: "/adminwebapp/risultati", emoji: "📝", label: "Risultati e classifiche", desc: "Squadre, calendario generato in automatico e risultati di campionati e coppe: classifica e tabellone si aggiornano da soli" },
   { href: "/adminwebapp/marcatori", emoji: "⚽", label: "Marcatori", desc: "Gol, assist e cartellini" },
   { href: "/adminwebapp/rosa", emoji: "👥", label: "Rosa", desc: "Gestisci i giocatori" },
   { href: "/adminwebapp/staff", emoji: "🧑‍💼", label: "Staff", desc: "Gestisci lo staff tecnico" },

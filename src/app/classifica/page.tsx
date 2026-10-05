@@ -3,12 +3,16 @@ import { Trophy } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Tabs from "@/components/ui/Tabs";
-import Bracket, { buildPlaceholderRounds } from "@/components/Bracket";
+import Bracket, { buildBracketRounds, buildPlaceholderRounds } from "@/components/Bracket";
 import { Pill } from "@/components/ui/Badge";
 import {
   Fixture,
+  MATCH_FIXTURE_COLUMNS,
+  MatchFixtureRow,
   QUALIFIED_PER_GROUP,
+  RESULT_COLUMNS,
   fixtureFromMatch,
+  fixtureFromResult,
   groupLabel,
   matchdayLabel,
   sortFixtures,
@@ -18,6 +22,7 @@ import {
   sortStandings,
   statusLabel,
 } from "@/lib/competitions";
+import { isPlaceholderName } from "@/lib/schedule";
 
 export const revalidate = 60;
 
@@ -32,7 +37,20 @@ interface Standing {
   goals_for: number;
   goals_against: number;
   points: number;
-  competition: { id: string; name: string; format: string | null; status: string | null } | null;
+  competition: CompetitionRow | null;
+}
+
+interface CompetitionRow {
+  id: string;
+  name: string;
+  format: string | null;
+  status: string | null;
+  qualified_per_group?: number | null;
+}
+
+async function getCompetitions(): Promise<CompetitionRow[]> {
+  const { data } = await supabase.from("competitions").select("id, name, format, status, qualified_per_group");
+  return (data as CompetitionRow[]) ?? [];
 }
 
 async function getStandings(): Promise<Standing[]> {
@@ -57,17 +75,12 @@ type CompFixture = Fixture & { competition_id: string };
 /** Tutte le partite delle competizioni: quelle tra altre squadre e quelle della Victoria. */
 async function getFixtures(): Promise<CompFixture[]> {
   const [{ data: r }, { data: m }] = await Promise.all([
-    supabase
-      .from("competition_results")
-      .select("id, competition_id, match_date, matchday, group_name, round, home_team, away_team, home_score, away_score, status"),
-    supabase
-      .from("matches")
-      .select("id, competition_id, match_date, matchday, group_name, home_team, away_team, is_home, home_score, away_score, status")
-      .not("competition_id", "is", null),
+    supabase.from("competition_results").select(`competition_id, ${RESULT_COLUMNS}`),
+    supabase.from("matches").select(`competition_id, ${MATCH_FIXTURE_COLUMNS}`).not("competition_id", "is", null),
   ]);
   return sortFixtures([
-    ...((r as Omit<CompFixture, "source">[]) ?? []).map((x) => ({ ...x, source: "result" as const })),
-    ...((m as (Parameters<typeof fixtureFromMatch>[0] & { competition_id: string })[]) ?? []).map((x) => ({
+    ...((r as unknown as Omit<CompFixture, "source">[]) ?? []).map((x) => ({ ...fixtureFromResult(x), competition_id: x.competition_id })),
+    ...((m as unknown as (MatchFixtureRow & { competition_id: string })[]) ?? []).map((x) => ({
       ...fixtureFromMatch(x),
       competition_id: x.competition_id,
     })),
@@ -108,10 +121,10 @@ function FixtureLine({ f }: { f: Fixture }) {
   );
 }
 
-function ResultsByMatchday({ fixtures }: { fixtures: Fixture[] }) {
+function ResultsByMatchday({ fixtures, showGroup = true }: { fixtures: Fixture[]; showGroup?: boolean }) {
   const days: { label: string; date: string | null; rows: Fixture[] }[] = [];
   for (const f of fixtures) {
-    const label = [f.round || matchdayLabel(f.matchday) || "Altre partite", groupLabel(f.group_name)].filter(Boolean).join(" · ");
+    const label = [f.round || matchdayLabel(f.matchday) || "Altre partite", showGroup ? groupLabel(f.group_name) : null].filter(Boolean).join(" · ");
     let d = days.find((x) => x.label === label);
     if (!d) {
       d = { label, date: f.match_date, rows: [] };
@@ -119,15 +132,16 @@ function ResultsByMatchday({ fixtures }: { fixtures: Fixture[] }) {
     }
     d.rows.push(f);
   }
-  // Apre l'ultima giornata con almeno un risultato
-  let openIdx = -1;
+  // Apre l'ultima giornata con almeno un risultato, altrimenti la prima da giocare
+  let openIdx = 0;
   days.forEach((d, i) => {
     if (d.rows.some((f) => f.status === "finished")) openIdx = i;
   });
+  if (days.length === 0) return null;
 
   return (
     <div className="mt-6">
-      <h3 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 px-1">Risultati</h3>
+      <h3 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 px-1">Partite e risultati</h3>
       <div className="rounded-card border border-border bg-surface shadow-card divide-y divide-border">
         {days.map((d, i) => (
           <details key={d.label} open={i === openIdx} className="group px-3 sm:px-4">
@@ -181,10 +195,12 @@ function StandingsTable({
   rows,
   mode,
   caption,
+  qualified = QUALIFIED_PER_GROUP,
 }: {
   rows: Standing[];
   mode: "zones" | "groups";
   caption: string;
+  qualified?: number;
 }) {
   const total = rows.length;
   return (
@@ -212,7 +228,7 @@ function StandingsTable({
             const dr = row.goals_for - row.goals_against;
             const bar =
               mode === "groups"
-                ? pos <= QUALIFIED_PER_GROUP
+                ? pos <= qualified
                   ? "bg-win"
                   : "bg-transparent"
                 : (() => {
@@ -276,9 +292,24 @@ function GroupLegend() {
 /* Sezione competizione                                                */
 /* ------------------------------------------------------------------ */
 
-function GroupStage({ compName, rows }: { compName: string; rows: Standing[] }) {
+function GroupStage({
+  compName,
+  rows,
+  fixtures,
+  qualifiedPerGroup,
+}: {
+  compName: string;
+  rows: Standing[];
+  fixtures: Fixture[];
+  qualifiedPerGroup: number;
+}) {
   const groups = groupByGroupName(rows);
-  const qualified = groups.length * QUALIFIED_PER_GROUP;
+  const knockout = fixtures.filter((f) => f.round);
+  const waitingGroups = knockout.some(
+    (f) =>
+      (f.home_source?.startsWith("G:") && isPlaceholderName(f.home_team, f.home_source)) ||
+      (f.away_source?.startsWith("G:") && isPlaceholderName(f.away_team, f.away_source)),
+  );
 
   return (
     <>
@@ -290,80 +321,84 @@ function GroupStage({ compName, rows }: { compName: string; rows: Standing[] }) 
           count: g.rows.length,
           content: (
             <>
-              <StandingsTable rows={g.rows} mode="groups" caption={`${compName} · ${g.label}`} />
+              <StandingsTable rows={g.rows} mode="groups" caption={`${compName} · ${g.label}`} qualified={qualifiedPerGroup} />
               <GroupLegend />
+              <ResultsByMatchday fixtures={fixtures.filter((f) => !f.round && (f.group_name ?? "") === g.key)} showGroup={false} />
             </>
           ),
         }))}
       />
       <div className="mt-6">
-        <Bracket rounds={buildPlaceholderRounds(qualified)} note="In attesa della fine dei gironi" />
+        {knockout.length > 0 ? (
+          <Bracket rounds={buildBracketRounds(knockout)} note={waitingGroups ? "Le qualificate compaiono a fine gironi" : undefined} />
+        ) : (
+          <Bracket rounds={buildPlaceholderRounds(groups.length * qualifiedPerGroup)} note="In attesa della fine dei gironi" />
+        )}
       </div>
     </>
   );
 }
 
 export default async function ClassificaPage() {
-  const [standings, fixtures] = await Promise.all([getStandings(), getFixtures()]);
+  const [standings, fixtures, competitions] = await Promise.all([getStandings(), getFixtures(), getCompetitions()]);
 
-  // Raggruppa per competizione mantenendo l'ordine di apparizione
-  const comps: { key: string; name: string; format: string | null; status: string | null; rows: Standing[] }[] = [];
-  for (const s of standings) {
-    const key = s.competition?.id ?? s.competition?.name ?? "generale";
-    let c = comps.find((x) => x.key === key);
-    if (!c) {
-      c = {
-        key,
-        name: s.competition?.name ?? "Generale",
-        format: s.competition?.format ?? null,
-        status: s.competition?.status ?? null,
-        rows: [],
-      };
-      comps.push(c);
-    }
-    c.rows.push(s);
-  }
-  // Competizioni in corso per prime, poi in arrivo, infine concluse
+  // Competizioni con classifica o partite, in corso per prime, poi in arrivo, infine concluse
   const statusOrder: Record<string, number> = { attiva: 0, in_arrivo: 1, conclusa: 2 };
-  comps.sort((a, b) => (statusOrder[a.status ?? ""] ?? 1) - (statusOrder[b.status ?? ""] ?? 1));
+  const comps = competitions
+    .map((c) => ({
+      ...c,
+      key: c.id,
+      rows: standings.filter((s) => s.competition?.id === c.id),
+      fixtures: fixtures.filter((f) => f.competition_id === c.id),
+    }))
+    .filter((c) => c.rows.length > 0 || c.fixtures.length > 0)
+    .sort((a, b) => (statusOrder[a.status ?? ""] ?? 1) - (statusOrder[b.status ?? ""] ?? 1) || a.name.localeCompare(b.name));
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 md:py-10">
       <PageHeader title="Classifica" subtitle="Classifiche per competizione" />
 
-      {standings.length === 0 && (
+      {comps.length === 0 && (
         <div className="bento-card">
           <EmptyState icon={Trophy} title="Classifica non disponibile" description="Verrà caricata dopo le prime giornate." />
         </div>
       )}
 
       {comps.map((c) => {
-        const hasGroups = isGroupFormat(c.format) || c.rows.some((r) => !!r.group_name);
+        const knockoutOnly = c.format === "eliminazione_diretta";
+        const hasGroups = !knockoutOnly && (isGroupFormat(c.format) || c.rows.some((r) => !!r.group_name));
+        const knockout = c.fixtures.filter((f) => f.round);
         const headingId = `comp-${c.key}`;
         return (
           <section key={c.key} className="mb-12" aria-labelledby={headingId}>
             <div className="flex items-center gap-2 flex-wrap mb-3 px-1">
               <h2 id={headingId} className="font-display text-h3">{c.name}</h2>
               {c.status && statusLabel[c.status] && (
-                <Pill tone={c.status === "attiva" ? "win" : c.status === "in_arrivo" ? "neutral" : "neutral"}>
-                  {statusLabel[c.status]}
-                </Pill>
+                <Pill tone={c.status === "attiva" ? "win" : "neutral"}>{statusLabel[c.status]}</Pill>
               )}
             </div>
 
             {hasGroups ? (
-              <GroupStage compName={c.name} rows={c.rows} />
+              <GroupStage
+                compName={c.name}
+                rows={c.rows}
+                fixtures={c.fixtures}
+                qualifiedPerGroup={c.qualified_per_group ?? QUALIFIED_PER_GROUP}
+              />
+            ) : knockoutOnly ? (
+              knockout.length > 0 ? <Bracket rounds={buildBracketRounds(knockout)} /> : null
             ) : (
               <>
-                <StandingsTable rows={c.rows} mode="zones" caption={c.name} />
+                {c.rows.length > 0 && <StandingsTable rows={c.rows} mode="zones" caption={c.name} />}
                 {c.rows.length >= 6 && <ZoneLegend />}
+                <ResultsByMatchday fixtures={c.fixtures.filter((f) => !f.round)} />
+                {knockout.length > 0 && (
+                  <div className="mt-6">
+                    <Bracket rounds={buildBracketRounds(knockout)} />
+                  </div>
+                )}
               </>
             )}
-
-            {(() => {
-              const compFixtures = fixtures.filter((f) => f.competition_id === c.key);
-              return compFixtures.length > 0 ? <ResultsByMatchday fixtures={compFixtures} /> : null;
-            })()}
           </section>
         );
       })}

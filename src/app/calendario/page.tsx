@@ -24,6 +24,7 @@ interface Match {
   status: string;
   matchday: number | null;
   group_name: string | null;
+  round?: string | null;
   opponent_logo_url: string | null;
   instagram_reels: string[] | null;
   venue: { name: string } | null;
@@ -33,7 +34,7 @@ interface Match {
 async function getMatches(): Promise<Match[]> {
   const { data, error } = await supabase
     .from("matches")
-    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, opponent_logo_url, instagram_reels, venue:venues(name), competition:competitions(id, name, format)")
+    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, round, opponent_logo_url, instagram_reels, venue:venues(name), competition:competitions(id, name, format)")
     .order("match_date", { ascending: true });
 
   if (error) {
@@ -68,10 +69,10 @@ function groupByCompetition(matches: Match[]): CompetitionGroup[] {
       c = { key: compKey, name: m.competition?.name ?? "Amichevoli", rounds: [] };
       comps.push(c);
     }
-    const roundKey = `${m.group_name ?? ""}-${m.matchday ?? ""}`;
+    const roundKey = m.round ? `ko-${m.round}` : `${m.group_name ?? ""}-${m.matchday ?? ""}`;
     let r = c.rounds.find((x) => x.key === roundKey);
     if (!r) {
-      const label = [groupLabel(m.group_name), matchdayLabel(m.matchday)].filter(Boolean).join(" · ") || null;
+      const label = m.round || [groupLabel(m.group_name), matchdayLabel(m.matchday)].filter(Boolean).join(" · ") || null;
       r = { key: roundKey, label, items: [] };
       c.rounds.push(r);
     }

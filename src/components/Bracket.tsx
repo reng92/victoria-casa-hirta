@@ -1,11 +1,19 @@
 import { Trophy } from "lucide-react";
+import { Fixture, fixtureWinner, isVCH, roundOrder } from "@/lib/competitions";
+import { isPlaceholderName } from "@/lib/schedule";
 
 interface Slot {
   name?: string | null;
+  score?: number | null;
+  penalties?: number | null;
+  winner?: boolean;
+  /** Squadra non ancora definita ("1ª Girone A", "Vincente Semifinale 1"). */
+  pending?: boolean;
 }
 interface Tie {
   home?: Slot;
   away?: Slot;
+  date?: string | null;
 }
 export interface BracketRound {
   label: string;
@@ -31,18 +39,64 @@ export function buildPlaceholderRounds(qualified: number): BracketRound[] {
   return rounds;
 }
 
+/** Tabellone dalle partite della fase finale (quelle con `round`). */
+export function buildBracketRounds(fixtures: Fixture[]): BracketRound[] {
+  const ko = fixtures.filter((f) => f.round);
+  const labels = [...new Set(ko.map((f) => f.round!))].sort((a, b) => roundOrder(a) - roundOrder(b));
+  return labels.map((label) => ({
+    label,
+    ties: ko
+      .filter((f) => f.round === label)
+      .sort((a, b) => (a.bracket_slot ?? 0) - (b.bracket_slot ?? 0))
+      .map((f) => {
+        const played = f.status !== "scheduled" && f.home_score != null && f.away_score != null;
+        const w = fixtureWinner(f);
+        return {
+          date: f.match_date,
+          home: { name: f.home_team, score: played ? f.home_score : null, penalties: f.home_penalties, winner: w === "home", pending: isPlaceholderName(f.home_team, f.home_source) },
+          away: { name: f.away_team, score: played ? f.away_score : null, penalties: f.away_penalties, winner: w === "away", pending: isPlaceholderName(f.away_team, f.away_source) },
+        };
+      }),
+  }));
+}
+
+function formatDay(iso?: string | null) {
+  if (!iso) return null;
+  const [, mo, d] = iso.slice(0, 10).split("-");
+  const time = iso.slice(11, 16);
+  return `${d}/${mo}${time && time !== "00:00" ? ` · ${time}` : ""}`;
+}
+
 function TieCard({ tie }: { tie: Tie }) {
   const rows = [tie.home, tie.away];
+  const decided = rows.some((s) => s?.winner);
+  const penalties = rows.every((s) => s?.penalties != null) ? `d.c.r. ${tie.home?.penalties}-${tie.away?.penalties}` : null;
+  const known = rows.some((s) => s?.name);
   return (
-    <div className="rounded-xl border border-dashed border-border bg-surface-2/40 divide-y divide-border/70">
-      {rows.map((slot, i) => (
-        <div key={i} className="flex items-center gap-2 px-3 py-2 text-sm min-h-[38px]">
-          <span className="w-5 h-5 rounded-full bg-surface border border-border shrink-0" aria-hidden />
-          <span className={slot?.name ? "font-semibold truncate" : "text-muted text-xs"}>
-            {slot?.name ?? "Da definire"}
-          </span>
-        </div>
-      ))}
+    <div className={`rounded-xl border bg-surface-2/40 ${known ? "border-border" : "border-dashed border-border"}`}>
+      <div className="divide-y divide-border/70">
+        {rows.map((slot, i) => {
+          const vch = slot?.name && !slot.pending && isVCH(slot.name);
+          return (
+            <div
+              key={i}
+              className={`flex items-center gap-2 px-3 py-2 text-sm min-h-[38px] ${vch ? "bg-brand/30" : ""} ${decided && !slot?.winner ? "opacity-55" : ""}`}
+            >
+              <span
+                className={`flex-1 min-w-0 truncate ${
+                  !slot?.name || slot.pending ? "text-muted text-xs italic" : slot.winner || vch ? "font-semibold" : ""
+                }`}
+              >
+                {slot?.name ?? "Da definire"}
+              </span>
+              {slot?.score != null && <span className="tabular font-display font-bold">{slot.score}</span>}
+            </div>
+          );
+        })}
+      </div>
+      {(penalties || (tie.date && rows.every((s) => s?.score == null))) && (
+        <p className="px-3 py-1 text-[10px] text-muted border-t border-border/70">{penalties ?? formatDay(tie.date)}</p>
+      )}
     </div>
   );
 }
@@ -64,17 +118,19 @@ export default function Bracket({
       </div>
       {note && <p className="text-xs text-muted mb-4 ml-10">{note}</p>}
 
-      <div className="mt-4 grid gap-4" style={{ gridTemplateColumns: `repeat(${rounds.length}, minmax(0, 1fr))` }}>
-        {rounds.map((round) => (
-          <section key={round.label} aria-label={round.label} className="min-w-0">
-            <h4 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 truncate">{round.label}</h4>
-            <div className="flex flex-col justify-around h-full gap-3">
-              {round.ties.map((tie, i) => (
-                <TieCard key={i} tie={tie} />
-              ))}
-            </div>
-          </section>
-        ))}
+      <div className="mt-4 -mx-5 px-5 overflow-x-auto">
+        <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${rounds.length}, minmax(${rounds.length > 2 ? "170px" : "0"}, 1fr))` }}>
+          {rounds.map((round) => (
+            <section key={round.label} aria-label={round.label} className="min-w-0 flex flex-col">
+              <h4 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 truncate">{round.label}</h4>
+              <div className="flex flex-col justify-around flex-1 gap-3">
+                {round.ties.map((tie, i) => (
+                  <TieCard key={i} tie={tie} />
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
       </div>
     </div>
   );
