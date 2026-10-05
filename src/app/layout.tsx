@@ -29,6 +29,8 @@ export const metadata: Metadata = {
   keywords: ["Victoria Casa Hirta", "VCH", "calcio amatoriale", "Campania", "Over 35", "Campania Cup", "risultati", "classifica"],
   manifest: "/manifest.json",
   robots: { index: true, follow: true },
+  // Proprietà del sito su Google Search Console
+  verification: { google: "H0mNoUWRCc7zWkdFWR1zBPFh8GTmyz2O2q5fWwCHoZk" },
   // Anteprima dei link condivisi su WhatsApp, Facebook e altri social
   openGraph: {
     type: "website",
