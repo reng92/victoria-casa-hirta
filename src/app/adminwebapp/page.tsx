@@ -5,6 +5,7 @@ const sections = [
   { href: "/adminwebapp/risultati", emoji: "📝", label: "Risultati e classifiche", desc: "Squadre, calendario generato in automatico e risultati di campionati e coppe: classifica e tabellone si aggiornano da soli" },
   { href: "/adminwebapp/marcatori", emoji: "⚽", label: "Marcatori", desc: "Gol, assist e cartellini" },
   { href: "/adminwebapp/rosa", emoji: "👥", label: "Rosa", desc: "Gestisci i giocatori" },
+  { href: "/adminwebapp/mvp", emoji: "🏅", label: "MVP del mese", desc: "Candidati, apertura e chiusura delle votazioni" },
   { href: "/adminwebapp/staff", emoji: "🧑‍💼", label: "Staff", desc: "Gestisci lo staff tecnico" },
   { href: "/adminwebapp/competizioni", emoji: "🏆", label: "Competizioni", desc: "Campionati e coppe" },
   { href: "/adminwebapp/classifica", emoji: "📊", label: "Classifica", desc: "Aggiorna le classifiche" },

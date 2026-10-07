@@ -11,6 +11,7 @@ import {
   Handshake,
   MapPin,
   History,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 
@@ -30,6 +31,7 @@ export const primaryNav: NavItem[] = [
 
 /** Voci secondarie: menu "Altro" */
 export const secondaryNav: NavItem[] = [
+  { href: "/mvp", label: "MVP del mese", icon: Award },
   { href: "/cannonieri", label: "Cannonieri", icon: Target },
   { href: "/news", label: "News", icon: Newspaper },
   { href: "/galleria", label: "Galleria", icon: Camera },

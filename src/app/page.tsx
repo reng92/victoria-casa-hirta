@@ -6,6 +6,7 @@ import LastResult from "@/components/home/LastResult";
 import HomeCompetitions from "@/components/home/HomeCompetitions";
 import UpcomingMatches from "@/components/home/UpcomingMatches";
 import LatestNews from "@/components/home/LatestNews";
+import HomeMvp from "@/components/home/HomeMvp";
 import SponsorMarquee, { type SponsorItem } from "@/components/SponsorMarquee";
 import Reveal from "@/components/ui/Reveal";
 import Skeleton, { SkeletonCard } from "@/components/ui/Skeleton";
@@ -56,6 +57,11 @@ export default async function HomePage() {
             <NextMatch />
           </Suspense>
         </Reveal>
+
+        {/* MVP del mese: solo se c'è una votazione in corso, in arrivo o appena chiusa */}
+        <Suspense fallback={null}>
+          <HomeMvp index={1} className="md:col-span-4 xl:col-span-6" />
+        </Suspense>
 
         {/* Ultimo risultato */}
         <Reveal index={1} className="md:col-span-2 xl:col-span-2 min-h-[220px]">
