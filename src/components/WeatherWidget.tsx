@@ -31,6 +31,20 @@ interface WttrHour {
   weatherDesc?: { value: string }[];
 }
 
+interface WttrDay {
+  date: string;
+  hourly: WttrHour[];
+  astronomy?: { sunrise?: string; sunset?: string }[];
+}
+
+/** "06:35 PM" → minuti dalla mezzanotte (ora locale della città). */
+function clockToMinutes(value: string | undefined): number | null {
+  const m = value?.match(/^(d{1,2}):(d{2})s*(AM|PM)$/i);
+  if (!m) return null;
+  const h = (Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0);
+  return h * 60 + Number(m[2]);
+}
+
 /**
  * Previsioni per il giorno e l'ora della partita. match_date è salvato con
  * l'orario locale scritto come UTC (14:30 → 14:30Z), quindi si leggono le
@@ -45,7 +59,7 @@ async function getForecast(city: string, matchDate: string): Promise<WeatherData
     );
     if (!res.ok) return null;
     const data = await res.json();
-    const day = (data.weather as { date: string; hourly: WttrHour[] }[] | undefined)?.find(
+    const day = (data.weather as WttrDay[] | undefined)?.find(
       (d) => d.date === matchDate.slice(0, 10)
     );
     if (!day?.hourly?.length) return null;
@@ -58,12 +72,16 @@ async function getForecast(city: string, matchDate: string): Promise<WeatherData
     });
 
     const code = parseInt(hour.weatherCode);
+    // Partita dopo il tramonto (o prima dell'alba): icone notturne
+    const sunrise = clockToMinutes(day.astronomy?.[0]?.sunrise) ?? 7 * 60;
+    const sunset = clockToMinutes(day.astronomy?.[0]?.sunset) ?? 19 * 60;
+    const night = minutes < sunrise || minutes >= sunset;
     return {
       temperature: parseInt(hour.tempC),
       feelsLike: parseInt(hour.FeelsLikeC),
       // Con lang=it wttr.in mette la descrizione tradotta in lang_it
       description: (hour.lang_it?.[0]?.value ?? hour.weatherDesc?.[0]?.value ?? "").trim(),
-      icon: getWeatherEmoji(code),
+      icon: getWeatherEmoji(code, night),
       rain: RAIN_CODES.includes(code) || STORM_CODES.includes(code),
       rainChance: parseInt(hour.chanceofrain) || 0,
       humidity: parseInt(hour.humidity),
@@ -77,15 +95,15 @@ async function getForecast(city: string, matchDate: string): Promise<WeatherData
 const RAIN_CODES = [176, 263, 266, 281, 284, 293, 296, 299, 302, 305, 308, 311, 314, 317, 320, 353, 356, 359, 362, 365, 374, 377];
 const STORM_CODES = [200, 386, 389, 392];
 
-function getWeatherEmoji(code: number): string {
-  if (code === 113) return "☀️";
-  if (code === 116) return "⛅";
+function getWeatherEmoji(code: number, night: boolean): string {
+  if (code === 113) return night ? "🌙" : "☀️";
+  if (code === 116) return night ? "☁️" : "⛅";
   if (code === 119 || code === 122) return "☁️";
   if ([143, 248, 260].includes(code)) return "🌫️";
   if (RAIN_CODES.includes(code)) return "🌧️";
   if ([179, 182, 185, 227, 230, 323, 326, 329, 332, 335, 338, 350, 368, 371, 395].includes(code)) return "❄️";
   if (STORM_CODES.includes(code)) return "⛈️";
-  return "🌤️";
+  return night ? "🌙" : "🌤️";
 }
 
 function getMatchDayAdvice(weather: WeatherData): string {
