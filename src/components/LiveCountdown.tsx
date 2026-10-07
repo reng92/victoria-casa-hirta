@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { matchInstant } from "@/lib/format";
 
 interface Props {
   /** ISO date della partita */
@@ -8,7 +9,7 @@ interface Props {
 }
 
 function diff(target: string) {
-  const ms = new Date(target).getTime() - Date.now();
+  const ms = matchInstant(target) - Date.now();
   if (ms <= 0) return { days: 0, hours: 0, minutes: 0, expired: true };
   return {
     days: Math.floor(ms / 86_400_000),

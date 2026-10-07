@@ -7,7 +7,7 @@ import WeatherWidget from "@/components/WeatherWidget";
 import LiveCountdown from "@/components/LiveCountdown";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, Pill } from "@/components/ui/Badge";
-import { formatDateLong, formatTime } from "@/lib/format";
+import { formatDateLong, formatTime, nowAsMatchDate } from "@/lib/format";
 import { getHomeAwayScores, getOpponent, matchContextLabel } from "@/lib/competitions";
 import AnniversaryBadge from "@/components/AnniversaryBadge";
 import { matchHref } from "@/lib/links";
@@ -42,7 +42,7 @@ async function getNextMatch(): Promise<Match | null> {
     supabase
       .from("matches")
       .select(select)
-      .or(`status.eq.live,and(status.eq.scheduled,match_date.gte.${new Date().toISOString()})`)
+      .or(`status.eq.live,and(status.eq.scheduled,match_date.gte.${nowAsMatchDate(3)})`)
       .order("status", { ascending: true }) // "live" < "scheduled": live per primo
       .order("match_date", { ascending: true })
       .limit(1)

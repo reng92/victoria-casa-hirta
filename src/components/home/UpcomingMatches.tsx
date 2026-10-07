@@ -5,7 +5,7 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo from "@/components/ui/TeamLogo";
 import { Pill } from "@/components/ui/Badge";
-import { formatTime, formatWeekday } from "@/lib/format";
+import { formatTime, formatWeekday, nowAsMatchDate } from "@/lib/format";
 import { getOpponent, matchContextShort } from "@/lib/competitions";
 import { matchHref } from "@/lib/links";
 
@@ -35,7 +35,7 @@ async function getUpcoming(): Promise<Match[]> {
       .from("matches")
       .select(select)
       .in("status", ["scheduled", "live"])
-      .gte("match_date", new Date().toISOString())
+      .gte("match_date", nowAsMatchDate(3))
       .order("match_date", { ascending: true })
       .limit(4);
   const { data, error } = await run(SELECT);
