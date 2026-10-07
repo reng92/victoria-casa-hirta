@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase";
+import { SITE_URL } from "@/lib/seo";
 
 const MAX_SIDE = 1600;
 
@@ -43,6 +44,6 @@ export async function uploadImage(
     return null;
   }
 
-  const { data } = supabase.storage.from("media").getPublicUrl(filename);
-  return data.publicUrl;
+  // Servita dal dominio del sito tramite il rewrite /media/* in next.config.mjs
+  return `${SITE_URL}/media/${filename}`;
 }
