@@ -7,6 +7,18 @@ const nextConfig = {
     // trasformazioni al mese. Le foto vengono compresse al caricamento (lib/storage.ts).
     unoptimized: true,
   },
+  async headers() {
+    // I nomi dei file caricati sono unici (timestamp + suffisso casuale): cache lunga
+    return [
+      {
+        source: "/media/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+          { key: "CDN-Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     // Le immagini caricate dall'admin stanno nel bucket "media" di Supabase,
     // ma vengono servite dal dominio del sito: victoriacasahirta.it/media/...
