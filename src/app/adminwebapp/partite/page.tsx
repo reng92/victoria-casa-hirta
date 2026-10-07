@@ -174,11 +174,11 @@ export default function AdminPartite() {
 
   function openEdit(m: Match) {
     setEditMatch(m);
-    const d = new Date(m.match_date);
+    // match_date è un orario "da parete" salvato in UTC: si legge dalla stringa, senza il fuso del browser
     setEditForm({
       away_team: m.away_team,
-      match_date: d.toISOString().split("T")[0],
-      match_time: d.toTimeString().slice(0, 5),
+      match_date: m.match_date.slice(0, 10),
+      match_time: m.match_date.slice(11, 16),
       is_home: m.is_home,
       competition_id: m.competition_id ?? "",
       venue_id: m.venue_id ?? "",
@@ -232,8 +232,7 @@ export default function AdminPartite() {
     setLiveAway(String(match.away_score ?? 0));
     setLiveMinuteDisplay(String(match.live_minute ?? 0));
     setLiveExtraTime(String(match.live_extra_time ?? 0));
-    const matchTime = new Date(match.match_date).toTimeString().slice(0, 5);
-    setLiveStartTime(matchTime);
+    setLiveStartTime(match.match_date.slice(11, 16));
     setLiveOpponentLogo(match.opponent_logo_url ?? "");
     setLiveMsg("");
     await supabase.from("matches").update({
@@ -291,8 +290,8 @@ export default function AdminPartite() {
 
   async function updateStartTime() {
     if (!liveMatchId || !liveStartTime) return;
-    const today = new Date().toISOString().split("T")[0];
-    const newDatetime = `${today}T${liveStartTime}:00`;
+    const day = matches.find(m => m.id === liveMatchId)?.match_date.slice(0, 10) ?? new Date().toISOString().split("T")[0];
+    const newDatetime = `${day}T${liveStartTime}:00`;
     await supabase.from("matches").update({
       match_date: newDatetime,
       live_started_at: newDatetime,
