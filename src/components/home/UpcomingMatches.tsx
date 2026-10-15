@@ -28,19 +28,19 @@ interface Match {
 const SELECT =
   "id, slug, match_date, home_team, away_team, is_home, status, matchday, group_name, round, opponent_logo_url, venue:venues(name), competition:competitions(id, name)";
 
-/** Le 3 partite successive a quella in hero. */
+/** Le prossime 3 partite (compresa quella in hero), con lo stesso filtro e ordine di NextMatch. */
 async function getUpcoming(): Promise<Match[]> {
   const run = (select: string) =>
     supabase
       .from("matches")
       .select(select)
-      .in("status", ["scheduled", "live"])
-      .gte("match_date", nowAsMatchDate(3))
+      .or(`status.eq.live,and(status.eq.scheduled,match_date.gte.${nowAsMatchDate(3)})`)
+      .order("status", { ascending: true })
       .order("match_date", { ascending: true })
-      .limit(4);
+      .limit(3);
   const { data, error } = await run(SELECT);
   const rows = error ? (await run(SELECT.replace("group_name, ", ""))).data : data;
-  return ((rows as unknown as Match[]) ?? []).slice(1, 4);
+  return (rows as unknown as Match[]) ?? [];
 }
 
 export default async function UpcomingMatches() {
@@ -50,7 +50,7 @@ export default async function UpcomingMatches() {
     <div className="bento-card p-5 h-full flex flex-col">
       <SectionHeader title="Prossime partite" icon={CalendarDays} href="/calendario" hrefLabel="Calendario" />
       {matches.length === 0 ? (
-        <EmptyState compact title="Nessun'altra partita in programma" description="Il calendario verrà aggiornato a breve." />
+        <EmptyState compact title="Nessuna partita in programma" description="Il calendario verrà aggiornato a breve." />
       ) : (
         <ul className="mt-4 flex flex-col divide-y divide-border flex-1">
           {matches.map((m) => {
