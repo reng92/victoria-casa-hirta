@@ -29,13 +29,14 @@ interface Draft {
   away_score: string;
   home_penalties: string;
   away_penalties: string;
+  extra_time: boolean;
   home_source: string;
   away_source: string;
 }
 
 const emptyDraft: Draft = {
   date: "", time: "", matchday: "", group_name: "", home_team: "", away_team: "",
-  home_score: "", away_score: "", home_penalties: "", away_penalties: "", home_source: "", away_source: "",
+  home_score: "", away_score: "", home_penalties: "", away_penalties: "", extra_time: false, home_source: "", away_source: "",
 };
 
 const rowKey = (f: Fixture) => `${f.source}:${f.id}`;
@@ -55,6 +56,7 @@ function toDraft(f: Fixture): Draft {
     away_score: str(f.away_score),
     home_penalties: str(f.home_penalties),
     away_penalties: str(f.away_penalties),
+    extra_time: f.extra_time,
     home_source: f.home_source ?? "",
     away_source: f.away_source ?? "",
   };
@@ -81,6 +83,7 @@ function draftToFields(d: Draft, base: Pick<Fixture, "round" | "bracket_slot" | 
     away_score,
     home_penalties: base.round && draw ? toInt(d.home_penalties) : null,
     away_penalties: base.round && draw ? toInt(d.away_penalties) : null,
+    extra_time: !!base.round && scored && d.extra_time,
     home_source: d.home_source || null,
     away_source: d.away_source || null,
     status: base.status === "live" ? "live" : scored ? "finished" : "scheduled",
@@ -279,7 +282,7 @@ export default function AdminRisultati() {
       b.missing.map((p) => ({
         match_date: null, matchday: p.matchday, group_name: b.group, round: null, bracket_slot: null,
         home_team: p.home_team, away_team: p.away_team, home_score: null, away_score: null,
-        home_penalties: null, away_penalties: null, home_source: null, away_source: null, status: "scheduled",
+        home_penalties: null, away_penalties: null, extra_time: false, home_source: null, away_source: null, status: "scheduled",
       })),
     );
     if (!rows.length) return;
@@ -302,7 +305,7 @@ export default function AdminRisultati() {
       }
       const rows: FixtureFields[] = plannedBracket.map((t) => ({
         ...t, match_date: null, matchday: null, group_name: null,
-        home_score: null, away_score: null, home_penalties: null, away_penalties: null, status: "scheduled",
+        home_score: null, away_score: null, home_penalties: null, away_penalties: null, extra_time: false, status: "scheduled",
       }));
       const err = await insertFixtures(compId, rows);
       if (err) return "Errore: " + err;
@@ -325,6 +328,8 @@ export default function AdminRisultati() {
     if (teamKey(fields.home_team) === teamKey(fields.away_team)) return "Le due squadre coincidono";
     const placeholder = isPlaceholderName(fields.home_team, fields.home_source) || isPlaceholderName(fields.away_team, fields.away_source);
     if (placeholder && fields.home_score != null) return `${fields.home_team} – ${fields.away_team}: le squadre non sono ancora definite`;
+    if ((fields.home_penalties == null) !== (fields.away_penalties == null)) return `${fields.home_team} – ${fields.away_team}: inserisci i rigori di entrambe le squadre`;
+    if (fields.home_penalties != null && fields.home_penalties === fields.away_penalties) return `${fields.home_team} – ${fields.away_team}: ai rigori non si può pareggiare`;
     const vch = isVCH(fields.home_team) || isVCH(fields.away_team);
     if (vch && fields.status === "finished" && !fields.match_date) return "Per le partite della Victoria serve la data, così finiscono anche nel calendario";
     return updateFixture(compId, f, fields);
@@ -688,12 +693,23 @@ function FixtureRow({
         {name(d.away_team, d.away_source, "text-left")}
       </div>
 
-      {f.round && draw && (
-        <div className="flex items-center justify-center gap-2 mt-2 text-xs text-gray-500">
-          Rigori
-          <input type="number" inputMode="numeric" min="0" className={`${input} w-11 text-center`} value={d.home_penalties} onChange={(e) => onChange({ home_penalties: e.target.value })} aria-label="Rigori casa" />
-          –
-          <input type="number" inputMode="numeric" min="0" className={`${input} w-11 text-center`} value={d.away_penalties} onChange={(e) => onChange({ away_penalties: e.target.value })} aria-label="Rigori trasferta" />
+      {f.round && finished && (
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-2 text-xs text-gray-500">
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={d.extra_time} onChange={(e) => onChange({ extra_time: e.target.checked })} />
+            Dopo i supplementari
+          </label>
+          {draw && (
+            <span className="flex items-center gap-2">
+              Rigori
+              <input type="number" inputMode="numeric" min="0" className={`${input} w-11 text-center`} value={d.home_penalties} onChange={(e) => onChange({ home_penalties: e.target.value })} aria-label="Rigori casa" />
+              –
+              <input type="number" inputMode="numeric" min="0" className={`${input} w-11 text-center`} value={d.away_penalties} onChange={(e) => onChange({ away_penalties: e.target.value })} aria-label="Rigori trasferta" />
+            </span>
+          )}
+          <span className="basis-full text-center text-[11px] text-gray-400">
+            Nei gol metti il risultato {d.extra_time ? "dopo i supplementari" : "dei tempi regolamentari"}, senza i rigori.
+          </span>
         </div>
       )}
 

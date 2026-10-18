@@ -17,6 +17,9 @@ interface Match {
   is_home: boolean;
   home_score: number | null;
   away_score: number | null;
+  home_penalties: number | null;
+  away_penalties: number | null;
+  extra_time: boolean;
   status: string;
   matchday: number | null;
   group_name: string | null;
@@ -77,6 +80,9 @@ export default function AdminPartite() {
     status: "scheduled",
     home_score: "",
     away_score: "",
+    home_penalties: "",
+    away_penalties: "",
+    extra_time: false,
     opponent_logo_url: "",
   });
   const [editReport, setEditReport] = useState("");
@@ -98,6 +104,8 @@ export default function AdminPartite() {
   const [liveMinuteDisplay, setLiveMinuteDisplay] = useState("");
   const [liveStartTime, setLiveStartTime] = useState("");
   const [liveExtraTime, setLiveExtraTime] = useState("0");
+  const [livePenHome, setLivePenHome] = useState("0");
+  const [livePenAway, setLivePenAway] = useState("0");
   const [liveOpponentLogo, setLiveOpponentLogo] = useState("");
   const [liveOpponentLogoUploading, setLiveOpponentLogoUploading] = useState(false);
   const [liveEvents, setLiveEvents] = useState<MatchEvent[]>([]);
@@ -114,7 +122,7 @@ export default function AdminPartite() {
 
   async function fetchAll() {
     const [{ data: m }, { data: c }, { data: v }, { data: p }] = await Promise.all([
-      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, status, matchday, group_name, round, competition_id, venue_id, opponent_logo_url, instagram_reels, match_report, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
+      supabase.from("matches").select("id, match_date, away_team, is_home, home_score, away_score, home_penalties, away_penalties, extra_time, status, matchday, group_name, round, competition_id, venue_id, opponent_logo_url, instagram_reels, match_report, live_minute, live_minute_set_at, live_period, live_extra_time, competition:competitions(name)").order("match_date", { ascending: false }),
       supabase.from("competitions").select("id, name, format"),
       supabase.from("venues").select("id, name"),
       supabase.from("players").select("id, full_name").eq("is_active", true).order("full_name"),
@@ -187,6 +195,9 @@ export default function AdminPartite() {
       status: m.status,
       home_score: m.home_score !== null ? String(m.home_score) : "",
       away_score: m.away_score !== null ? String(m.away_score) : "",
+      home_penalties: m.home_penalties !== null ? String(m.home_penalties) : "",
+      away_penalties: m.away_penalties !== null ? String(m.away_penalties) : "",
+      extra_time: !!m.extra_time,
       opponent_logo_url: m.opponent_logo_url ?? "",
     });
     setEditReels(m.instagram_reels ?? []);
@@ -201,6 +212,14 @@ export default function AdminPartite() {
     setEditLoading(true);
     setEditMsg("");
     const match_date = `${editForm.match_date}T${editForm.match_time || "00:00"}:00`;
+    const home_score = editForm.home_score !== "" ? parseInt(editForm.home_score) : null;
+    const away_score = editForm.away_score !== "" ? parseInt(editForm.away_score) : null;
+    // I rigori contano solo se la partita è finita in parità
+    const draw = home_score != null && home_score === away_score;
+    const hp = draw && editForm.home_penalties !== "" ? parseInt(editForm.home_penalties) : null;
+    const ap = draw && editForm.away_penalties !== "" ? parseInt(editForm.away_penalties) : null;
+    if ((hp == null) !== (ap == null)) { setEditMsg("Errore: inserisci i rigori di entrambe le squadre"); setEditLoading(false); return; }
+    if (hp != null && hp === ap) { setEditMsg("Errore: ai rigori non si può pareggiare"); setEditLoading(false); return; }
     const { error } = await supabase.from("matches").update({
       away_team: editForm.away_team,
       match_date,
@@ -210,8 +229,11 @@ export default function AdminPartite() {
       matchday: editForm.matchday ? parseInt(editForm.matchday) : null,
       group_name: isGroupFormat(formatOf(editForm.competition_id)) && editForm.group_name ? editForm.group_name : null,
       status: editForm.status,
-      home_score: editForm.home_score !== "" ? parseInt(editForm.home_score) : null,
-      away_score: editForm.away_score !== "" ? parseInt(editForm.away_score) : null,
+      home_score,
+      away_score,
+      home_penalties: hp,
+      away_penalties: ap,
+      extra_time: home_score != null && editForm.extra_time,
       opponent_logo_url: editForm.opponent_logo_url || null,
       instagram_reels: editReels.length > 0 ? editReels : null,
       match_report: editReport.trim() || null,
@@ -232,6 +254,8 @@ export default function AdminPartite() {
     setLiveAway(String(match.away_score ?? 0));
     setLiveMinuteDisplay(String(match.live_minute ?? 0));
     setLiveExtraTime(String(match.live_extra_time ?? 0));
+    setLivePenHome(String(match.home_penalties ?? 0));
+    setLivePenAway(String(match.away_penalties ?? 0));
     setLiveStartTime(match.match_date.slice(11, 16));
     setLiveOpponentLogo(match.opponent_logo_url ?? "");
     setLiveMsg("");
@@ -251,10 +275,17 @@ export default function AdminPartite() {
       live_minute: minuteStart,
       live_minute_set_at: new Date().toISOString(),
       live_extra_time: 0,
+      // Il risultato finale sarà "d.t.s."
+      ...(period === "extra_time" ? { extra_time: true } : {}),
+      ...(period === "penalties" ? { live_minute_set_at: null } : {}),
     }).eq("id", liveMatchId);
+    if (period === "penalties") {
+      setLivePenHome(String(liveMatch?.home_penalties ?? 0));
+      setLivePenAway(String(liveMatch?.away_penalties ?? 0));
+    }
     setLiveMinuteDisplay(String(minuteStart));
     setLiveExtraTime("0");
-    setLiveMsg(period === "half_time" ? "⏸ Intervallo!" : period === "second_half" ? "▶️ Secondo tempo iniziato!" : period === "extra_time" ? "⚡ Tempi supplementari!" : "");
+    setLiveMsg(period === "half_time" ? "⏸ Intervallo!" : period === "second_half" ? "▶️ Secondo tempo iniziato!" : period === "extra_time" ? "⚡ Tempi supplementari!" : period === "penalties" ? "🎯 Calci di rigore!" : "");
     fetchAll();
   }
 
@@ -265,6 +296,16 @@ export default function AdminPartite() {
       away_score: parseInt(liveAway) || 0,
     }).eq("id", liveMatchId);
     setLiveMsg("✅ Punteggio aggiornato!");
+    fetchAll();
+  }
+
+  async function updateLivePenalties() {
+    if (!liveMatchId) return;
+    await supabase.from("matches").update({
+      home_penalties: parseInt(livePenHome) || 0,
+      away_penalties: parseInt(livePenAway) || 0,
+    }).eq("id", liveMatchId);
+    setLiveMsg("✅ Rigori aggiornati!");
     fetchAll();
   }
 
@@ -368,6 +409,7 @@ export default function AdminPartite() {
     half_time: "⏸ Intervallo",
     second_half: "🔴 Secondo tempo",
     extra_time: "⚡ Supplementari",
+    penalties: "🎯 Rigori",
     finished: "✅ Terminata",
   };
 
@@ -425,6 +467,28 @@ export default function AdminPartite() {
             Aggiorna punteggio
           </button>
 
+          {/* Calci di rigore */}
+          {liveMatch.live_period === "penalties" && (
+            <div className="bg-orange-500/20 border border-orange-300/30 rounded-xl p-4 mb-4">
+              <div className="text-sm font-semibold mb-3 text-center">🎯 Calci di rigore</div>
+              <div className="flex items-center justify-center gap-6 mb-3">
+                <div className="text-center">
+                  <div className="text-xs text-white/60 mb-1">VCH</div>
+                  <input type="number" min="0" className="w-16 text-center text-2xl font-extrabold bg-white/10 border border-white/20 rounded-xl py-1.5 text-white" value={livePenHome} onChange={e => setLivePenHome(e.target.value)} />
+                </div>
+                <div className="text-2xl font-extrabold text-white/40">–</div>
+                <div className="text-center">
+                  <div className="text-xs text-white/60 mb-1">{liveMatch.away_team}</div>
+                  <input type="number" min="0" className="w-16 text-center text-2xl font-extrabold bg-white/10 border border-white/20 rounded-xl py-1.5 text-white" value={livePenAway} onChange={e => setLivePenAway(e.target.value)} />
+                </div>
+              </div>
+              <button onClick={updateLivePenalties} className="w-full bg-white text-brand-blue font-bold py-2 rounded-full hover:opacity-90 text-sm">
+                Aggiorna rigori
+              </button>
+              <p className="text-xs text-white/50 mt-2 text-center">Il punteggio sopra resta quello del campo (senza rigori).</p>
+            </div>
+          )}
+
           {/* Gestione tempi */}
           <div className="bg-white/10 rounded-xl p-4 mb-4">
             <div className="text-sm font-semibold mb-3">⏱️ Gestione tempi</div>
@@ -438,7 +502,10 @@ export default function AdminPartite() {
               <button onClick={() => setPeriod("extra_time", 90)} className="bg-purple-500 text-white text-xs font-bold py-2 rounded-full hover:opacity-90">
                 ⚡ Supplementari
               </button>
-              <button onClick={stopTimer} className="bg-white/20 text-white text-xs font-semibold py-2 rounded-full hover:bg-white/30">
+              <button onClick={() => setPeriod("penalties", 120)} className="bg-orange-500 text-white text-xs font-bold py-2 rounded-full hover:opacity-90">
+                🎯 Rigori
+              </button>
+              <button onClick={stopTimer} className="col-span-2 bg-white/20 text-white text-xs font-semibold py-2 rounded-full hover:bg-white/30">
                 ⏸ Ferma timer
               </button>
             </div>
@@ -695,6 +762,31 @@ export default function AdminPartite() {
               <label className="text-xs text-gray-500 mb-1 block">Gol Avversario</label>
               <input type="number" min="0" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.away_score} onChange={e => setEditForm(f => ({ ...f, away_score: e.target.value }))} />
             </div>
+            {/* Supplementari e rigori (partite di coppa) */}
+            <div className="sm:col-span-2 bg-gray-50 rounded-xl p-4 flex flex-col gap-3">
+              <p className="text-xs text-gray-500 font-semibold">🏆 Coppe: supplementari e rigori</p>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={editForm.extra_time} onChange={e => setEditForm(f => ({ ...f, extra_time: e.target.checked }))} />
+                Risultato dopo i tempi supplementari (d.t.s.)
+              </label>
+              {editForm.home_score !== "" && editForm.home_score === editForm.away_score ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Rigori VCH</label>
+                    <input type="number" min="0" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" value={editForm.home_penalties} onChange={e => setEditForm(f => ({ ...f, home_penalties: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Rigori Avversario</label>
+                    <input type="number" min="0" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" value={editForm.away_penalties} onChange={e => setEditForm(f => ({ ...f, away_penalties: e.target.value }))} />
+                  </div>
+                </div>
+              ) : (
+                <p className="text-[11px] text-gray-400">I campi dei rigori compaiono quando i gol sono in parità.</p>
+              )}
+              <p className="text-[11px] text-gray-400">
+                Nei campi &quot;Gol&quot; va il risultato {editForm.extra_time ? "dopo i supplementari" : "dei tempi regolamentari"}, senza i rigori: se si è andati direttamente ai rigori lascia i supplementari spenti.
+              </p>
+            </div>
             {/* Instagram Reels */}
             <div className="sm:col-span-2">
               <label className="text-xs text-gray-500 mb-2 block font-semibold">🎬 Instagram Reels</label>
@@ -894,7 +986,14 @@ export default function AdminPartite() {
                 </button>
               )}
               {m.status === "finished" && (
-                <span className="text-sm font-bold text-brand-red">{m.home_score} – {m.away_score}</span>
+                <span className="text-sm font-bold text-brand-red">
+                  {m.home_score} – {m.away_score}
+                  {(m.extra_time || m.home_penalties != null) && (
+                    <span className="ml-1 text-[11px] font-semibold text-gray-500">
+                      {[m.extra_time && "d.t.s.", m.home_penalties != null && `d.c.r. ${m.home_penalties}-${m.away_penalties}`].filter(Boolean).join(" · ")}
+                    </span>
+                  )}
+                </span>
               )}
               <button onClick={() => openEdit(m)} className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition">
                 ✏️ Modifica

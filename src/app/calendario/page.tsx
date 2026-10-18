@@ -6,8 +6,8 @@ import Tabs from "@/components/ui/Tabs";
 import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, Pill } from "@/components/ui/Badge";
-import { formatDateShort, formatTime, formatWeekday, getOutcome, outcomeShort } from "@/lib/format";
-import { getHomeAwayScores, getOpponent, getScores, groupLabel, matchdayLabel } from "@/lib/competitions";
+import { formatDateShort, formatTime, formatWeekday, outcomeShort } from "@/lib/format";
+import { getHomeAwayScores, getMatchOutcome, getOpponent, groupLabel, matchResultNote, matchdayLabel } from "@/lib/competitions";
 import { matchHref } from "@/lib/links";
 import { competitionHref, getTeamLogos, getUnscheduledVCH } from "@/lib/competition-data";
 import { isVCH, teamKey } from "@/lib/competitions";
@@ -30,6 +30,9 @@ interface Match {
   is_home: boolean;
   home_score: number | null;
   away_score: number | null;
+  home_penalties?: number | null;
+  away_penalties?: number | null;
+  extra_time?: boolean | null;
   status: string;
   matchday: number | null;
   group_name: string | null;
@@ -43,7 +46,7 @@ interface Match {
 async function getMatches(): Promise<Match[]> {
   const { data, error } = await supabase
     .from("matches")
-    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, round, opponent_logo_url, instagram_reels, venue:venues(name), competition:competitions(id, name, format)")
+    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, home_penalties, away_penalties, extra_time, status, matchday, group_name, round, opponent_logo_url, instagram_reels, venue:venues(name), competition:competitions(id, name, format)")
     .order("match_date", { ascending: true });
 
   if (error) {
@@ -94,8 +97,8 @@ function MatchRow({ m }: { m: Match }) {
   const isLive = m.status === "live";
   const isFinished = m.status === "finished";
   const opponent = getOpponent(m);
-  const { ours, theirs } = getScores(m);
-  const outcome = isFinished ? getOutcome(ours, theirs) : null;
+  const outcome = isFinished ? getMatchOutcome(m) : null;
+  const note = isFinished ? matchResultNote(m) : null;
   const { home, away } = getHomeAwayScores(m);
   const d = new Date(m.match_date);
   const reels = m.instagram_reels?.length ?? 0;
@@ -146,6 +149,7 @@ function MatchRow({ m }: { m: Match }) {
               <span className={`font-display text-2xl font-bold tabular leading-none ${scoreColor}`}>
                 {home ?? "–"}<span className="text-muted mx-1">–</span>{away ?? "–"}
               </span>
+              {note && <span className="text-[10px] font-semibold text-muted tabular whitespace-nowrap">{note}</span>}
               <span className="flex items-center gap-1.5">
                 {reels > 0 && (
                   <span className="inline-flex items-center gap-0.5 text-[10px] text-muted" title={`${reels} reel`}>

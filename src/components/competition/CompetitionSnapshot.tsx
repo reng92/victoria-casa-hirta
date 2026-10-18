@@ -1,5 +1,5 @@
 import TeamLogo from "@/components/ui/TeamLogo";
-import { Fixture, fixtureWinner, groupLabel, isVCH, roundOrder, teamKey } from "@/lib/competitions";
+import { Fixture, fixtureWinner, groupLabel, isVCH, resultNote, roundOrder, teamKey } from "@/lib/competitions";
 import { isPlaceholderName } from "@/lib/schedule";
 import type { Standing, TeamLogos } from "@/lib/competition-data";
 
@@ -84,7 +84,7 @@ function TieSnapshot({ f, logos }: { f: Fixture; logos: TeamLogos }) {
   const winner = fixtureWinner(f);
   const vchSide = isVCH(f.home_team) ? "home" : "away";
   const outcome = !winner ? null : winner === vchSide ? "Qualificata al turno successivo" : `Eliminata ai ${f.round!.toLowerCase()}`;
-  const penalties = f.home_penalties != null && f.away_penalties != null ? `d.c.r. ${f.home_penalties}-${f.away_penalties}` : null;
+  const penalties = played ? resultNote(f) : null;
 
   const team = (name: string, score: number | null, side: "home" | "away") => (
     <div className={`flex items-center gap-2.5 px-3 py-2.5 ${isVCH(name) ? "bg-brand/40 font-semibold" : ""} ${winner && winner !== side ? "opacity-60" : ""}`}>

@@ -6,8 +6,8 @@ import SectionHeader from "@/components/ui/SectionHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { OutcomeBadge } from "@/components/ui/Badge";
-import { formatDateShort, getOutcome } from "@/lib/format";
-import { getHomeAwayScores, getOpponent, getScores, matchContextShort } from "@/lib/competitions";
+import { formatDateShort } from "@/lib/format";
+import { getHomeAwayScores, getMatchOutcome, getOpponent, matchContextShort, matchResultNote } from "@/lib/competitions";
 import { matchHref } from "@/lib/links";
 
 interface Match {
@@ -19,6 +19,9 @@ interface Match {
   is_home: boolean;
   home_score: number | null;
   away_score: number | null;
+  home_penalties?: number | null;
+  away_penalties?: number | null;
+  extra_time?: boolean | null;
   status: string;
   matchday: number | null;
   group_name: string | null;
@@ -28,7 +31,7 @@ interface Match {
 }
 
 const SELECT =
-  "id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, round, opponent_logo_url, competition:competitions(id, name)";
+  "id, slug, match_date, home_team, away_team, is_home, home_score, away_score, home_penalties, away_penalties, extra_time, status, matchday, group_name, round, opponent_logo_url, competition:competitions(id, name)";
 
 async function getLastResult(): Promise<Match | null> {
   const run = (select: string) =>
@@ -82,8 +85,8 @@ export default async function LastResult() {
 function LastResultBody({ m }: { m: Match }) {
   const opponent = getOpponent(m);
   const context = matchContextShort(m);
-  const { ours, theirs } = getScores(m);
-  const outcome = getOutcome(ours, theirs);
+  const outcome = getMatchOutcome(m);
+  const note = matchResultNote(m);
   const { home, away } = getHomeAwayScores(m);
   const scoreColor = outcome === "win" ? "text-win" : outcome === "loss" ? "text-loss" : outcome === "draw" ? "text-draw" : "text-text";
 
@@ -99,6 +102,7 @@ function LastResultBody({ m }: { m: Match }) {
           <span className={`font-display text-4xl font-bold tabular leading-none ${scoreColor}`}>
             {home ?? "–"}<span className="text-muted mx-1.5 font-normal">–</span>{away ?? "–"}
           </span>
+          {note && <span className="text-[11px] font-semibold text-muted tabular mt-1.5">{note}</span>}
           {outcome && <OutcomeBadge outcome={outcome} className="mt-2" />}
         </div>
         <div className="flex flex-col items-center gap-2 flex-1 min-w-0">

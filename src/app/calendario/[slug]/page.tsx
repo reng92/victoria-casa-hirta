@@ -32,8 +32,8 @@ import ConsentGate from "@/components/consent/ConsentGate";
 import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, OutcomeBadge, Pill } from "@/components/ui/Badge";
-import { formatDateFull, formatTime, getOutcome } from "@/lib/format";
-import { getHomeAwayScores, getOpponent, getScores, matchContextLabel } from "@/lib/competitions";
+import { formatDateFull, formatTime } from "@/lib/format";
+import { getHomeAwayScores, getMatchOutcome, getOpponent, matchContextLabel, matchResultNote } from "@/lib/competitions";
 import { excerpt, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 0;
@@ -47,6 +47,9 @@ interface Match {
   is_home: boolean;
   home_score: number | null;
   away_score: number | null;
+  home_penalties?: number | null;
+  away_penalties?: number | null;
+  extra_time?: boolean | null;
   status: string;
   matchday: number | null;
   group_name: string | null;
@@ -75,7 +78,7 @@ const getMatch = cache(async (key: string): Promise<Match | null> => {
   const column = isUuid(key) ? "id" : "slug";
   const { data, error } = await supabase
     .from("matches")
-    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, group_name, round, notes, opponent_logo_url, instagram_reels, live_minute, live_period, match_report, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
+    .select("id, slug, match_date, home_team, away_team, is_home, home_score, away_score, home_penalties, away_penalties, extra_time, status, matchday, group_name, round, notes, opponent_logo_url, instagram_reels, live_minute, live_period, match_report, venue:venues(name, address, city, maps_url), competition:competitions(name, type, level)")
     .eq(column, key)
     .single();
   if (error) {
@@ -98,7 +101,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const [home, away] = m.is_home ? ["Victoria Casa Hirta", opponent] : [opponent, "Victoria Casa Hirta"];
   const scores = getHomeAwayScores(m);
   const played = m.status !== "scheduled" && scores.home != null && scores.away != null;
-  const title = played ? `${home} ${scores.home}-${scores.away} ${away}` : `${home} - ${away}`;
+  const note = played ? matchResultNote(m) : null;
+  const title = played ? `${home} ${scores.home}-${scores.away} ${away}${note ? ` (${note})` : ""}` : `${home} - ${away}`;
   const when = `${formatDateFull(m.match_date)}${played ? "" : ` ore ${formatTime(m.match_date)}`}`;
   const where = m.venue ? ` · ${m.venue.name}${m.venue.city ? `, ${m.venue.city}` : ""}` : "";
   const intro = `${matchContextLabel(m)} · ${when}${where}.`;
@@ -171,6 +175,7 @@ const periodLabel: Record<string, string> = {
   half_time: "Intervallo",
   second_half: "Secondo tempo",
   extra_time: "Supplementari",
+  penalties: "Calci di rigore",
   finished: "Terminata",
 };
 
@@ -226,11 +231,11 @@ export default async function PartitaPage({ params }: { params: { slug: string }
   if (match.slug && params.slug !== match.slug) permanentRedirect(matchHref(match));
 
   const [events, commentary, photos] = await Promise.all([getEvents(match.id), getCommentary(match.id), getPhotos(match.id)]);
-  const { ours: ourScore, theirs: theirScore } = getScores(match);
   const isFinished = match.status === "finished";
   const isLive = match.status === "live";
   const opponent = getOpponent(match);
-  const outcome = isFinished ? getOutcome(ourScore, theirScore) : null;
+  const outcome = isFinished ? getMatchOutcome(match) : null;
+  const resultNote = isFinished || isLive ? matchResultNote(match) : null;
 
   const vchEvents = events.filter(e => e.for_team === "vch" || e.for_team === null);
   const oppEvents = events.filter(e => e.for_team === "opponent");
@@ -258,7 +263,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
 
   const { home: homeScore, away: awayScore } = getHomeAwayScores(match);
   const shareTeams = match.is_home ? `VCH vs ${opponent}` : `${opponent} vs VCH`;
-  const shareText = `${shareTeams} · ${formatDateFull(match.match_date)}${isFinished ? ` · ${homeScore}–${awayScore}` : ""} · victoriacasahirta.it${matchHref(match)}`;
+  const shareText = `${shareTeams} · ${formatDateFull(match.match_date)}${isFinished ? ` · ${homeScore}–${awayScore}${resultNote ? ` ${resultNote}` : ""}` : ""} · victoriacasahirta.it${matchHref(match)}`;
 
   /* ---------- Cronaca: livescore minuto per minuto + resoconto ---------- */
   // Ogni blocco compare solo se ha contenuto: senza commenti live il feed
@@ -546,6 +551,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
                 <span className="score-pop font-display text-5xl sm:text-6xl font-bold tabular leading-none">
                   {homeScore ?? 0}<span className="text-white/30 mx-2">–</span>{awayScore ?? 0}
                 </span>
+                {resultNote && <span className="text-xs font-semibold text-white/80 mt-2 tabular">{resultNote}</span>}
                 {isLive && match.live_period && (
                   <span className="text-xs text-white/70 mt-2">{periodLabel[match.live_period] ?? "In corso"}</span>
                 )}

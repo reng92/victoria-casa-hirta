@@ -69,6 +69,7 @@ const resultRow = (f: FixtureFields) => ({
   away_score: f.away_score,
   home_penalties: f.home_penalties,
   away_penalties: f.away_penalties,
+  extra_time: f.extra_time,
   home_source: f.home_source,
   away_source: f.away_source,
   status: f.status,
@@ -84,6 +85,7 @@ function matchRow(f: FixtureFields) {
     bracket_slot: f.bracket_slot,
     home_source: f.home_source,
     away_source: f.away_source,
+    extra_time: f.extra_time,
     status: f.status,
     ...vch,
   };

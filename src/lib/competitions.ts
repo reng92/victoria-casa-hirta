@@ -98,6 +98,50 @@ export function getHomeAwayScores(m: { is_home: boolean; home_score: number | nu
   return m.is_home ? { home: ours, away: theirs } : { home: theirs, away: ours };
 }
 
+type ResultExtras = { home_penalties?: number | null; away_penalties?: number | null; extra_time?: boolean | null };
+
+/** Rigori dal punto di vista della Victoria (in `matches` home_* = Victoria, come i gol). */
+export function getPenalties(m: ResultExtras) {
+  const ours = m.home_penalties ?? null;
+  const theirs = m.away_penalties ?? null;
+  return ours != null && theirs != null ? { ours, theirs } : null;
+}
+
+/**
+ * Esito della Victoria per badge e colori: con il pareggio decidono i rigori,
+ * se ci sono. Le statistiche V/N/P restano sul risultato del campo.
+ */
+export function getMatchOutcome(m: { home_score: number | null; away_score: number | null } & ResultExtras): "win" | "draw" | "loss" | null {
+  const { ours, theirs } = getScores(m);
+  if (ours == null || theirs == null) return null;
+  if (ours !== theirs) return ours > theirs ? "win" : "loss";
+  const p = getPenalties(m);
+  if (p && p.ours !== p.theirs) return p.ours > p.theirs ? "win" : "loss";
+  return "draw";
+}
+
+/**
+ * Nota sotto il punteggio: "d.t.s." (dopo i tempi supplementari) e/o
+ * "d.c.r. 4-3" (dopo i calci di rigore), con i rigori nell'ordine ricevuto.
+ * Per una riga di `matches` usare `matchResultNote`.
+ */
+export function resultNote(f: ResultExtras) {
+  const parts: string[] = [];
+  if (f.extra_time) parts.push("d.t.s.");
+  if (f.home_penalties != null && f.away_penalties != null) parts.push(`d.c.r. ${f.home_penalties}-${f.away_penalties}`);
+  return parts.length ? parts.join(" · ") : null;
+}
+
+/** `resultNote` per una riga di `matches`, con i rigori in ordine casa – trasferta. */
+export function matchResultNote(m: { is_home: boolean } & ResultExtras) {
+  const p = getPenalties(m);
+  return resultNote({
+    extra_time: m.extra_time,
+    home_penalties: p ? (m.is_home ? p.ours : p.theirs) : null,
+    away_penalties: p ? (m.is_home ? p.theirs : p.ours) : null,
+  });
+}
+
 export interface StandingLike {
   group_name?: string | null;
   points: number;
@@ -162,6 +206,8 @@ export interface Fixture {
   bracket_slot: number | null;
   home_penalties: number | null;
   away_penalties: number | null;
+  /** Risultato maturato dopo i tempi supplementari (i gol li includono). */
+  extra_time: boolean;
   /** Provenienza della squadra nel tabellone ('G:A:1', 'W:Semifinale:1'), vedi src/lib/schedule.ts. */
   home_source: string | null;
   away_source: string | null;
@@ -169,9 +215,9 @@ export interface Fixture {
 
 /** Colonne da selezionare per costruire un Fixture. */
 export const RESULT_COLUMNS =
-  "id, match_date, matchday, group_name, round, bracket_slot, home_team, away_team, home_score, away_score, home_penalties, away_penalties, home_source, away_source, status";
+  "id, match_date, matchday, group_name, round, bracket_slot, home_team, away_team, home_score, away_score, home_penalties, away_penalties, extra_time, home_source, away_source, status";
 export const MATCH_FIXTURE_COLUMNS =
-  "id, match_date, matchday, group_name, round, bracket_slot, home_team, away_team, is_home, home_score, away_score, home_penalties, away_penalties, home_source, away_source, status";
+  "id, match_date, matchday, group_name, round, bracket_slot, home_team, away_team, is_home, home_score, away_score, home_penalties, away_penalties, extra_time, home_source, away_source, status";
 
 export interface MatchFixtureRow {
   id: string;
@@ -187,6 +233,7 @@ export interface MatchFixtureRow {
   away_score: number | null;
   home_penalties?: number | null;
   away_penalties?: number | null;
+  extra_time?: boolean | null;
   home_source?: string | null;
   away_source?: string | null;
   status: string;
@@ -212,6 +259,7 @@ export function fixtureFromMatch(m: MatchFixtureRow): Fixture {
     away_score: m.is_home ? theirs : ours,
     home_penalties: m.is_home ? pOurs : pTheirs,
     away_penalties: m.is_home ? pTheirs : pOurs,
+    extra_time: !!m.extra_time,
     home_source: m.home_source ?? null,
     away_source: m.away_source ?? null,
     status: m.status,
@@ -220,7 +268,7 @@ export function fixtureFromMatch(m: MatchFixtureRow): Fixture {
 
 /** Riga di `competition_results` letta con RESULT_COLUMNS. */
 export function fixtureFromResult(r: Omit<Fixture, "source">): Fixture {
-  return { ...r, source: "result" };
+  return { ...r, extra_time: !!r.extra_time, source: "result" };
 }
 
 /**

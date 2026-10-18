@@ -6,6 +6,7 @@ import {
   QUALIFIED_PER_GROUP,
   groupLabel,
   matchdayLabel,
+  resultNote,
   groupByGroupName,
   isGroupFormat,
   isVCH,
@@ -41,6 +42,7 @@ function FixtureLine({ f, logos }: { f: Fixture; logos: TeamLogos }) {
             {f.home_score}
             <span className="text-muted mx-1">–</span>
             {f.away_score}
+            {resultNote(f) && <span className="block text-[10px] font-sans font-semibold text-muted whitespace-nowrap">{resultNote(f)}</span>}
           </>
         ) : (
           <span className="text-muted font-normal text-[11px]">{formatDay(f.match_date) ?? "vs"}</span>

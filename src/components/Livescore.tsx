@@ -4,7 +4,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/Badge";
-import { getHomeAwayScores, getOpponent, getScores } from "@/lib/competitions";
+import { getHomeAwayScores, getOpponent, getScores, matchResultNote } from "@/lib/competitions";
 import { matchHref } from "@/lib/links";
 
 interface LiveMatch {
@@ -14,6 +14,9 @@ interface LiveMatch {
   away_team: string;
   home_score: number | null;
   away_score: number | null;
+  home_penalties?: number | null;
+  away_penalties?: number | null;
+  extra_time?: boolean | null;
   is_home: boolean;
   status: string;
   opponent_logo_url: string | null;
@@ -57,7 +60,7 @@ export default function Livescore() {
   async function fetchLive() {
     const { data } = await supabase
       .from("matches")
-      .select("id, slug, home_team, away_team, home_score, away_score, is_home, status, opponent_logo_url, live_minute, live_minute_set_at, competition:competitions(name)")
+      .select("id, slug, home_team, away_team, home_score, away_score, home_penalties, away_penalties, extra_time, is_home, status, opponent_logo_url, live_minute, live_minute_set_at, competition:competitions(name)")
       .eq("status", "live");
     const liveMatches = (data as unknown as LiveMatch[]) ?? [];
     setMatches(liveMatches);
@@ -111,8 +114,11 @@ export default function Livescore() {
                   <span className="text-xs font-semibold truncate hidden xs:block">{m.is_home ? "VCH" : opponent}</span>
                   {m.is_home ? <VCHLogo size={28} /> : <TeamLogo src={m.opponent_logo_url} name={opponent} size={28} />}
                 </div>
-                <span className="font-display text-2xl font-bold tabular leading-none shrink-0">
-                  {homeScore ?? 0}<span className="text-muted mx-1.5">–</span>{awayScore ?? 0}
+                <span className="flex flex-col items-center shrink-0">
+                  <span className="font-display text-2xl font-bold tabular leading-none">
+                    {homeScore ?? 0}<span className="text-muted mx-1.5">–</span>{awayScore ?? 0}
+                  </span>
+                  {matchResultNote(m) && <span className="text-[10px] font-semibold text-muted tabular mt-0.5">{matchResultNote(m)}</span>}
                 </span>
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   {m.is_home ? <TeamLogo src={m.opponent_logo_url} name={opponent} size={28} /> : <VCHLogo size={28} />}

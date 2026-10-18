@@ -1,6 +1,6 @@
 import { Trophy } from "lucide-react";
 import TeamLogo from "@/components/ui/TeamLogo";
-import { Fixture, fixtureWinner, isVCH, roundOrder, teamKey } from "@/lib/competitions";
+import { Fixture, fixtureWinner, isVCH, resultNote, roundOrder, teamKey } from "@/lib/competitions";
 import { isPlaceholderName } from "@/lib/schedule";
 
 interface Slot {
@@ -15,6 +15,8 @@ interface Tie {
   home?: Slot;
   away?: Slot;
   date?: string | null;
+  /** "d.t.s." / "d.c.r. 4-3" */
+  note?: string | null;
 }
 export interface BracketRound {
   label: string;
@@ -54,6 +56,7 @@ export function buildBracketRounds(fixtures: Fixture[]): BracketRound[] {
         const w = fixtureWinner(f);
         return {
           date: f.match_date,
+          note: played ? resultNote(f) : null,
           home: { name: f.home_team, score: played ? f.home_score : null, penalties: f.home_penalties, winner: w === "home", pending: isPlaceholderName(f.home_team, f.home_source) },
           away: { name: f.away_team, score: played ? f.away_score : null, penalties: f.away_penalties, winner: w === "away", pending: isPlaceholderName(f.away_team, f.away_source) },
         };
@@ -74,7 +77,7 @@ export type TeamLogos = Record<string, string>;
 function TieCard({ tie, logos }: { tie: Tie; logos?: TeamLogos }) {
   const rows = [tie.home, tie.away];
   const decided = rows.some((s) => s?.winner);
-  const penalties = rows.every((s) => s?.penalties != null) ? `d.c.r. ${tie.home?.penalties}-${tie.away?.penalties}` : null;
+  const penalties = tie.note ?? (rows.every((s) => s?.penalties != null) ? `d.c.r. ${tie.home?.penalties}-${tie.away?.penalties}` : null);
   const known = rows.some((s) => s?.name);
   return (
     <div className={`rounded-xl border bg-surface-2/40 ${known ? "border-border" : "border-dashed border-border"}`}>
