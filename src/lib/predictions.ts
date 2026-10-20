@@ -1,10 +1,13 @@
 /**
  * Pronostici dei tifosi (migrazione `2026-10-20_pronostici.sql`). Il
- * pronostico è salvato dal punto di vista della Victoria ('vch', 'draw',
+ * pronostico è salvato dal punto di vista del Victoria ('vch', 'draw',
  * 'opp'); a video diventa 1/X/2 con la squadra di casa a sinistra.
  * Tutte le scritture passano dalle RPC chiamate dal browser, che leggono l'IP
  * del tifoso per il limite di 3 pronostici per rete.
  */
+/** Sezione pronostici nascosta: rimettere a true per riattivarla ovunque. */
+export const PREDICTIONS_ENABLED = false;
+
 export type Pick = "vch" | "draw" | "opp";
 
 export interface PickOption {

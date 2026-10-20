@@ -13,7 +13,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "Rosa",
-  description: "I giocatori della Victoria Casa Hirta: portieri, difensori, centrocampisti e attaccanti con numeri di maglia e statistiche.",
+  description: "I giocatori del Victoria Casa Hirta: portieri, difensori, centrocampisti e attaccanti con numeri di maglia e statistiche.",
   path: "/rosa",
 });
 
@@ -62,15 +62,17 @@ function PlayerCard({ p, priority }: { p: Player; priority?: boolean }) {
         {p.photo_url ? (
           <Image
             src={p.photo_url}
-            alt={`${p.full_name}, ${(ruoloSingolare[p.role] ?? p.role).toLowerCase()} della Victoria Casa Hirta`}
+            alt={`${p.full_name}, ${(ruoloSingolare[p.role] ?? p.role).toLowerCase()} del Victoria Casa Hirta`}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
             priority={priority}
             className="object-cover object-top transition-transform duration-500 group-hover:scale-[1.04]"
           />
         ) : (
+          // Senza foto: stemma in filigrana e iniziali ben leggibili, così la card non sembra vuota
           <div className="absolute inset-0 mesh-hero flex items-center justify-center">
-            <span className="font-display text-4xl font-bold text-white/30">{initials(p.full_name)}</span>
+            <img src="/logo-crest-320.webp" alt="" aria-hidden loading="lazy" className="absolute w-[78%] max-w-[220px] opacity-[0.12] grayscale" />
+            <span className="relative font-display text-5xl font-bold text-white/75 tracking-tight -mt-6">{initials(p.full_name)}</span>
           </div>
         )}
         {/* Gradiente per leggibilità */}
@@ -111,8 +113,8 @@ export default async function RosaPage() {
       {/* Foto squadra 2026/27 (4:3): intera su mobile, su schermi larghi si taglia solo il cielo */}
       <div className="relative aspect-[4/3] md:aspect-[16/9] rounded-hero overflow-hidden mb-8 shadow-card bg-surface-2">
         <Image
-          src="/vch-2627.jpeg"
-          alt="Foto di squadra della Victoria Casa Hirta, stagione 2026/27"
+          src="/vch-2627.webp"
+          alt="Foto di squadra del Victoria Casa Hirta, stagione 2026/27"
           fill
           priority
           sizes="(min-width:1152px) 1120px, 100vw"

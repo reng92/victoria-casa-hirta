@@ -2,7 +2,7 @@
  * Lettura e scrittura delle partite di una competizione, sia quelle della
  * Victoria (`matches`) sia quelle tra altre squadre (`competition_results`).
  *
- * Una partita della Victoria finisce in `matches` (e quindi nel calendario
+ * Una partita del Victoria finisce in `matches` (e quindi nel calendario
  * del sito) solo quando ha una data, perché lì `match_date` è obbligatoria:
  * le partite generate senza data restano in `competition_results` e vengono
  * spostate al primo salvataggio con la data.
@@ -133,7 +133,7 @@ export async function insertFixtures(competitionId: string, rows: FixtureFields[
 
 /**
  * Aggiorna una partita, spostandola tra `competition_results` e `matches`
- * quando serve (la Victoria entra o esce dalla partita, o riceve la data).
+ * quando serve (il Victoria entra o esce dalla partita, o riceve la data).
  */
 export async function updateFixture(competitionId: string, current: Fixture, f: FixtureFields): Promise<string | null> {
   const vch = playsVCH(f);
@@ -142,9 +142,9 @@ export async function updateFixture(competitionId: string, current: Fixture, f: 
       const { error } = await supabase.from("matches").update(matchRow({ ...f, match_date: f.match_date ?? current.match_date })).eq("id", current.id);
       return error?.message ?? null;
     }
-    // La Victoria non gioca più questa partita (es. tabellone ricalcolato): si sposta solo se non ha ancora un risultato
+    // Il Victoria non gioca più questa partita (es. tabellone ricalcolato): si sposta solo se non ha ancora un risultato
     if (current.home_score != null || current.status !== "scheduled") {
-      return `La partita ${current.home_team} – ${current.away_team} è nel calendario della Victoria con un risultato: correggila da Partite`;
+      return `La partita ${current.home_team} – ${current.away_team} è nel calendario del Victoria con un risultato: correggila da Partite`;
     }
     const { error } = await supabase.from("competition_results").insert({ ...resultRow(f), competition_id: competitionId });
     if (error) return error.message;

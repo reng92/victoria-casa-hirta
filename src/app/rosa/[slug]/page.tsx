@@ -5,7 +5,6 @@ import Link from "next/link";
 import { permanentRedirect } from "next/navigation";
 import { isUuid, playerHref } from "@/lib/links";
 import { ArrowLeft, Calendar, ClipboardList, Goal, Target, Square, ArrowLeftRight, ShieldAlert, Users, type LucideIcon } from "lucide-react";
-import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import Avatar from "@/components/ui/Avatar";
 import { Pill } from "@/components/ui/Badge";
@@ -96,10 +95,10 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const number = p.shirt_number != null ? ` con la maglia numero ${p.shirt_number}` : "";
   return pageMetadata({
     title: p.shirt_number != null ? `${p.full_name} #${p.shirt_number}` : p.full_name,
-    description: `${p.full_name}${role ? `, ${role}` : ""} della Victoria Casa Hirta${number}: presenze, gol, assist e statistiche della stagione.`,
+    description: `${p.full_name}${role ? `, ${role}` : ""} del Victoria Casa Hirta${number}: presenze, gol, assist e statistiche della stagione.`,
     path: playerHref(p),
     type: "profile",
-    image: p.photo_url ? { url: p.photo_url, alt: `${p.full_name}, giocatore della Victoria Casa Hirta` } : null,
+    image: p.photo_url ? { url: p.photo_url, alt: `${p.full_name}, giocatore del Victoria Casa Hirta` } : null,
   });
 }
 
@@ -136,7 +135,11 @@ export default async function GiocatorePage({ params }: { params: { slug: string
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 md:py-10">
-      <PageHeader title={player.full_name} back={{ href: "/rosa", label: "Rosa" }} />
+      {/* Il nome è già nella card sotto: qui solo il ritorno alla rosa */}
+      <Link href="/rosa" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-text transition mb-4 min-h-11">
+        <ArrowLeft className="w-4 h-4" aria-hidden />
+        Rosa
+      </Link>
 
       {/* Header giocatore */}
       <section className="relative mesh-hero rounded-hero text-white overflow-hidden shadow-card mb-4 min-h-[180px]">
@@ -160,7 +163,7 @@ export default async function GiocatorePage({ params }: { params: { slug: string
             {player.shirt_number !== null && (
               <p className="font-display text-accent-soft font-bold text-4xl leading-none tabular mb-1">#{player.shirt_number}</p>
             )}
-            <h2 className="font-display text-xl sm:text-2xl font-bold leading-tight text-balance">{player.full_name}</h2>
+            <h1 className="font-display text-2xl sm:text-3xl font-bold leading-tight text-balance">{player.full_name}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <Pill tone="glass" className="normal-case tracking-normal">{roleLabel[player.role] ?? player.role}</Pill>
               {player.birth_date && (
@@ -172,11 +175,12 @@ export default async function GiocatorePage({ params }: { params: { slug: string
       </section>
 
       {/* Statistiche */}
-      <section aria-label="Statistiche" className="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-4">
-        {statCards.map((s) => {
+      {/* Su telefono 3 + 2 a tutta larghezza (griglia da 6), da tablet 5 in fila */}
+      <section aria-label="Statistiche" className="grid grid-cols-6 sm:grid-cols-5 gap-3 mb-4">
+        {statCards.map((s, i) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="bento-card p-4 text-center">
+            <div key={s.label} className={`bento-card p-4 text-center sm:col-span-1 ${i < 3 ? "col-span-2" : "col-span-3"}`}>
               <Icon className={`w-5 h-5 mx-auto mb-2 ${s.color}`} aria-hidden />
               <p className="font-display text-2xl font-bold tabular leading-none">{s.value}</p>
               <p className="text-[11px] text-muted mt-1.5">{s.label}</p>

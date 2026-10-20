@@ -42,7 +42,7 @@ function FixtureLine({ f, logos }: { f: Fixture; logos: TeamLogos }) {
             {f.home_score}
             <span className="text-muted mx-1">–</span>
             {f.away_score}
-            {resultNote(f) && <span className="block text-[10px] font-sans font-semibold text-muted whitespace-nowrap">{resultNote(f)}</span>}
+            {resultNote(f) && <span className="block text-[11px] font-sans font-semibold text-muted whitespace-nowrap">{resultNote(f)}</span>}
           </>
         ) : (
           <span className="text-muted font-normal text-[11px]">{formatDay(f.match_date) ?? "vs"}</span>
@@ -173,7 +173,7 @@ function StandingsTable({
               <tr
                 key={row.id}
                 className={`border-t border-border transition ${
-                  vch ? "bg-brand/35 font-semibold shadow-[inset_3px_0_0_0_rgb(var(--accent-rgb))]" : "hover:bg-surface-2/50"
+                  vch ? "row-vch font-semibold" : "hover:bg-surface-2/50"
                 }`}
               >
                 <td className="py-3 pl-3 sm:pl-4 pr-1">

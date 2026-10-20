@@ -87,7 +87,7 @@ export async function getStandings(competitionId?: string): Promise<Standing[]> 
   return sortStandings((data as unknown as Standing[]) ?? []);
 }
 
-/** Partite delle competizioni: quelle tra altre squadre e quelle della Victoria. */
+/** Partite delle competizioni: quelle tra altre squadre e quelle del Victoria. */
 export async function getFixtures(competitionId?: string): Promise<CompFixture[]> {
   let r = supabase.from("competition_results").select(`competition_id, ${RESULT_COLUMNS}`);
   let m = supabase.from("matches").select(`competition_id, ${MATCH_FIXTURE_COLUMNS}`).not("competition_id", "is", null);
@@ -111,7 +111,7 @@ export async function getTeamLogos(): Promise<TeamLogos> {
 }
 
 /**
- * Partite della Victoria ancora senza data: restano in `competition_results`
+ * Partite del Victoria ancora senza data: restano in `competition_results`
  * finché l'admin non le programma, quindi non sono in `matches`.
  */
 export async function getUnscheduledVCH(): Promise<(CompFixture & { competition: { name: string } | null })[]> {

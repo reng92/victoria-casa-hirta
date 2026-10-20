@@ -155,7 +155,7 @@ export default function MVPVoting({ matchId }: Props) {
                 }`}
               >
                 {isWinner && (
-                  <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 bg-draw text-black text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  <span className="absolute -top-2 -right-2 inline-flex items-center gap-1 bg-draw text-black text-[11px] font-bold px-2 py-0.5 rounded-full">
                     <Crown className="w-3 h-3" aria-hidden /> MVP
                   </span>
                 )}
@@ -172,8 +172,8 @@ export default function MVPVoting({ matchId }: Props) {
                     </div>
                     <div className="w-full bg-surface rounded-full h-1.5 overflow-hidden">
                       <div
-                        className="bg-accent rounded-full h-1.5 transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
+                        className="bg-accent rounded-full h-1.5 origin-left transition-transform duration-500"
+                        style={{ transform: `scaleX(${percentage / 100})` }}
                       />
                     </div>
                   </div>

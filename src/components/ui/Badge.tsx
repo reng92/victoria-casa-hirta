@@ -9,7 +9,8 @@ const tones: Record<Tone, string> = {
   win: "bg-win/15 text-win border border-win/25",
   draw: "bg-draw/15 text-draw border border-draw/25",
   loss: "bg-loss/15 text-loss border border-loss/25",
-  glass: "bg-white/10 text-white border border-white/15 backdrop-blur",
+  // Su foto: velatura scura al posto del blur, che costa un layer per ogni pill
+  glass: "bg-black/40 text-white border border-white/15",
 };
 
 export function Pill({

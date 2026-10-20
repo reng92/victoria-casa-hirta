@@ -1,7 +1,8 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useDialogFocus } from "@/lib/use-dialog-focus";
 
 export interface GridPhoto {
   id: string;
@@ -31,6 +32,8 @@ export default function PhotoGrid({
   sizes = "(min-width:768px) 25vw, (min-width:640px) 33vw, 50vw",
 }: Props) {
   const [open, setOpen] = useState<number | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(open !== null, dialogRef);
   const close = useCallback(() => setOpen(null), []);
   const step = useCallback(
     (dir: number) => setOpen((i) => (i === null ? i : (i + dir + photos.length) % photos.length)),
@@ -72,9 +75,10 @@ export default function PhotoGrid({
                 priority={i < priorityCount}
                 className="block w-full h-auto transition-transform duration-500 group-hover:scale-[1.03]"
               />
-              {p.caption && (
+              {/* Didascalia, altrimenti la partita: la foto non resta senza contesto */}
+              {(p.caption || p.label) && (
                 <span className="absolute inset-x-0 bottom-0 pt-10 pb-2.5 px-3 bg-gradient-to-t from-black/75 to-transparent text-left">
-                  <span className="text-white text-xs font-medium leading-snug line-clamp-2">{p.caption}</span>
+                  <span className="text-white text-xs font-medium leading-snug line-clamp-2">{p.caption ?? p.label}</span>
                 </span>
               )}
             </button>
@@ -84,6 +88,7 @@ export default function PhotoGrid({
 
       {current && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="Foto ingrandita"
@@ -99,7 +104,7 @@ export default function PhotoGrid({
         >
           <div className="flex items-center justify-between px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-2 text-white/80 text-sm">
             <span className="tabular">{open! + 1} / {photos.length}</span>
-            <button type="button" onClick={close} className="w-10 h-10 inline-flex items-center justify-center rounded-full hover:bg-white/10" aria-label="Chiudi">
+            <button type="button" onClick={close} data-autofocus className="w-10 h-10 inline-flex items-center justify-center rounded-full hover:bg-white/10" aria-label="Chiudi">
               <X className="w-5 h-5" aria-hidden />
             </button>
           </div>

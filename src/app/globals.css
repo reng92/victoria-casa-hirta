@@ -37,6 +37,9 @@
   --draw-rgb: 250 204 21;
   --loss-rgb: 248 113 113;
 
+  /* Riga del VCH in classifiche e tabelloni */
+  --row-highlight: rgb(16 44 92 / 0.55);
+
   --radius-card: 16px;
   --radius-hero: 24px;
 
@@ -65,9 +68,12 @@
   --accent-soft: #c90b0a;
   --accent-soft-rgb: 201 11 10;
 
-  --win-rgb: 22 163 74;
-  --draw-rgb: 202 138 4;
-  --loss-rgb: 220 38 38;
+  /* Toni 700: leggibili (AA) anche come testo piccolo su bianco */
+  --win-rgb: 21 128 61;
+  --draw-rgb: 161 98 7;
+  --loss-rgb: 185 28 28;
+
+  --row-highlight: rgb(16 44 92 / 0.08);
 
   color-scheme: light;
 }
@@ -84,8 +90,9 @@
     @apply antialiased;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
+  /* --font-digits: solo le cifre di Inter, perché l'"1" di Space Grotesk ha il piede */
   h1, h2, h3, h4 {
-    font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
+    font-family: var(--font-digits), var(--font-display), var(--font-sans), system-ui, sans-serif;
     letter-spacing: -0.02em;
   }
   ::selection {
@@ -94,6 +101,10 @@
   :focus-visible {
     outline: 2px solid rgb(var(--brand-soft-rgb));
     outline-offset: 2px;
+  }
+  /* Sull'hero (sempre scuro) l'anello blu del tema chiaro sparirebbe */
+  .mesh-hero :focus-visible {
+    outline-color: #fff;
   }
   img, video {
     max-width: 100%;
@@ -205,6 +216,11 @@
     animation-play-state: paused;
   }
 
+  /* Riga del VCH: blu pieno sul tema scuro, velatura leggera sul chiaro */
+  .row-vch {
+    background-color: var(--row-highlight);
+  }
+
   /* Segmented control / tab indicator */
   .tab-indicator {
     background-color: rgb(var(--accent-rgb));
@@ -223,17 +239,13 @@
 
   /* Comparsa a cascata dei figli diretti (card, righe di lista) */
   .stagger > * {
-    animation: rise-in 0.5s var(--ease-out) backwards;
+    animation: rise-in 0.4s var(--ease-out) backwards;
   }
   .stagger > *:nth-child(1) { animation-delay: 40ms; }
   .stagger > *:nth-child(2) { animation-delay: 80ms; }
   .stagger > *:nth-child(3) { animation-delay: 120ms; }
   .stagger > *:nth-child(4) { animation-delay: 160ms; }
-  .stagger > *:nth-child(5) { animation-delay: 200ms; }
-  .stagger > *:nth-child(6) { animation-delay: 240ms; }
-  .stagger > *:nth-child(7) { animation-delay: 280ms; }
-  .stagger > *:nth-child(8) { animation-delay: 320ms; }
-  .stagger > *:nth-child(n + 9) { animation-delay: 360ms; }
+  .stagger > *:nth-child(n + 5) { animation-delay: 200ms; }
 
   /* Feedback al tocco: leggera compressione con rilascio a molla */
   .tap {
@@ -255,15 +267,16 @@
     animation: digit-in 0.35s var(--ease-out);
   }
 
-  /* Punteggio della partita: ingresso con piccola molla */
+  /* Punteggio della partita: ingresso con piccola molla. Il keyframe
+     ha già il suo superamento, quindi la curva è un semplice ease-out */
   .score-pop {
     display: inline-block;
-    animation: nav-pop 0.6s var(--ease-spring) 0.15s backwards;
+    animation: nav-pop 0.6s var(--ease-out) 0.15s backwards;
   }
 
   /* Icona della bottom nav quando diventa attiva */
   .nav-pop {
-    animation: nav-pop 0.45s var(--ease-spring);
+    animation: nav-pop 0.45s var(--ease-out);
   }
 
   /* Testi legali (privacy / cookie policy) */

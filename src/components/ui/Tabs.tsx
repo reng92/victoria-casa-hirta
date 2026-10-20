@@ -1,5 +1,5 @@
 "use client";
-import { useId, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 
 export interface TabItem {
@@ -28,23 +28,43 @@ export default function Tabs({ items, defaultKey, variant = "segmented", classNa
   const layoutId = `tab-indicator-${id}`;
 
   const isSeg = variant === "segmented";
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // Frecce, Home e Fine spostano la tab attiva (pattern ARIA con roving tabindex)
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const current = items.findIndex((it) => it.key === active);
+    let next = current;
+    if (e.key === "ArrowRight") next = (current + 1) % items.length;
+    else if (e.key === "ArrowLeft") next = (current - 1 + items.length) % items.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = items.length - 1;
+    else return;
+    e.preventDefault();
+    setActive(items[next].key);
+    tabRefs.current[next]?.focus();
+  }
 
   return (
     <div className={className}>
       <div
         role="tablist"
         aria-label="Sezioni"
+        onKeyDown={onKeyDown}
         className={
           isSeg
             ? "relative inline-flex w-full sm:w-auto p-1 rounded-full bg-surface-2 border border-border"
             : "relative flex gap-1 border-b border-border overflow-x-auto no-scrollbar"
         }
       >
-        {items.map((it) => {
+        {items.map((it, i) => {
           const selected = it.key === active;
           return (
             <button
               key={it.key}
+              ref={(el) => {
+                tabRefs.current[i] = el;
+              }}
+              type="button"
               role="tab"
               id={`${id}-tab-${it.key}`}
               aria-selected={selected}

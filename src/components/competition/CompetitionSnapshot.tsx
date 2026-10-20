@@ -10,7 +10,7 @@ function formatDay(iso: string | null) {
   return `${d}/${mo}${time && time !== "00:00" ? ` · ${time}` : ""}`;
 }
 
-/** Ultima partita della Victoria nella fase a eliminazione diretta (turno più avanzato). */
+/** Ultima partita del Victoria nella fase a eliminazione diretta (turno più avanzato). */
 function currentTie(fixtures: Fixture[]) {
   return fixtures
     .filter((f) => f.round && (isVCH(f.home_team) || isVCH(f.away_team)))
@@ -19,7 +19,7 @@ function currentTie(fixtures: Fixture[]) {
 }
 
 /**
- * Riepilogo della Victoria in una competizione: la sfida del tabellone se è
+ * Riepilogo del Victoria in una competizione: la sfida del tabellone se è
  * nella fase a eliminazione diretta, altrimenti le prime del suo girone (o
  * della classifica) con la sua posizione.
  */
@@ -67,7 +67,7 @@ function StandingRow({ r, pos, logos }: { r: Standing; pos: number; logos: TeamL
   return (
     <li
       className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm ${
-        vch ? "bg-brand/40 border-l-2 border-accent font-semibold" : "bg-surface-2/50"
+        vch ? "row-vch font-semibold" : "bg-surface-2/50"
       }`}
     >
       <span className={`w-4 text-center tabular text-xs ${pos === 1 ? "text-draw font-bold" : "text-muted"}`}>{pos}</span>
@@ -83,11 +83,11 @@ function TieSnapshot({ f, logos }: { f: Fixture; logos: TeamLogos }) {
   const played = f.status !== "scheduled" && f.home_score != null && f.away_score != null;
   const winner = fixtureWinner(f);
   const vchSide = isVCH(f.home_team) ? "home" : "away";
-  const outcome = !winner ? null : winner === vchSide ? "Qualificata al turno successivo" : `Eliminata ai ${f.round!.toLowerCase()}`;
+  const outcome = !winner ? null : winner === vchSide ? "Qualificato al turno successivo" : `Eliminato ai ${f.round!.toLowerCase()}`;
   const penalties = played ? resultNote(f) : null;
 
   const team = (name: string, score: number | null, side: "home" | "away") => (
-    <div className={`flex items-center gap-2.5 px-3 py-2.5 ${isVCH(name) ? "bg-brand/40 font-semibold" : ""} ${winner && winner !== side ? "opacity-60" : ""}`}>
+    <div className={`flex items-center gap-2.5 px-3 py-2.5 ${isVCH(name) ? "row-vch font-semibold" : winner && winner !== side ? "opacity-60" : ""}`}>
       <TeamLogo src={logos[teamKey(name)]} name={name} size={28} />
       <span className="flex-1 truncate text-sm">{name}</span>
       {played && <span className="font-display font-bold tabular text-lg">{score}</span>}

@@ -22,6 +22,8 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
     setTheme(next);
     if (next === "light") document.documentElement.setAttribute("data-theme", "light");
     else document.documentElement.removeAttribute("data-theme");
+    // Barra del browser e status bar seguono il tema scelto, non quello del telefono
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", next === "light" ? "#f4f6fb" : "#0b1220");
     try {
       localStorage.setItem("vch-theme", next);
     } catch {}

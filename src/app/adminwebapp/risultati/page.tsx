@@ -331,7 +331,7 @@ export default function AdminRisultati() {
     if ((fields.home_penalties == null) !== (fields.away_penalties == null)) return `${fields.home_team} – ${fields.away_team}: inserisci i rigori di entrambe le squadre`;
     if (fields.home_penalties != null && fields.home_penalties === fields.away_penalties) return `${fields.home_team} – ${fields.away_team}: ai rigori non si può pareggiare`;
     const vch = isVCH(fields.home_team) || isVCH(fields.away_team);
-    if (vch && fields.status === "finished" && !fields.match_date) return "Per le partite della Victoria serve la data, così finiscono anche nel calendario";
+    if (vch && fields.status === "finished" && !fields.match_date) return "Per le partite del Victoria serve la data, così finiscono anche nel calendario";
     return updateFixture(compId, f, fields);
   }
 
@@ -352,7 +352,7 @@ export default function AdminRisultati() {
 
   async function removeRow(f: Fixture) {
     const what = f.source === "match"
-      ? "Questa partita è nel calendario della Victoria: verrà eliminata anche da lì (con eventi e presenze collegate). Continuare?"
+      ? "Questa partita è nel calendario del Victoria: verrà eliminata anche da lì (con eventi e presenze collegate). Continuare?"
       : "Eliminare questa partita?";
     if (!confirm(what)) return;
     await run(async () => {
@@ -518,7 +518,7 @@ export default function AdminRisultati() {
                 </div>
               )}
               <p className="text-xs text-gray-400">
-                Le partite generate non hanno data: aggiungila quando la conosci. Quelle della Victoria entrano nel calendario del sito appena hanno una data.
+                Le partite generate non hanno data: aggiungila quando la conosci. Quelle del Victoria entrano nel calendario del sito appena hanno una data.
                 {groupFormat && " Nel tabellone le qualificate e le vincenti compaiono da sole a fine girone e dopo ogni turno."}
               </p>
             </div>

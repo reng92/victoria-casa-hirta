@@ -91,8 +91,8 @@ export default function PushToggle() {
               <>
                 <p className="text-muted mt-1.5">
                   {on
-                    ? "Riceverai risultati, partite e novità della Victoria. Puoi disattivarle quando vuoi."
-                    : "Ricevi risultati, partite e novità della Victoria. Nessuna registrazione, puoi disattivarle quando vuoi."}
+                    ? "Riceverai risultati, partite e novità del Victoria. Puoi disattivarle quando vuoi."
+                    : "Ricevi risultati, partite e novità del Victoria. Nessuna registrazione, puoi disattivarle quando vuoi."}
                 </p>
                 <button
                   type="button"

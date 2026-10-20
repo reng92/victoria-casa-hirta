@@ -80,8 +80,8 @@ export function getOpponent(m: { home_team?: string | null; away_team: string; i
 }
 
 /**
- * Punteggio dal punto di vista della Victoria. Nel DB `home_score` è SEMPRE
- * il numero di gol della Victoria e `away_score` quello dell'avversario,
+ * Punteggio dal punto di vista del Victoria. Nel DB `home_score` è SEMPRE
+ * il numero di gol del Victoria e `away_score` quello dell'avversario,
  * indipendentemente da `is_home` (il form admin li etichetta "Gol VCH" e
  * "Gol Avversario").
  */
@@ -91,7 +91,7 @@ export function getScores(m: { home_score: number | null; away_score: number | n
 
 /**
  * Punteggio nell'ordine di visualizzazione "casa – trasferta": in trasferta
- * la Victoria va a destra, quindi i gol vanno scambiati rispetto al DB.
+ * il Victoria va a destra, quindi i gol vanno scambiati rispetto al DB.
  */
 export function getHomeAwayScores(m: { is_home: boolean; home_score: number | null; away_score: number | null }) {
   const { ours, theirs } = getScores(m);
@@ -100,7 +100,7 @@ export function getHomeAwayScores(m: { is_home: boolean; home_score: number | nu
 
 type ResultExtras = { home_penalties?: number | null; away_penalties?: number | null; extra_time?: boolean | null };
 
-/** Rigori dal punto di vista della Victoria (in `matches` home_* = Victoria, come i gol). */
+/** Rigori dal punto di vista del Victoria (in `matches` home_* = Victoria, come i gol). */
 export function getPenalties(m: ResultExtras) {
   const ours = m.home_penalties ?? null;
   const theirs = m.away_penalties ?? null;
@@ -108,7 +108,7 @@ export function getPenalties(m: ResultExtras) {
 }
 
 /**
- * Esito della Victoria per badge e colori: con il pareggio decidono i rigori,
+ * Esito del Victoria per badge e colori: con il pareggio decidono i rigori,
  * se ci sono. Le statistiche V/N/P restano sul risultato del campo.
  */
 export function getMatchOutcome(m: { home_score: number | null; away_score: number | null } & ResultExtras): "win" | "draw" | "loss" | null {
@@ -273,7 +273,7 @@ export function fixtureFromResult(r: Omit<Fixture, "source">): Fixture {
 
 /**
  * Converte una partita con casa/trasferta reali nel formato di `matches`
- * (avversario in away_team, gol e rigori della Victoria in home_*); null se la
+ * (avversario in away_team, gol e rigori del Victoria in home_*); null se la
  * Victoria non gioca.
  */
 export function fixtureToMatchFields(

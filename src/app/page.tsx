@@ -8,6 +8,7 @@ import UpcomingMatches from "@/components/home/UpcomingMatches";
 import LatestNews from "@/components/home/LatestNews";
 import HomeMvp from "@/components/home/HomeMvp";
 import HomePrediction, { getPredictableMatch } from "@/components/home/HomePrediction";
+import { PREDICTIONS_ENABLED } from "@/lib/predictions";
 import SponsorMarquee, { type SponsorItem } from "@/components/SponsorMarquee";
 import Reveal from "@/components/ui/Reveal";
 import Skeleton, { SkeletonCard } from "@/components/ui/Skeleton";
@@ -47,19 +48,22 @@ function ListSkeleton({ rows = 3 }: { rows?: number }) {
 }
 
 export default async function HomePage() {
-  const [sponsors, predictable] = await Promise.all([getSponsors(), getPredictableMatch()]);
+  const [sponsors, predictable] = await Promise.all([
+    getSponsors(),
+    PREDICTIONS_ENABLED ? getPredictableMatch() : Promise.resolve(null),
+  ]);
   // Con il pronostico, la riga "prossime partite + news" diventa di tre card su desktop
   const thirdCol = predictable ? "xl:col-span-2" : "xl:col-span-3";
 
   return (
     <div className="max-w-7xl mx-auto px-4 pt-4 md:pt-6 pb-8">
       <div className="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-6 gap-4">
-        {/* Hero prossima partita */}
-        <Reveal index={0} className="md:col-span-4 xl:col-span-6">
+        {/* Hero prossima partita: niente Reveal, deve essere visibile già nell'HTML (è l'immagine LCP) */}
+        <div className="md:col-span-4 xl:col-span-6">
           <Suspense fallback={<HeroSkeleton />}>
             <NextMatch />
           </Suspense>
-        </Reveal>
+        </div>
 
         {/* MVP del mese: solo se c'è una votazione in corso, in arrivo o appena chiusa */}
         <Suspense fallback={null}>
@@ -88,14 +92,14 @@ export default async function HomePage() {
         )}
 
         {/* Prossime 3 partite */}
-        <Reveal index={3} className={`md:col-span-2 ${thirdCol} min-h-[220px]`}>
+        <Reveal index={3} className={`md:col-span-2 ${thirdCol}`}>
           <Suspense fallback={<ListSkeleton rows={3} />}>
             <UpcomingMatches />
           </Suspense>
         </Reveal>
 
         {/* Ultima news */}
-        <Reveal index={4} className={`md:col-span-2 ${thirdCol} min-h-[220px]`}>
+        <Reveal index={4} className={`md:col-span-2 ${thirdCol}`}>
           <Suspense fallback={<SkeletonCard className="h-full" />}>
             <LatestNews />
           </Suspense>

@@ -13,9 +13,15 @@ export default function ConditionalShell({ children }: { children: import("react
 
   return (
     <>
+      <a
+        href="#contenuto"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-full focus:bg-accent focus:text-white focus:px-4 focus:py-2.5 focus:text-sm focus:font-semibold"
+      >
+        Salta al contenuto
+      </a>
       <Header />
       <Livescore />
-      <main>
+      <main id="contenuto" tabIndex={-1} className="focus:outline-none">
         {children}
       </main>
       {!isAdmin && <Footer />}

@@ -13,7 +13,7 @@ export interface SponsorItem {
 /**
  * Sponsor in home. Loghi sempre a colori su tessera chiara o scura in base al
  * logo (vedi SponsorLogo), così restano leggibili in entrambi i temi.
- * Mobile: griglia a 2 colonne. Da sm in su: marquee orizzontale infinito
+ * Mobile: griglia compatta a 3 colonne, tutti visibili senza fare un muro. Da sm in su: marquee orizzontale infinito
  * (track duplicato per il loop continuo via CSS).
  */
 function SponsorTile({ s, hidden = false, className = "" }: { s: SponsorItem; hidden?: boolean; className?: string }) {
@@ -49,10 +49,10 @@ export default function SponsorMarquee({ sponsors }: { sponsors: SponsorItem[] }
         </Link>
       </div>
 
-      <ul className="grid grid-cols-2 gap-3 px-5 sm:hidden">
+      <ul className="grid grid-cols-3 gap-2 px-4 sm:hidden">
         {sponsors.map((s) => (
           <li key={s.id}>
-            <SponsorTile s={s} className="h-20 w-full" />
+            <SponsorTile s={s} className="h-14 w-full" />
           </li>
         ))}
       </ul>

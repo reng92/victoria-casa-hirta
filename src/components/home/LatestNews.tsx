@@ -37,8 +37,9 @@ export default async function LatestNews() {
       {!n ? (
         <EmptyState compact title="Nessuna news" description="I comunicati compariranno qui." />
       ) : (
-        <Link href={newsHref(n)} className="flex-1 flex flex-col mt-4 group">
-          <div className="relative aspect-[16/9] bg-surface-2 overflow-hidden">
+        // Da tablet in su foto a sinistra e testo a destra: la card resta alta quanto "Prossime partite"
+        <Link href={newsHref(n)} className="flex-1 flex flex-col md:flex-row mt-4 group">
+          <div className="relative aspect-[16/9] md:aspect-auto md:w-[45%] md:min-h-[190px] md:shrink-0 bg-surface-2 overflow-hidden md:ml-5 md:mb-5 md:rounded-xl">
             {n.cover_url ? (
               <Image
                 src={n.cover_url}
@@ -55,9 +56,9 @@ export default async function LatestNews() {
               {formatDateNumeric(n.published_at)}
             </p>
           </div>
-          <div className="p-5 pt-4">
+          <div className="p-5 pt-4 md:pt-0 min-w-0">
             <h3 className="font-display text-h3 leading-snug text-balance">{n.title}</h3>
-            {n.body && <p className="text-sm text-muted mt-2 line-clamp-3">{n.body}</p>}
+            {n.body && <p className="text-sm text-muted mt-2 line-clamp-3 md:line-clamp-4">{n.body}</p>}
           </div>
         </Link>
       )}

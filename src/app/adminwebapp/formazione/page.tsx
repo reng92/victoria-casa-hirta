@@ -159,7 +159,7 @@ export default function AdminFormazione() {
     <div className="max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-extrabold text-brand-blue mb-2">Admin – Formazione</h1>
       <p className="text-sm text-gray-500 mb-8">
-        Titolari in campo e panchina della Victoria. Si può inserire anche per partite già giocate:
+        Titolari in campo e panchina del Victoria. Si può inserire anche per partite già giocate:
         gol, cartellini e cambi inseriti nella partita compaiono da soli sui giocatori.
       </p>
 

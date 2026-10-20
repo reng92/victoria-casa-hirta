@@ -11,7 +11,7 @@ export const revalidate = 0;
 
 export const metadata = pageMetadata({
   title: "Cannonieri",
-  description: "La classifica marcatori della Victoria Casa Hirta: gol, assist e statistiche dei giocatori in tutte le competizioni.",
+  description: "La classifica marcatori del Victoria Casa Hirta: gol, assist e statistiche dei giocatori in tutte le competizioni.",
   path: "/cannonieri",
 });
 
@@ -92,7 +92,7 @@ function ScorerRow({ s, pos, total }: { s: Scorer; pos: number; total: number })
         </div>
         <div className="text-right shrink-0">
           <p className={`font-display font-bold tabular leading-none text-accent-soft ${isPodium ? "text-3xl" : "text-xl"}`}>{s.gol}</p>
-          <p className="text-[10px] uppercase tracking-wider text-muted mt-1">gol</p>
+          <p className="text-[11px] uppercase tracking-wider text-muted mt-1">gol</p>
         </div>
       </Link>
     </li>

@@ -55,7 +55,7 @@ export default function CookieBanner() {
     setDetails(false);
   }
 
-  const btn = "tap flex-1 rounded-full px-4 py-2.5 text-sm font-semibold";
+  const btn = "tap flex-1 rounded-full px-4 min-h-11 text-sm font-semibold";
 
   return (
     <AnimatePresence>
@@ -68,24 +68,26 @@ export default function CookieBanner() {
           animate={{ y: 0, opacity: 1 }}
           exit={reduce ? undefined : { y: 16, opacity: 0, transition: { duration: 0.18 } }}
           transition={{ type: "spring", stiffness: 380, damping: 34 }}
-          className="fixed z-[60] inset-x-3 bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+12px)] md:inset-x-auto md:left-6 md:bottom-6 md:w-[400px] glass rounded-card shadow-soft p-4 text-sm"
+          className="fixed z-[60] inset-x-3 bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+8px)] md:inset-x-auto md:left-6 md:bottom-6 md:w-[400px] glass rounded-card shadow-soft p-3 md:p-4 text-sm"
         >
           <div className="flex items-start gap-3">
-            <span className="w-9 h-9 rounded-full bg-surface-2 border border-border flex items-center justify-center shrink-0" aria-hidden>
+            <span className="hidden md:flex w-9 h-9 rounded-full bg-surface-2 border border-border items-center justify-center shrink-0" aria-hidden>
               <Cookie className="w-4 h-4 text-accent-soft" />
             </span>
             <div className="flex-1 min-w-0">
               <h2 id={titleId} className="font-display font-bold leading-tight">Cookie e privacy</h2>
-              <p className="text-muted text-xs mt-1 leading-relaxed">
-                Usiamo cookie tecnici e, solo con il tuo consenso, cookie statistici e contenuti esterni.{" "}
+              <p className="text-muted text-xs mt-0.5 leading-snug">
+                Statistiche e contenuti esterni solo con il tuo consenso.{" "}
                 <Link href="/cookie-policy" className="underline underline-offset-2 text-text/80 hover:text-text">Cookie policy</Link>
+                {" · "}
+                <Link href="/privacy-policy" className="underline underline-offset-2 text-text/80 hover:text-text">Privacy</Link>
               </p>
             </div>
             <button
               type="button"
               onClick={() => choose({ analytics: false, external: false })}
               aria-label="Chiudi e rifiuta i cookie non necessari"
-              className="tap w-8 h-8 -mr-1 -mt-1 rounded-full text-muted hover:text-text hover:bg-surface-2 flex items-center justify-center shrink-0"
+              className="tap w-10 h-10 -mr-2 -mt-2 rounded-full text-muted hover:text-text hover:bg-surface-2 flex items-center justify-center shrink-0"
             >
               <X className="w-4 h-4" aria-hidden />
             </button>
@@ -140,17 +142,16 @@ export default function CookieBanner() {
               </button>
             )}
           </div>
-          <div className="mt-2 flex items-center justify-center gap-4 text-xs">
+          <div className="mt-1 flex justify-center text-xs">
             {details ? (
-              <button type="button" onClick={() => choose({ analytics: true, external: true })} className="text-muted underline underline-offset-2 hover:text-text">
+              <button type="button" onClick={() => choose({ analytics: true, external: true })} className="min-h-9 px-3 text-muted underline underline-offset-2 hover:text-text">
                 Accetta tutti
               </button>
             ) : (
-              <button type="button" onClick={() => setDetails(true)} className="text-muted underline underline-offset-2 hover:text-text">
+              <button type="button" onClick={() => setDetails(true)} className="min-h-9 px-3 text-muted underline underline-offset-2 hover:text-text">
                 Personalizza
               </button>
             )}
-            <Link href="/privacy-policy" className="text-muted underline underline-offset-2 hover:text-text">Privacy policy</Link>
           </div>
         </motion.section>
       )}

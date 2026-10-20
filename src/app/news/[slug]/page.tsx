@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const meta = pageMetadata({
     title: n.title,
     socialTitle: n.title,
-    description: excerpt(n.body) || `News della Victoria Casa Hirta del ${formatDateFull(n.published_at)}.`,
+    description: excerpt(n.body) || `News del Victoria Casa Hirta del ${formatDateFull(n.published_at)}.`,
     path: newsHref(n),
     type: "article",
     image: n.cover_url ? { url: n.cover_url, alt: n.title } : null,

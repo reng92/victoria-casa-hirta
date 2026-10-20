@@ -8,7 +8,7 @@ import { isVCH } from "@/lib/competitions";
 import { byStatus, competitionHref, getCompetitions, getFixtures, getStandings, getTeamLogos } from "@/lib/competition-data";
 
 /**
- * Le competizioni in corso della Victoria, ognuna col suo riepilogo:
+ * Le competizioni in corso del Victoria, ognuna col suo riepilogo:
  * classifica del girone o sfida del tabellone.
  */
 export default async function HomeCompetitions() {

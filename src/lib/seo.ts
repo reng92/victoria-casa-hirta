@@ -3,14 +3,14 @@ import type { Metadata } from "next";
 export const SITE_URL = "https://victoriacasahirta.it";
 export const SITE_NAME = "Victoria Casa Hirta";
 export const SITE_DESCRIPTION =
-  "Sito ufficiale della Victoria Casa Hirta, squadra di calcio amatoriale campana dal 2016: partite, risultati, classifiche, rosa, foto e news.";
+  "Sito ufficiale del Victoria Casa Hirta, squadra di calcio amatoriale campana dal 2016: partite, risultati, classifiche, rosa, foto e news.";
 
 /** Foto di squadra 2026/27 ritagliata a 1200×630, il formato delle anteprime di Facebook e WhatsApp. */
 export const DEFAULT_OG_IMAGE = {
   url: "/og-vch.jpg",
   width: 1200,
   height: 630,
-  alt: "La squadra della Victoria Casa Hirta nella stagione 2026/27",
+  alt: "La squadra del Victoria Casa Hirta nella stagione 2026/27",
 };
 
 interface PageMeta {

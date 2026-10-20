@@ -17,7 +17,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "Partite e risultati",
-  description: "Calendario, risultati e prossime partite della Victoria Casa Hirta in campionato e nelle coppe, con date, orari e campi.",
+  description: "Calendario, risultati e prossime partite del Victoria Casa Hirta in campionato e nelle coppe, con date, orari e campi.",
   path: "/calendario",
 });
 
@@ -112,13 +112,13 @@ function MatchRow({ m }: { m: Match }) {
         href={matchHref(m)}
         className={`bento-card flex items-center gap-3 p-3 sm:p-4 hover:bg-surface-2/60 tap ${
           isLive ? "ring-1 ring-accent/50" : ""
-        } ${outcome ? `border-l-4 ${outcome === "win" ? "border-l-win" : outcome === "loss" ? "border-l-loss" : "border-l-draw"}` : ""}`}
+        }`}
       >
         {/* Data */}
         <div className="flex flex-col items-center w-12 shrink-0 rounded-xl bg-surface-2 border border-border py-1.5">
-          <span className="text-[10px] uppercase text-muted leading-none">{formatWeekday(m.match_date)}</span>
+          <span className="text-[11px] uppercase text-muted leading-none">{formatWeekday(m.match_date)}</span>
           <span className="font-display text-lg font-bold leading-tight tabular">{d.getDate()}</span>
-          <span className="text-[10px] text-muted leading-none">{formatDateShort(m.match_date).split(" ")[1]}</span>
+          <span className="text-[11px] text-muted leading-none">{formatDateShort(m.match_date).split(" ")[1]}</span>
         </div>
 
         {/* Squadre: la squadra di casa sopra */}
@@ -149,10 +149,10 @@ function MatchRow({ m }: { m: Match }) {
               <span className={`font-display text-2xl font-bold tabular leading-none ${scoreColor}`}>
                 {home ?? "–"}<span className="text-muted mx-1">–</span>{away ?? "–"}
               </span>
-              {note && <span className="text-[10px] font-semibold text-muted tabular whitespace-nowrap">{note}</span>}
+              {note && <span className="text-[11px] font-semibold text-muted tabular whitespace-nowrap">{note}</span>}
               <span className="flex items-center gap-1.5">
                 {reels > 0 && (
-                  <span className="inline-flex items-center gap-0.5 text-[10px] text-muted" title={`${reels} reel`}>
+                  <span className="inline-flex items-center gap-0.5 text-[11px] text-muted" title={`${reels} reel`}>
                     <Clapperboard className="w-3 h-3" aria-hidden />
                     {reels}
                   </span>
@@ -211,7 +211,7 @@ function MatchList({ matches, emptyTitle, emptyDesc }: { matches: Match[]; empty
 
 type Unscheduled = Awaited<ReturnType<typeof getUnscheduledVCH>>[number];
 
-/** Partite della Victoria già in calendario ma senza data e orario (es. un turno di coppa appena sorteggiato). */
+/** Partite del Victoria già in calendario ma senza data e orario (es. un turno di coppa appena sorteggiato). */
 function UnscheduledList({ fixtures, logos }: { fixtures: Unscheduled[]; logos: Record<string, string> }) {
   if (fixtures.length === 0) return null;
   return (
@@ -233,7 +233,7 @@ function UnscheduledList({ fixtures, logos }: { fixtures: Unscheduled[]; logos: 
                 className="bento-card flex items-center gap-3 p-3 sm:p-4 hover:bg-surface-2/60 tap"
               >
                 <div className="flex flex-col items-center justify-center w-12 self-stretch shrink-0 rounded-xl bg-surface-2 border border-dashed border-border">
-                  <span className="text-[10px] uppercase text-muted leading-tight text-center">Data<br />da def.</span>
+                  <span className="text-[11px] uppercase text-muted leading-tight text-center">Data<br />da def.</span>
                 </div>
                 <div className="flex-1 min-w-0 flex flex-col gap-1.5">
                   <span className="text-[11px] text-muted truncate">{label}</span>

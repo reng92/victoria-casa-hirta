@@ -32,7 +32,8 @@ interface Match {
 }
 
 /** Foto di squadra della stagione in corso. */
-const TEAM_PHOTO = "/vch-2627.jpeg";
+// WebP 1280px (220 KB invece dei 495 KB del JPEG originale): le immagini non passano dall'ottimizzatore di Vercel
+const TEAM_PHOTO = "/vch-2627.webp";
 
 const BASE_SELECT =
   "id, slug, match_date, home_team, away_team, is_home, home_score, away_score, status, matchday, opponent_logo_url, venue:venues(name, address, city, maps_url), competition:competitions(name)";
@@ -67,7 +68,7 @@ interface UndatedMatch {
   competition: string | null;
 }
 
-/** Senza partite in calendario, la prossima della Victoria ancora senza data (es. una finale di coppa). */
+/** Senza partite in calendario, la prossima del Victoria ancora senza data (es. una finale di coppa). */
 async function getUndatedMatch(): Promise<UndatedMatch | null> {
   const [fixtures, logos] = await Promise.all([getUnscheduledVCH(), getTeamLogos()]);
   const f = fixtures[0];
@@ -108,7 +109,7 @@ export default async function NextMatch() {
         />
         <Image
           src={TEAM_PHOTO}
-          alt="La squadra della Victoria Casa Hirta, stagione 2026/27"
+          alt="La squadra del Victoria Casa Hirta, stagione 2026/27"
           fill
           priority
           sizes="(min-width:1280px) 560px, 100vw"
@@ -290,7 +291,7 @@ function UndatedHero({ m }: { m: UndatedMatch }) {
         </p>
       )}
 
-      {/* La squadra di casa a sinistra; il titolo della pagina resta sulla Victoria */}
+      {/* La squadra di casa a sinistra; il titolo della pagina resta sul Victoria */}
       <div className="flex-1 flex items-center justify-between gap-3 py-6 md:py-8">
         <UndatedTeam name={m.home} logo={m.homeLogo} titleId={vchHome ? "next-match-title" : undefined} />
         <span className="font-display text-4xl md:text-5xl font-bold text-white/25 leading-none shrink-0 px-1">VS</span>

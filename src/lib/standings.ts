@@ -17,7 +17,7 @@ const totalPlayed = (rows: { played: number | null }[]) => rows.reduce((sum, r) 
  * salvataggio di un risultato.
  *
  * Classifiche inserite a mano (es. stagioni importate con le sole partite
- * della Victoria) contano più partite giocate di quelle registrate: in quel
+ * del Victoria) contano più partite giocate di quelle registrate: in quel
  * caso non si tocca nulla, salvo `force`. Il margine di 2 lascia passare
  * l'eliminazione di una partita (una giocata in meno per ciascuna squadra).
  */

@@ -1,5 +1,5 @@
 // Moduli di gioco e posizioni in campo della formazione (match_formations).
-// Coordinate in percentuale: x da sinistra, y dall'alto; la Victoria attacca
+// Coordinate in percentuale: x da sinistra, y dall'alto; il Victoria attacca
 // verso l'alto, quindi il portiere sta in basso.
 
 export const MODULES = ["4-3-3", "4-4-2", "4-2-3-1", "3-5-2", "3-4-3", "4-3-1-2", "5-3-2", "4-5-1"] as const;

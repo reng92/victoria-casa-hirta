@@ -23,7 +23,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "Competizioni e classifiche",
-  description: "Classifiche, gironi e tabelloni dei campionati e delle coppe della Victoria Casa Hirta, con tutti i risultati della stagione.",
+  description: "Classifiche, gironi e tabelloni dei campionati e delle coppe del Victoria Casa Hirta, con tutti i risultati della stagione.",
   path: "/competizioni",
 });
 

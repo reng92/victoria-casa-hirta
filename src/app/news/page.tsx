@@ -13,7 +13,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "News",
-  description: "Notizie, comunicati e racconti delle partite dalla Victoria Casa Hirta.",
+  description: "Notizie, comunicati e racconti delle partite dal Victoria Casa Hirta.",
   path: "/news",
 });
 

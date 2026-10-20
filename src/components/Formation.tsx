@@ -157,7 +157,7 @@ function PitchPlayer({ row, top, stats, isKeeper, rowSize }: { row: FormationRow
             {Array.from({ length: Math.min(stats.goals, 3) }).map((_, i) => (
               <BallIcon key={i} className={`w-4 h-4 drop-shadow ${i > 0 ? "-ml-1.5" : ""}`} />
             ))}
-            {stats.goals > 3 && <span className="ml-0.5 text-[10px] font-bold text-white drop-shadow">×{stats.goals}</span>}
+            {stats.goals > 3 && <span className="ml-0.5 text-[11px] font-bold text-white drop-shadow">×{stats.goals}</span>}
             {stats.ownGoals > 0 && <BallIcon own className={`w-4 h-4 drop-shadow ${stats.goals > 0 ? "-ml-1.5" : ""}`} />}
           </span>
         )}
@@ -176,7 +176,7 @@ function PitchPlayer({ row, top, stats, isKeeper, rowSize }: { row: FormationRow
       </span>
 
       {/* Nome completo: nome sopra, cognome (anche composto, "De Rosa") sotto */}
-      <span className={`mt-1.5 max-w-full text-center ${rowSize >= 5 ? "text-[10px]" : "text-[11px]"} sm:text-xs font-semibold text-white leading-tight [text-shadow:0_1px_2px_rgb(0_0_0/0.6)]`}>
+      <span className={`mt-1.5 max-w-full text-center ${rowSize >= 5 ? "text-[11px]" : "text-[11px]"} sm:text-xs font-semibold text-white leading-tight [text-shadow:0_1px_2px_rgb(0_0_0/0.6)]`}>
         <span className="block truncate font-medium text-white/85">{firstName(p.full_name)}</span>
         <span className="block truncate">
           {p.shirt_number != null && <span className="text-white/70 tabular mr-1">{p.shirt_number}</span>}
@@ -263,7 +263,7 @@ function BenchPlayer({ player, stats }: { player: Player; stats: Stats }) {
 }
 
 /**
- * Formazione della Victoria in stile livescore: campo con i titolari e i loro
+ * Formazione del Victoria in stile livescore: campo con i titolari e i loro
  * eventi (gol, assist, cartellini, sostituzioni), poi panchina e allenatore.
  * Degli avversari non abbiamo la formazione. Ritorna null se non c'è nulla.
  */

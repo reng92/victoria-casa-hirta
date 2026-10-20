@@ -1,10 +1,11 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { primaryNav, secondaryNav, moreNav, isActivePath } from "@/lib/nav";
+import { useDialogFocus } from "@/lib/use-dialog-focus";
 
 /**
  * Bottom navigation mobile (5 voci) con indicatore attivo animato (layoutId).
@@ -21,6 +22,8 @@ export default function BottomNav() {
   const pathname = usePathname();
   const [sheet, setSheet] = useState(false);
   const reduce = useReducedMotion();
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(sheet, sheetRef);
 
   useEffect(() => {
     setSheet(false);
@@ -56,7 +59,7 @@ export default function BottomNav() {
                 {active && (
                   <motion.span
                     layoutId="bottom-nav-active"
-                    className="absolute top-1.5 inset-x-3 h-[calc(100%-12px)] rounded-2xl bg-brand/40 border border-brand-soft/20"
+                    className="absolute top-1.5 inset-x-3 h-[calc(100%-12px)] rounded-2xl row-vch border border-brand-soft/20"
                     transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 520, damping: 42 }}
                     aria-hidden
                   />
@@ -67,7 +70,7 @@ export default function BottomNav() {
                   aria-hidden
                 />
                 <span
-                  className={`relative z-10 text-[10px] font-semibold leading-none transition-colors ${
+                  className={`relative z-10 text-[11px] font-semibold leading-none transition-colors ${
                     active ? "text-text" : "text-muted"
                   }`}
                 >
@@ -114,6 +117,7 @@ export default function BottomNav() {
               onClick={() => setSheet(false)}
             />
             <motion.div
+              ref={sheetRef}
               id="more-sheet"
               role="dialog"
               aria-modal="true"
@@ -131,7 +135,8 @@ export default function BottomNav() {
                   type="button"
                   onClick={() => setSheet(false)}
                   aria-label="Chiudi"
-                  className="w-9 h-9 rounded-full bg-surface-2 border border-border flex items-center justify-center text-muted"
+                  data-autofocus
+                  className="w-10 h-10 rounded-full bg-surface-2 border border-border flex items-center justify-center text-muted"
                 >
                   <X className="w-4 h-4" aria-hidden />
                 </button>
@@ -146,7 +151,7 @@ export default function BottomNav() {
                         href={l.href}
                         className={`flex flex-col items-center gap-1.5 py-3 rounded-2xl border tap ${
                           active
-                            ? "bg-brand/40 border-brand-soft/30 text-text"
+                            ? "row-vch border-brand-soft/30 text-text"
                             : "bg-surface-2/60 border-border text-muted active:bg-surface-2"
                         }`}
                       >

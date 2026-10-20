@@ -14,7 +14,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "Storico",
-  description: "La storia della Victoria Casa Hirta dal 2016: stagioni, competizioni, classifiche finali e risultati.",
+  description: "La storia del Victoria Casa Hirta dal 2016: stagioni, competizioni, classifiche finali e risultati.",
   path: "/storico",
 });
 
@@ -92,14 +92,14 @@ function ordinal(n: number) {
   return `${n}ª`;
 }
 
-/** Riepilogo V/N/P e posizione finale della Victoria in una competizione. */
+/** Riepilogo V/N/P e posizione finale del Victoria in una competizione. */
 function CompetitionSection({ comp, matches, standings }: { comp: Competition; matches: Match[]; standings: Standing[] }) {
   const results = matches.map((m) => getOutcome(getScores(m).ours, getScores(m).theirs));
   const wins = results.filter((r) => r === "win").length;
   const draws = results.filter((r) => r === "draw").length;
   const losses = results.filter((r) => r === "loss").length;
 
-  // Posizione finale: nel girone della Victoria (se a gironi), altrimenti nella classifica unica
+  // Posizione finale: nel girone del Victoria (se a gironi), altrimenti nella classifica unica
   const vchRow = standings.find((s) => isVCH(s.team_name));
   const tableRows = vchRow ? standings.filter((s) => (s.group_name ?? null) === (vchRow.group_name ?? null)) : standings;
   const position = vchRow ? tableRows.findIndex((s) => isVCH(s.team_name)) + 1 : 0;
@@ -137,7 +137,7 @@ function CompetitionSection({ comp, matches, standings }: { comp: Competition; m
             return (
               <li
                 key={s.id}
-                className={`flex items-center gap-3 rounded-lg px-2 py-1 text-xs ${vch ? "bg-brand/40 border-l-2 border-accent font-semibold" : ""}`}
+                className={`flex items-center gap-3 rounded-lg px-2 py-1 text-xs ${vch ? "row-vch font-semibold" : ""}`}
               >
                 <span className="w-5 text-muted tabular text-center">{i + 1}</span>
                 <span className="flex-1 truncate">{s.team_name}</span>
@@ -155,7 +155,6 @@ function CompetitionSection({ comp, matches, standings }: { comp: Competition; m
           const { ours, theirs } = getScores(m);
           const outcome = getOutcome(ours, theirs);
           const color = outcome === "win" ? "text-win" : outcome === "loss" ? "text-loss" : outcome === "draw" ? "text-draw" : "text-muted";
-          const border = outcome === "win" ? "border-l-win" : outcome === "loss" ? "border-l-loss" : outcome === "draw" ? "border-l-draw" : "border-l-border";
           const opponent = getOpponent(m);
           const context = [groupLabel(m.group_name), matchdayLabel(m.matchday), !m.matchday && m.notes ? m.notes.split(".")[0] : null]
             .filter(Boolean)
@@ -164,7 +163,7 @@ function CompetitionSection({ comp, matches, standings }: { comp: Competition; m
             <li key={m.id}>
               <Link
                 href={matchHref(m)}
-                className={`flex items-center gap-3 rounded-xl border-l-4 ${border} bg-surface-2/40 hover:bg-surface-2/80 tap px-3 py-2 text-sm`}
+                className={`flex items-center gap-3 rounded-xl bg-surface-2/40 hover:bg-surface-2/80 tap px-3 py-2 text-sm`}
               >
                 <TeamLogo src={m.opponent_logo_url} name={opponent} size={28} />
                 <div className="flex flex-col min-w-0 flex-1">

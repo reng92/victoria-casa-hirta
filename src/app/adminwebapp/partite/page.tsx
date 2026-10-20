@@ -227,7 +227,8 @@ export default function AdminPartite() {
       competition_id: editForm.competition_id || null,
       venue_id: editForm.venue_id || null,
       matchday: editForm.matchday ? parseInt(editForm.matchday) : null,
-      group_name: isGroupFormat(formatOf(editForm.competition_id)) && editForm.group_name ? editForm.group_name : null,
+      // Le partite della fase finale (con il turno) non hanno girone
+      group_name: isGroupFormat(formatOf(editForm.competition_id)) && !editMatch.round && editForm.group_name ? editForm.group_name : null,
       status: editForm.status,
       home_score,
       away_score,
@@ -737,7 +738,12 @@ export default function AdminPartite() {
               <label className="text-xs text-gray-500 mb-1 block">Giornata</label>
               <input type="number" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={editForm.matchday} onChange={e => setEditForm(f => ({ ...f, matchday: e.target.value }))} />
             </div>
-            {isGroupFormat(formatOf(editForm.competition_id)) && (
+            {isGroupFormat(formatOf(editForm.competition_id)) && editMatch.round ? (
+              <div>
+                <label className="text-xs text-gray-500 mb-1 block">Fase</label>
+                <p className="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm text-gray-600">{editMatch.round} · fase finale, nessun girone</p>
+              </div>
+            ) : isGroupFormat(formatOf(editForm.competition_id)) && (
               <div>
                 <label className="text-xs text-gray-500 mb-1 block">Girone *</label>
                 <select required className={groupSelectClass} value={editForm.group_name} onChange={e => setEditForm(f => ({ ...f, group_name: e.target.value }))}>

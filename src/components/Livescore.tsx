@@ -118,7 +118,7 @@ export default function Livescore() {
                   <span className="font-display text-2xl font-bold tabular leading-none">
                     {homeScore ?? 0}<span className="text-muted mx-1.5">–</span>{awayScore ?? 0}
                   </span>
-                  {matchResultNote(m) && <span className="text-[10px] font-semibold text-muted tabular mt-0.5">{matchResultNote(m)}</span>}
+                  {matchResultNote(m) && <span className="text-[11px] font-semibold text-muted tabular mt-0.5">{matchResultNote(m)}</span>}
                 </span>
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   {m.is_home ? <TeamLogo src={m.opponent_logo_url} name={opponent} size={28} /> : <VCHLogo size={28} />}

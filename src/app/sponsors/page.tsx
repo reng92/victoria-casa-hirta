@@ -11,7 +11,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "Sponsor",
-  description: "Le aziende e i partner che sostengono la Victoria Casa Hirta.",
+  description: "Le aziende e i partner che sostengono il Victoria Casa Hirta.",
   path: "/sponsors",
 });
 

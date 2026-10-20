@@ -220,7 +220,7 @@ export default function MvpOfMonth({ poll, renderedAt, compact = false }: Props)
                   )}
                   {(isWinner || isSelected || isMine) && (
                     <span
-                      className={`absolute top-1.5 left-1.5 inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                      className={`absolute top-1.5 left-1.5 inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
                         isWinner ? "bg-draw text-black" : "bg-accent text-white"
                       }`}
                     >
@@ -231,12 +231,12 @@ export default function MvpOfMonth({ poll, renderedAt, compact = false }: Props)
                     <p className={`font-display font-bold text-white leading-tight text-balance ${compact ? "text-xs" : "text-sm"}`}>{p.full_name}</p>
                     {showResults && (
                       <div className="mt-1.5">
-                        <div className="flex justify-between text-[10px] text-white/80 tabular mb-0.5">
+                        <div className="flex justify-between text-[11px] text-white/80 tabular mb-0.5">
                           <span>{count} {count === 1 ? "voto" : "voti"}</span>
                           <span>{pct}%</span>
                         </div>
                         <div className="h-1 rounded-full bg-white/20 overflow-hidden">
-                          <div className={`h-1 rounded-full transition-all duration-500 ${isWinner ? "bg-draw" : "bg-accent"}`} style={{ width: `${pct}%` }} />
+                          <div className={`h-1 rounded-full origin-left transition-transform duration-500 ${isWinner ? "bg-draw" : "bg-accent"}`} style={{ transform: `scaleX(${pct / 100})` }} />
                         </div>
                       </div>
                     )}

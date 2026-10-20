@@ -54,7 +54,7 @@ export default function LiveCountdown({ target, className = "" }: Props) {
             <span key={c.v ?? "x"} className="digit-roll font-display text-2xl font-bold tabular leading-none text-white">
               {c.v === undefined ? "--" : String(c.v).padStart(2, "0")}
             </span>
-            <span className="text-[10px] uppercase tracking-wider text-white/60 mt-1">{c.l}</span>
+            <span className="text-[11px] uppercase tracking-wider text-white/60 mt-1">{c.l}</span>
           </div>
           {i < cells.length - 1 && <span className="text-white/30 font-bold -mt-3" aria-hidden>:</span>}
         </div>

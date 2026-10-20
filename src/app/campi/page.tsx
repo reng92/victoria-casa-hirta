@@ -10,7 +10,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "Campi di gioco",
-  description: "Indirizzi e indicazioni stradali dei campi dove gioca la Victoria Casa Hirta.",
+  description: "Indirizzi e indicazioni stradali dei campi dove gioca il Victoria Casa Hirta.",
   path: "/campi",
 });
 

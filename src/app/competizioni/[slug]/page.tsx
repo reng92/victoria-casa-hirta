@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const kind = c.format === "eliminazione_diretta" ? "tabellone, accoppiamenti" : "classifica, calendario";
   return pageMetadata({
     title: c.season ? `${c.name} ${c.season.name}` : c.name,
-    description: `${c.name}${c.season ? ` ${c.season.name}` : ""}: ${kind} e risultati della Victoria Casa Hirta${c.organizer ? `, organizzata da ${c.organizer}` : ""}.`,
+    description: `${c.name}${c.season ? ` ${c.season.name}` : ""}: ${kind} e risultati del Victoria Casa Hirta${c.organizer ? `, organizzata da ${c.organizer}` : ""}.`,
     path: competitionHref(c),
   });
 }

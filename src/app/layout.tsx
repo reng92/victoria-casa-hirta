@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { Viewport } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import ConditionalShell from "@/components/ConditionalShell";
 import PWAInstaller from "@/components/PWAInstaller";
@@ -16,6 +17,18 @@ const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
+});
+
+// Solo le cifre di Inter (6 KB), messe davanti a Space Grotesk nei titoli e nei
+// punteggi: l'"1" di Space Grotesk ha il piede e sembra un'altra lettera.
+const digits = localFont({
+  src: "./fonts/inter-digits.woff2",
+  variable: "--font-digits",
+  weight: "100 900",
+  display: "swap",
+  preload: false,
+  adjustFontFallback: false,
+  declarations: [{ prop: "unicode-range", value: "U+0030-0039" }],
 });
 
 export const metadata: Metadata = {
@@ -69,22 +82,21 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#102c5c" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b1220" },
-  ],
+  // Il tema di default è scuro: lo script qui sotto e ThemeToggle aggiornano il
+  // colore quando si sceglie il tema chiaro
+  themeColor: "#0b1220",
 };
 
 // Applica il tema salvato prima del primo paint per evitare flash.
 const themeInitScript = `
-(function(){try{var t=localStorage.getItem("vch-theme");if(t==="light"){document.documentElement.setAttribute("data-theme","light");}}catch(e){}})();
+(function(){try{var t=localStorage.getItem("vch-theme");if(t==="light"){document.documentElement.setAttribute("data-theme","light");var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content","#f4f6fb");}}catch(e){}})();
 `;
 
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="it" className={`${inter.variable} ${spaceGrotesk.variable}`} suppressHydrationWarning>
+    <html lang="it" className={`${inter.variable} ${spaceGrotesk.variable} ${digits.variable}`} suppressHydrationWarning>
       <head>
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

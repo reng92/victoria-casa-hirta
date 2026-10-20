@@ -69,16 +69,18 @@ export default function PWAInstaller() {
         <p className="font-bold text-sm">Installa l'app VCH</p>
         <p className="text-xs text-muted">Accedi velocemente dal tuo telefono</p>
       </div>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col">
         <button
+          type="button"
           onClick={handleInstall}
-          className="text-xs bg-accent text-white px-3 py-1.5 rounded-full font-semibold hover:brightness-110"
+          className="text-xs bg-accent text-white px-4 min-h-9 rounded-full font-semibold hover:brightness-110"
         >
           Installa
         </button>
         <button
+          type="button"
           onClick={() => setShow(false)}
-          className="text-xs text-muted hover:text-text text-center"
+          className="text-xs text-muted hover:text-text text-center min-h-9 px-3"
         >
           No grazie
         </button>

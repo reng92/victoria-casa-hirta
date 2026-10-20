@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { SITE_URL } from "@/lib/seo";
 import { matchHref, newsHref, playerHref } from "@/lib/links";
 import { competitionHref } from "@/lib/competition-data";
+import { PREDICTIONS_ENABLED } from "@/lib/predictions";
 
 export const revalidate = 3600;
 
@@ -14,7 +15,7 @@ const STATIC_PAGES: { path: string; priority: number; changeFrequency: MetadataR
   { path: "/rosa", priority: 0.8, changeFrequency: "weekly" },
   { path: "/news", priority: 0.8, changeFrequency: "weekly" },
   { path: "/mvp", priority: 0.7, changeFrequency: "weekly" },
-  { path: "/pronostici", priority: 0.7, changeFrequency: "weekly" },
+  ...(PREDICTIONS_ENABLED ? [{ path: "/pronostici", priority: 0.7, changeFrequency: "weekly" as const }] : []),
   { path: "/cannonieri", priority: 0.7, changeFrequency: "weekly" },
   { path: "/galleria", priority: 0.6, changeFrequency: "weekly" },
   { path: "/storico", priority: 0.5, changeFrequency: "monthly" },

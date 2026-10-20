@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { PREDICTIONS_ENABLED } from "@/lib/predictions";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -12,6 +13,12 @@ export async function middleware(req: NextRequest) {
   // Le classifiche ora sono nelle pagine delle competizioni
   if (pathname === "/classifica" || pathname === "/classifica/") {
     return NextResponse.redirect(new URL("/competizioni", req.url), 308);
+  }
+
+  // Pronostici nascosti: 307 (temporaneo) verso la home. Il notFound() della
+  // pagina con lo streaming risponderebbe 200.
+  if (!PREDICTIONS_ENABLED && (pathname === "/pronostici" || pathname === "/pronostici/")) {
+    return NextResponse.redirect(new URL("/", req.url), 307);
   }
 
   // Vecchi URL con l'UUID di partite e giocatori: 308 verso lo slug leggibile.

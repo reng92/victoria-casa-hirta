@@ -11,7 +11,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "Galleria foto",
-  description: "Le foto delle partite e della squadra della Victoria Casa Hirta.",
+  description: "Le foto delle partite e della squadra del Victoria Casa Hirta.",
   path: "/galleria",
 });
 

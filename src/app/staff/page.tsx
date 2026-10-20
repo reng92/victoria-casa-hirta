@@ -11,7 +11,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "Staff",
-  description: "Lo staff tecnico e la dirigenza della Victoria Casa Hirta.",
+  description: "Lo staff tecnico e la dirigenza del Victoria Casa Hirta.",
   path: "/staff",
 });
 
@@ -37,7 +37,7 @@ function StaffCard({ s, priority }: { s: StaffMember; priority?: boolean }) {
         {s.photo_url ? (
           <Image
             src={s.photo_url}
-            alt={`${s.full_name}, ${s.role} della Victoria Casa Hirta`}
+            alt={`${s.full_name}, ${s.role} del Victoria Casa Hirta`}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
             priority={priority}

@@ -64,7 +64,7 @@ export default async function UpcomingMatches() {
       {matches.length === 0 && undated.length === 0 ? (
         <EmptyState compact title="Nessuna partita in programma" description="Il calendario verrà aggiornato a breve." />
       ) : (
-        <ul className="mt-4 flex flex-col divide-y divide-border flex-1">
+        <ul className="mt-4 flex flex-col divide-y divide-border">
           {matches.map((m) => {
             const d = new Date(m.match_date);
             const opponent = getOpponent(m);
@@ -76,7 +76,7 @@ export default async function UpcomingMatches() {
                   className="flex items-center gap-3 py-3 hover:bg-surface-2/40 -mx-2 px-2 rounded-xl tap"
                 >
                   <div className="flex flex-col items-center w-11 shrink-0 rounded-xl bg-surface-2 border border-border py-1.5">
-                    <span className="text-[10px] uppercase text-muted leading-none">{formatWeekday(m.match_date)}</span>
+                    <span className="text-[11px] uppercase text-muted leading-none">{formatWeekday(m.match_date)}</span>
                     <span className="font-display text-lg font-bold leading-tight tabular">{d.getDate()}</span>
                   </div>
                   <TeamLogo src={m.opponent_logo_url} name={opponent} size={36} />

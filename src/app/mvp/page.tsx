@@ -14,7 +14,7 @@ export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "MVP del mese",
-  description: "Vota il miglior giocatore del mese della Victoria Casa Hirta e scopri l'albo d'oro degli MVP.",
+  description: "Vota il miglior giocatore del mese del Victoria Casa Hirta e scopri l'albo d'oro degli MVP.",
   path: "/mvp",
 });
 
@@ -30,7 +30,11 @@ export default async function MvpPage() {
 
       {!featured ? (
         <div className="bento-card">
-          <EmptyState icon={Award} title="Nessuna votazione" description="La prossima votazione per l'MVP del mese comparirà qui." />
+          <EmptyState
+            icon={Award}
+            title="Nessuna votazione aperta"
+            description={`Si vota a fine mese tra i candidati scelti dallo staff. Tocca la campanella in alto per sapere quando si apre${winners.length > 0 ? ", intanto ecco l'albo d'oro" : ""}.`}
+          />
         </div>
       ) : (
         <MvpOfMonth poll={featured} renderedAt={now} />

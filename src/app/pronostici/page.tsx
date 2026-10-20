@@ -3,13 +3,15 @@ import { supabase } from "@/lib/supabase";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
 import HomePrediction, { getPredictableMatch } from "@/components/home/HomePrediction";
+import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/seo";
+import { PREDICTIONS_ENABLED } from "@/lib/predictions";
 
 export const revalidate = 60;
 
 export const metadata = pageMetadata({
   title: "Pronostici",
-  description: "Pronostica le partite della Victoria Casa Hirta e scala la classifica dei tifosi.",
+  description: "Pronostica le partite del Victoria Casa Hirta e scala la classifica dei tifosi.",
   path: "/pronostici",
 });
 
@@ -25,11 +27,12 @@ async function getLeaderboard(): Promise<Row[]> {
 }
 
 export default async function PronosticiPage() {
+  if (!PREDICTIONS_ENABLED) notFound();
   const [match, rows] = await Promise.all([getPredictableMatch(), getLeaderboard()]);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6 md:py-10">
-      <PageHeader title="Pronostici" subtitle="Indovina l'esito delle partite della Victoria e scala la classifica dei tifosi." />
+      <PageHeader title="Pronostici" subtitle="Indovina l'esito delle partite del Victoria e scala la classifica dei tifosi." />
 
       {match ? (
         <HomePrediction match={match} />

@@ -28,6 +28,7 @@ import Formation from "@/components/Formation";
 import PhotoGrid from "@/components/PhotoGrid";
 import WeatherWidget from "@/components/WeatherWidget";
 import MatchPrediction from "@/components/MatchPrediction";
+import { PREDICTIONS_ENABLED } from "@/lib/predictions";
 import LiveRefresh from "@/components/LiveRefresh";
 import ConsentGate from "@/components/consent/ConsentGate";
 import EmptyState from "@/components/ui/EmptyState";
@@ -270,6 +271,51 @@ export default async function PartitaPage({ params }: { params: { slug: string }
   // Ogni blocco compare solo se ha contenuto: senza commenti live il feed
   // diventa il tabellino dei marcatori, senza nulla la sezione sparisce.
   const hasCronaca = feed.length > 0 || !!match.match_report || !!match.notes;
+  // A partita finita una cronaca lunga mostra solo i momenti chiave (o, se non ce ne
+  // sono, i primi 8 commenti); il resto si apre a richiesta
+  const KEY_EVENTS = new Set(["gol", "autorete", "rigore_segnato", "rigore_sbagliato", "rigore_parato", "espulsione"]);
+  const keyFeed = feed.filter((i) => i.kind === "event" && KEY_EVENTS.has(i.event.event_type));
+  const collapsed = !isLive && feed.length > 10 && keyFeed.length < feed.length;
+  const shown = !collapsed ? feed : keyFeed.length > 0 ? keyFeed : feed.slice(0, 8);
+  const hiddenFeed = keyFeed.length > 0 ? feed : feed.slice(8);
+  const renderFeedItem = (item: FeedItem) => {
+    // Senza minuto (es. marcatori di partite vecchie) niente pastiglia
+    const minute = item.minute != null ? (
+      <span className="relative z-10 shrink-0 min-w-[42px] text-center text-[11px] font-bold tabular bg-surface-2 border border-border rounded-full px-1.5 py-0.5 mt-0.5">
+        {item.minute}&apos;
+      </span>
+    ) : hasMinutes ? (
+      <span className="shrink-0 min-w-[42px]" aria-hidden />
+    ) : null;
+    if (item.kind === "comment") {
+      return (
+        <li key={`c-${item.id}`} className="flex items-start gap-3 px-4 py-2.5">
+          {minute}
+          <p className="text-sm leading-relaxed whitespace-pre-line min-w-0">{item.text}</p>
+        </li>
+      );
+    }
+    const ev = item.event;
+    const isVch = ev.for_team === "vch" || ev.for_team === null;
+    const name = ev.player?.full_name ?? (isVch ? "–" : opponent);
+    return (
+      <li key={`e-${ev.id}`} className="flex items-start gap-3 px-4 py-2.5">
+        {minute}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <EventIcon type={ev.event_type} />
+          <div className="min-w-0">
+            <p className="text-sm font-semibold truncate">
+              {eventLabel[ev.event_type] ?? ev.event_type} · {name}
+            </p>
+            <p className="text-[11px] text-muted truncate">
+              {isVch ? "Victoria Casa Hirta" : opponent}
+              {ev.player_out ? ` · esce ${ev.player_out.full_name}` : ""}
+            </p>
+          </div>
+        </div>
+      </li>
+    );
+  };
   const cronaca = hasCronaca && (
     <section className="flex flex-col gap-4" aria-labelledby="cronaca-title">
       <h2 id="cronaca-title" className="font-display font-bold text-lg inline-flex items-center gap-2">
@@ -286,45 +332,20 @@ export default async function PartitaPage({ params }: { params: { slug: string }
         </div>
           <ol className="relative py-2">
             {hasMinutes && <span className="absolute left-[38px] top-4 bottom-4 w-px bg-border" aria-hidden />}
-            {feed.map((item) => {
-              // Senza minuto (es. marcatori di partite vecchie) niente pastiglia
-              const minute = item.minute != null ? (
-                <span className="relative z-10 shrink-0 min-w-[42px] text-center text-[11px] font-bold tabular bg-surface-2 border border-border rounded-full px-1.5 py-0.5 mt-0.5">
-                  {item.minute}&apos;
-                </span>
-              ) : hasMinutes ? (
-                <span className="shrink-0 min-w-[42px]" aria-hidden />
-              ) : null;
-              if (item.kind === "comment") {
-                return (
-                  <li key={`c-${item.id}`} className="flex items-start gap-3 px-4 py-2.5">
-                    {minute}
-                    <p className="text-sm leading-relaxed whitespace-pre-line min-w-0">{item.text}</p>
-                  </li>
-                );
-              }
-              const ev = item.event;
-              const isVch = ev.for_team === "vch" || ev.for_team === null;
-              const name = ev.player?.full_name ?? (isVch ? "–" : opponent);
-              return (
-                <li key={`e-${ev.id}`} className="flex items-start gap-3 px-4 py-2.5">
-                  {minute}
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <EventIcon type={ev.event_type} />
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold truncate">
-                        {eventLabel[ev.event_type] ?? ev.event_type} · {name}
-                      </p>
-                      <p className="text-[11px] text-muted truncate">
-                        {isVch ? "Victoria Casa Hirta" : opponent}
-                        {ev.player_out ? ` · esce ${ev.player_out.full_name}` : ""}
-                      </p>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
+            {shown.map(renderFeedItem)}
           </ol>
+          {collapsed && (
+            <details className="group border-t border-border">
+              <summary className="list-none cursor-pointer select-none px-5 min-h-11 flex items-center justify-center gap-1.5 text-sm font-semibold text-accent-soft hover:text-text [&::-webkit-details-marker]:hidden">
+                <span className="group-open:hidden">{keyFeed.length > 0 ? `Mostra tutta la cronaca (${feed.length})` : `Mostra il resto della cronaca (${hiddenFeed.length})`}</span>
+                <span className="hidden group-open:inline">{keyFeed.length > 0 ? "Tutta la cronaca" : "Il resto della cronaca"}</span>
+              </summary>
+              <ol className="relative py-2 border-t border-border">
+                {hasMinutes && <span className="absolute left-[38px] top-4 bottom-4 w-px bg-border" aria-hidden />}
+                {hiddenFeed.map(renderFeedItem)}
+              </ol>
+            </details>
+          )}
       </div>
       )}
 
@@ -436,7 +457,8 @@ export default async function PartitaPage({ params }: { params: { slug: string }
     ? { label: opponent, logo: <TeamLogo src={match.opponent_logo_url} name={opponent} size={22} />, key: "opp" as const }
     : { label: "VCH", logo: <VCHLogo size={22} />, key: "vch" as const };
 
-  const statistiche = stats.length > 0 && (
+  // Con una sola voce (es. solo i cambi) il confronto non dice nulla
+  const statistiche = stats.length > 1 && (
     <section aria-labelledby="stats-title">
       <h2 id="stats-title" className="font-display font-bold text-lg inline-flex items-center gap-2 mb-4">
         <BarChart3 className="w-4 h-4 text-accent-soft" aria-hidden /> Statistiche
@@ -460,10 +482,10 @@ export default async function PartitaPage({ params }: { params: { slug: string }
                 </div>
                 <div className="flex gap-1 h-1.5">
                   <div className="flex-1 rounded-full bg-surface-2 overflow-hidden flex justify-end">
-                    <span className="h-full bg-brand-soft rounded-full" style={{ width: `${(home / total) * 100}%` }} />
+                    <span className={`h-full rounded-full ${homeSide.key === "vch" ? "bg-brand-soft" : "bg-muted/60"}`} style={{ width: `${(home / total) * 100}%` }} />
                   </div>
                   <div className="flex-1 rounded-full bg-surface-2 overflow-hidden">
-                    <span className="block h-full bg-accent rounded-full" style={{ width: `${(away / total) * 100}%` }} />
+                    <span className={`block h-full rounded-full ${awaySide.key === "vch" ? "bg-brand-soft" : "bg-muted/60"}`} style={{ width: `${(away / total) * 100}%` }} />
                   </div>
                 </div>
               </li>
@@ -589,7 +611,7 @@ export default async function PartitaPage({ params }: { params: { slug: string }
       {isLive && <LiveRefresh matchId={match.id} />}
 
       <div className="stagger flex flex-col gap-8">
-        {!isFinished && !isLive && match.status === "scheduled" && (
+        {PREDICTIONS_ENABLED && !isFinished && !isLive && match.status === "scheduled" && (
           <MatchPrediction
             matchId={match.id}
             matchDate={match.match_date}

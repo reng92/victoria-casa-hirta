@@ -74,20 +74,23 @@ function formatDay(iso?: string | null) {
 /** Loghi per squadra, con chiave `teamKey(nome)` (tabella team_logos). */
 export type TeamLogos = Record<string, string>;
 
-function TieCard({ tie, logos }: { tie: Tie; logos?: TeamLogos }) {
+const hasVCH = (tie: Tie) => [tie.home, tie.away].some((s) => s?.name && !s.pending && isVCH(s.name));
+const toPlay = (tie: Tie) => (tie.home?.name || tie.away?.name) && [tie.home, tie.away].every((s) => s?.score == null);
+
+function TieCard({ tie, logos, hideUndated = false }: { tie: Tie; logos?: TeamLogos; hideUndated?: boolean }) {
   const rows = [tie.home, tie.away];
   const decided = rows.some((s) => s?.winner);
   const penalties = tie.note ?? (rows.every((s) => s?.penalties != null) ? `d.c.r. ${tie.home?.penalties}-${tie.away?.penalties}` : null);
   const known = rows.some((s) => s?.name);
   return (
-    <div className={`rounded-xl border bg-surface-2/40 ${known ? "border-border" : "border-dashed border-border"}`}>
+    <div className={`rounded-xl border bg-surface-2/40 ${hasVCH(tie) ? "border-brand-soft/50" : known ? "border-border" : "border-dashed border-border"}`}>
       <div className="divide-y divide-border/70">
         {rows.map((slot, i) => {
           const vch = slot?.name && !slot.pending && isVCH(slot.name);
           return (
             <div
               key={i}
-              className={`flex items-center gap-2 px-3 py-2 text-sm min-h-[38px] ${vch ? "bg-brand/30" : ""} ${decided && !slot?.winner ? "opacity-55" : ""}`}
+              className={`flex items-center gap-2 px-3 py-2 text-sm min-h-[38px] ${vch ? "row-vch" : decided && !slot?.winner ? "opacity-55" : ""}`}
             >
               {logos && slot?.name && !slot.pending && <TeamLogo src={logos[teamKey(slot.name)]} name={slot.name} size={20} />}
               <span
@@ -104,8 +107,8 @@ function TieCard({ tie, logos }: { tie: Tie; logos?: TeamLogos }) {
       </div>
       {(() => {
         const toPlay = rows.every((s) => s?.score == null);
-        const info = penalties ?? (toPlay && known ? formatDay(tie.date) ?? "Data da definire" : null);
-        return info && <p className="px-3 py-1 text-[10px] text-muted border-t border-border/70">{info}</p>;
+        const info = penalties ?? (toPlay && known ? formatDay(tie.date) ?? (hideUndated ? null : "Data da definire") : null);
+        return info && <p className="px-3 py-1 text-[11px] text-muted border-t border-border/70">{info}</p>;
       })()}
     </div>
   );
@@ -132,16 +135,27 @@ export default function Bracket({
 
       <div className="mt-4 -mx-5 px-5 overflow-x-auto">
         <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${rounds.length}, minmax(${rounds.length > 2 ? "170px" : "0"}, 1fr))` }}>
-          {rounds.map((round) => (
-            <section key={round.label} aria-label={round.label} className="min-w-0 flex flex-col">
-              <h4 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 truncate">{round.label}</h4>
-              <div className="flex flex-col justify-around flex-1 gap-3">
-                {round.ties.map((tie, i) => (
-                  <TieCard key={i} tie={tie} logos={logos} />
-                ))}
-              </div>
-            </section>
-          ))}
+          {rounds.map((round) => {
+            // Un solo turno (es. sedicesimi): la sfida del VCH in cima e le altre su due colonne
+            const single = rounds.length === 1;
+            const ties = single ? [...round.ties].sort((a, b) => Number(hasVCH(b)) - Number(hasVCH(a))) : round.ties;
+            // "Data da definire" una volta sola per il turno, non sotto ogni sfida
+            const pending = ties.filter(toPlay);
+            const allUndated = pending.length > 1 && pending.every((t) => !t.date);
+            return (
+              <section key={round.label} aria-label={round.label} className="min-w-0 flex flex-col">
+                <h4 className="text-[11px] uppercase tracking-wider text-muted font-semibold mb-2 truncate">
+                  {round.label}
+                  {allUndated && <span className="normal-case tracking-normal font-normal"> · date da definire</span>}
+                </h4>
+                <div className={single && ties.length > 2 ? "grid sm:grid-cols-2 gap-3" : "flex flex-col justify-around flex-1 gap-3"}>
+                  {ties.map((tie, i) => (
+                    <TieCard key={i} tie={tie} logos={logos} hideUndated={allUndated} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
         </div>
       </div>
     </div>
