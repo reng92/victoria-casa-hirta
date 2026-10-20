@@ -2,6 +2,7 @@ import { supabase } from "@/lib/supabase";
 import Image from "next/image";
 import { Handshake, ExternalLink } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
+import SponsorLink from "@/components/SponsorLink";
 import EmptyState from "@/components/ui/EmptyState";
 import { initials } from "@/lib/format";
 import { pageMetadata } from "@/lib/seo";
@@ -53,15 +54,15 @@ function SponsorCard({ s }: { s: Sponsor }) {
 
   if (s.website_url) {
     return (
-      <a
+      <SponsorLink
         href={s.website_url}
-        target="_blank"
-        rel="noopener noreferrer"
+        sponsor={s.name}
+        placement="sponsor_page"
         className="group bento-card block hover:bg-surface-2/60 transition focus-visible:ring-2 focus-visible:ring-brand-soft"
-        aria-label={`${s.name} (sito esterno)`}
+        ariaLabel={`${s.name} (sito esterno)`}
       >
         {inner}
-      </a>
+      </SponsorLink>
     );
   }
   return <div className="group bento-card">{inner}</div>;

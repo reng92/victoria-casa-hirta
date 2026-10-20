@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Handshake } from "lucide-react";
 import SponsorLogo from "./SponsorLogo";
+import SponsorLink from "./SponsorLink";
 
 export interface SponsorItem {
   id: string;
@@ -24,16 +25,9 @@ function SponsorTile({ s, hidden = false, className = "" }: { s: SponsorItem; hi
     </span>
   );
   return s.website_url ? (
-    <a
-      href={s.website_url}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={s.name}
-      tabIndex={hidden ? -1 : 0}
-      className="tap block"
-    >
+    <SponsorLink href={s.website_url} sponsor={s.name} placement="home" ariaLabel={s.name} tabIndex={hidden ? -1 : 0} className="tap block">
       {content}
-    </a>
+    </SponsorLink>
   ) : (
     content
   );

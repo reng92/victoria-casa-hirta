@@ -6,7 +6,8 @@ import EmptyState from "@/components/ui/EmptyState";
 import TeamLogo from "@/components/ui/TeamLogo";
 import { Pill } from "@/components/ui/Badge";
 import { formatTime, formatWeekday, nowAsMatchDate } from "@/lib/format";
-import { getOpponent, matchContextShort } from "@/lib/competitions";
+import { getOpponent, isVCH, matchContextShort, teamKey } from "@/lib/competitions";
+import { competitionHref, getTeamLogos, getUnscheduledVCH } from "@/lib/competition-data";
 import { matchHref } from "@/lib/links";
 
 interface Match {
@@ -43,13 +44,24 @@ async function getUpcoming(): Promise<Match[]> {
   return (rows as unknown as Match[]) ?? [];
 }
 
+/** Partite già decise ma senza data (es. turni di coppa), in coda a quelle in calendario. */
+async function getUndated(limit: number) {
+  if (limit <= 0) return [];
+  const [fixtures, logos] = await Promise.all([getUnscheduledVCH(), getTeamLogos()]);
+  return fixtures.slice(0, limit).map((f) => {
+    const opponent = isVCH(f.home_team) ? f.away_team : f.home_team;
+    return { ...f, opponent, logo: logos[teamKey(opponent)] ?? null };
+  });
+}
+
 export default async function UpcomingMatches() {
   const matches = await getUpcoming();
+  const undated = await getUndated(3 - matches.length);
 
   return (
     <div className="bento-card p-5 h-full flex flex-col">
       <SectionHeader title="Prossime partite" icon={CalendarDays} href="/calendario" hrefLabel="Calendario" />
-      {matches.length === 0 ? (
+      {matches.length === 0 && undated.length === 0 ? (
         <EmptyState compact title="Nessuna partita in programma" description="Il calendario verrà aggiornato a breve." />
       ) : (
         <ul className="mt-4 flex flex-col divide-y divide-border flex-1">
@@ -83,6 +95,27 @@ export default async function UpcomingMatches() {
               </li>
             );
           })}
+          {undated.map((f) => (
+            <li key={f.id}>
+              <Link
+                href={f.competition ? competitionHref(f.competition) : "/calendario"}
+                className="flex items-center gap-3 py-3 hover:bg-surface-2/40 -mx-2 px-2 rounded-xl tap"
+              >
+                <div className="flex flex-col items-center justify-center w-11 h-[46px] shrink-0 rounded-xl bg-surface-2 border border-border">
+                  <span className="font-display text-lg font-bold leading-none text-muted">?</span>
+                </div>
+                <TeamLogo src={f.logo} name={f.opponent} size={36} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold truncate">{f.opponent}</p>
+                  <p className="text-[11px] text-muted truncate">
+                    {f.competition?.name ?? "Amichevole"}{f.round ? ` · ${f.round}` : ""}
+                  </p>
+                </div>
+                {/* Niente casa/fuori: il campo non è ancora deciso (le finali sono spesso in campo neutro) */}
+                <span className="text-[11px] font-semibold text-muted shrink-0">Data da definire</span>
+              </Link>
+            </li>
+          ))}
         </ul>
       )}
     </div>

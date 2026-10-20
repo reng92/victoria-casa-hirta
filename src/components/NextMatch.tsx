@@ -1,14 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
-import { CalendarDays, MapPin, Navigation, ArrowRight } from "lucide-react";
+import { CalendarDays, MapPin, Navigation, ArrowRight, Trophy } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import WeatherWidget from "@/components/WeatherWidget";
 import LiveCountdown from "@/components/LiveCountdown";
 import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge, Pill } from "@/components/ui/Badge";
 import { formatDateLong, formatTime, nowAsMatchDate } from "@/lib/format";
-import { getHomeAwayScores, getOpponent, matchContextLabel } from "@/lib/competitions";
+import { getHomeAwayScores, getOpponent, isVCH, matchContextLabel, teamKey } from "@/lib/competitions";
+import { competitionHref, getTeamLogos, getUnscheduledVCH } from "@/lib/competition-data";
 import AnniversaryBadge from "@/components/AnniversaryBadge";
 import { matchHref } from "@/lib/links";
 
@@ -57,9 +58,35 @@ async function getNextMatch(): Promise<Match | null> {
   return data as unknown as Match | null;
 }
 
+interface UndatedMatch {
+  home: string;
+  away: string;
+  homeLogo: string | null;
+  awayLogo: string | null;
+  round: string | null;
+  competition: string | null;
+}
+
+/** Senza partite in calendario, la prossima della Victoria ancora senza data (es. una finale di coppa). */
+async function getUndatedMatch(): Promise<UndatedMatch | null> {
+  const [fixtures, logos] = await Promise.all([getUnscheduledVCH(), getTeamLogos()]);
+  const f = fixtures[0];
+  if (!f) return null;
+  const logo = (team: string) => (isVCH(team) ? null : logos[teamKey(team)] ?? null);
+  return {
+    home: f.home_team,
+    away: f.away_team,
+    homeLogo: logo(f.home_team),
+    awayLogo: logo(f.away_team),
+    round: f.round,
+    competition: f.competition?.name ?? null,
+  };
+}
+
 /** Hero "prossima partita": gradient mesh, loghi, countdown live, CTA mappe. */
 export default async function NextMatch() {
   const match = await getNextMatch();
+  const undated = match ? null : await getUndatedMatch();
   const opponent = match ? getOpponent(match) : "";
 
   return (
@@ -89,7 +116,9 @@ export default async function NextMatch() {
         />
       </div>
 
-      {!match ? (
+      {!match && undated ? (
+        <UndatedHero m={undated} />
+      ) : !match ? (
         <div className="relative flex-1 flex flex-col items-center justify-center text-center p-8">
           <AnniversaryBadge size={96} priority className="mb-5" />
           <h1 id="next-match-title" className="font-display text-display">
@@ -218,5 +247,70 @@ export default async function NextMatch() {
         </div>
       )}
     </section>
+  );
+}
+
+function UndatedTeam({ name, logo, titleId }: { name: string; logo: string | null; titleId?: string }) {
+  const Title = titleId ? "h1" : "p";
+  return (
+    <div className="flex flex-col items-center gap-3 flex-1 min-w-0">
+      {isVCH(name) ? (
+        <VCHLogo size={72} priority className="ring-4 ring-white/10 md:!w-24 md:!h-24" />
+      ) : (
+        <TeamLogo src={logo} name={name} size={72} priority className="ring-4 ring-white/10 md:!w-24 md:!h-24" />
+      )}
+      <Title id={titleId} className="font-display text-base sm:text-xl md:text-2xl font-bold text-center leading-tight text-balance">
+        {name}
+      </Title>
+    </div>
+  );
+}
+
+/** Prossima partita già decisa ma senza data: stessa hero, con "Data da definire" al posto del countdown. */
+function UndatedHero({ m }: { m: UndatedMatch }) {
+  const isFinal = m.round?.toLowerCase() === "finale";
+  const vchHome = isVCH(m.home);
+  return (
+    <div className="relative flex-1 flex flex-col p-5 sm:p-7 md:p-8">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
+          {m.competition && <Pill tone="glass" className="normal-case tracking-normal">{m.competition}</Pill>}
+          {m.round && !isFinal && <Pill tone="glass" className="normal-case tracking-normal">{m.round}</Pill>}
+        </div>
+        <div className="flex items-center gap-3">
+          <p className="text-[11px] uppercase tracking-wider text-white/60 font-semibold">Prossima partita</p>
+          <AnniversaryBadge size={36} className="hidden xs:block" />
+        </div>
+      </div>
+
+      {isFinal && (
+        <p className="mt-6 flex items-center justify-center gap-2 font-display text-2xl md:text-3xl font-bold uppercase tracking-wide text-draw">
+          <Trophy className="w-6 h-6 md:w-7 md:h-7" aria-hidden />
+          Finale
+        </p>
+      )}
+
+      {/* La squadra di casa a sinistra; il titolo della pagina resta sulla Victoria */}
+      <div className="flex-1 flex items-center justify-between gap-3 py-6 md:py-8">
+        <UndatedTeam name={m.home} logo={m.homeLogo} titleId={vchHome ? "next-match-title" : undefined} />
+        <span className="font-display text-4xl md:text-5xl font-bold text-white/25 leading-none shrink-0 px-1">VS</span>
+        <UndatedTeam name={m.away} logo={m.awayLogo} titleId={vchHome ? undefined : "next-match-title"} />
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <p className="inline-flex items-center gap-2 text-sm text-white/85">
+          <CalendarDays className="w-4 h-4 text-white/60 shrink-0" aria-hidden />
+          Data e campo da definire
+        </p>
+        {m.competition && (
+          <Link
+            href={competitionHref({ name: m.competition })}
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full bg-white/10 border border-white/15 backdrop-blur text-white font-semibold px-4 py-2.5 text-sm hover:bg-white/20 tap"
+          >
+            Tabellone <ArrowRight className="w-4 h-4" aria-hidden />
+          </Link>
+        )}
+      </div>
+    </div>
   );
 }

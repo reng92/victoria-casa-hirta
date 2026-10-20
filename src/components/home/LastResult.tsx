@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Flag } from "lucide-react";
+import { Flag, Goal } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import SectionHeader from "@/components/ui/SectionHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -60,9 +60,27 @@ async function getCoverPhoto(matchId: string): Promise<string | null> {
   return (data as { photo_url: string } | null)?.photo_url ?? null;
 }
 
+/** Marcatori della Victoria ("Mario Rossi 2, Luca Bianchi"), con gli stessi eventi contati in /cannonieri. */
+async function getScorers(matchId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from("match_events")
+    .select("for_team, player:players!match_events_player_id_fkey(full_name)")
+    .eq("match_id", matchId)
+    .in("event_type", ["gol", "rigore_segnato"])
+    .order("minute", { ascending: true });
+  type Row = { for_team: string | null; player: { full_name: string } | null };
+  const goals = new Map<string, number>();
+  for (const e of (data as unknown as Row[]) ?? []) {
+    if (e.for_team === "opponent" || !e.player) continue;
+    const name = e.player.full_name.trim();
+    goals.set(name, (goals.get(name) ?? 0) + 1);
+  }
+  return [...goals].map(([name, n]) => (n > 1 ? `${name} ${n}` : name));
+}
+
 export default async function LastResult() {
   const m = await getLastResult();
-  const cover = m ? await getCoverPhoto(m.id) : null;
+  const [cover, scorers] = m ? await Promise.all([getCoverPhoto(m.id), getScorers(m.id)]) : [null, []];
 
   return (
     <div className="bento-card p-5 h-full flex flex-col overflow-hidden">
@@ -76,13 +94,13 @@ export default async function LastResult() {
       {!m ? (
         <EmptyState compact title="Nessun risultato" description="La prima partita deve ancora essere giocata." />
       ) : (
-        <LastResultBody m={m} />
+        <LastResultBody m={m} scorers={scorers} />
       )}
     </div>
   );
 }
 
-function LastResultBody({ m }: { m: Match }) {
+function LastResultBody({ m, scorers }: { m: Match; scorers: string[] }) {
   const opponent = getOpponent(m);
   const context = matchContextShort(m);
   const outcome = getMatchOutcome(m);
@@ -110,6 +128,15 @@ function LastResultBody({ m }: { m: Match }) {
           <span className="text-xs font-semibold text-center leading-tight truncate w-full">{opponent}</span>
         </div>
       </div>
+      {scorers.length > 0 && (
+        <p className="mt-4 flex items-start justify-center gap-1.5 text-xs text-center text-balance">
+          <Goal className="w-3.5 h-3.5 text-win shrink-0 mt-px" aria-hidden />
+          <span>
+            <span className="sr-only">Marcatori Victoria: </span>
+            {scorers.join(", ")}
+          </span>
+        </p>
+      )}
       <p className="text-[11px] text-muted mt-4 text-center truncate">
         {m.competition?.name ?? "Amichevole"}{context ? ` · ${context}` : ""} · {formatDateShort(m.match_date)} · {m.is_home ? "Casa" : "Trasferta"}
       </p>
