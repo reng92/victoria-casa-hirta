@@ -1,8 +1,8 @@
 import { supabase } from "@/lib/supabase";
-import Image from "next/image";
 import { Handshake, ExternalLink } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import SponsorLink from "@/components/SponsorLink";
+import SponsorLogo from "@/components/SponsorLogo";
 import EmptyState from "@/components/ui/EmptyState";
 import { initials } from "@/lib/format";
 import { pageMetadata } from "@/lib/seo";
@@ -30,21 +30,18 @@ async function getSponsors(): Promise<Sponsor[]> {
 function SponsorCard({ s }: { s: Sponsor }) {
   const inner = (
     <>
-      <div className="relative aspect-[3/2] bg-white overflow-hidden">
-        {s.logo_url ? (
-          <Image
-            src={s.logo_url}
-            alt={s.name}
-            fill
-            sizes="(min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
-            className="object-contain p-5 grayscale group-hover:grayscale-0 transition duration-300"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="font-display text-3xl font-bold text-brand-blue">{initials(s.name)}</span>
-          </div>
-        )}
-      </div>
+      {/* Stessa tessera della home: scura per i loghi chiari su fondo trasparente */}
+      {s.logo_url ? (
+        <SponsorLogo
+          src={s.logo_url}
+          alt={s.name}
+          className="aspect-[3/2] w-full !rounded-none !p-5 !ring-0 grayscale group-hover:grayscale-0 duration-300"
+        />
+      ) : (
+        <div className="aspect-[3/2] bg-white flex items-center justify-center">
+          <span className="font-display text-3xl font-bold text-brand-blue">{initials(s.name)}</span>
+        </div>
+      )}
       <div className="p-4 flex items-center justify-between gap-2">
         <p className="font-semibold text-sm truncate">{s.name}</p>
         {s.website_url && <ExternalLink className="w-3.5 h-3.5 text-muted shrink-0" aria-hidden />}

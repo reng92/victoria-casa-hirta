@@ -14,6 +14,7 @@ const STATIC_PAGES: { path: string; priority: number; changeFrequency: MetadataR
   { path: "/rosa", priority: 0.8, changeFrequency: "weekly" },
   { path: "/news", priority: 0.8, changeFrequency: "weekly" },
   { path: "/mvp", priority: 0.7, changeFrequency: "weekly" },
+  { path: "/pronostici", priority: 0.7, changeFrequency: "weekly" },
   { path: "/cannonieri", priority: 0.7, changeFrequency: "weekly" },
   { path: "/galleria", priority: 0.6, changeFrequency: "weekly" },
   { path: "/storico", priority: 0.5, changeFrequency: "monthly" },

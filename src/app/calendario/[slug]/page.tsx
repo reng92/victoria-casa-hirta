@@ -27,6 +27,7 @@ import {
 import Formation from "@/components/Formation";
 import PhotoGrid from "@/components/PhotoGrid";
 import WeatherWidget from "@/components/WeatherWidget";
+import MatchPrediction from "@/components/MatchPrediction";
 import LiveRefresh from "@/components/LiveRefresh";
 import ConsentGate from "@/components/consent/ConsentGate";
 import EmptyState from "@/components/ui/EmptyState";
@@ -588,6 +589,15 @@ export default async function PartitaPage({ params }: { params: { slug: string }
       {isLive && <LiveRefresh matchId={match.id} />}
 
       <div className="stagger flex flex-col gap-8">
+        {!isFinished && !isLive && match.status === "scheduled" && (
+          <MatchPrediction
+            matchId={match.id}
+            matchDate={match.match_date}
+            isHome={match.is_home}
+            status={match.status}
+            opponent={opponent}
+          />
+        )}
         {cronaca}
         {foto}
         {statistiche}
