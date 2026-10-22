@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/lib/storage";
 import { refreshPages } from "@/lib/revalidate";
 import { getOpponent } from "@/lib/competitions";
+import { nowAsMatchDate } from "@/lib/format";
 
 interface Match {
   id: string;
@@ -49,7 +50,7 @@ export default function AdminGalleria() {
         const list = (data as Match[]) ?? [];
         setMatches(list);
         // Parte dall'ultima partita giocata o in corso, la più probabile
-        const now = new Date().toISOString();
+        const now = nowAsMatchDate();
         setTarget(list.find((m) => m.match_date <= now)?.id ?? list[0]?.id ?? NO_MATCH);
       });
   }, []);

@@ -3,8 +3,8 @@
 -- match_formations e match_commentary, che esauriva il Disk IO.
 -- Va applicata PRIMA del deploy: senza queste policy i canali privati
 -- rifiutano la sottoscrizione.
-
-alter table realtime.messages enable row level security;
+-- La RLS su realtime.messages è già attiva di default (e la tabella non è
+-- nostra: "alter table ... enable row level security" fallisce).
 
 -- Tutti (anche senza login) possono ricevere i messaggi delle partite
 drop policy if exists "livescore read partita" on realtime.messages;

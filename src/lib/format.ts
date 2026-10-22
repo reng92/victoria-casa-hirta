@@ -93,8 +93,17 @@ export const outcomeShort: Record<Outcome, string> = {
 };
 
 /**
- * match_date è l'orario "da parete" di Roma scritto come UTC (21:00 → 21:00Z).
- * Per countdown e confronti con l'ora attuale serve l'istante vero.
+ * Convenzione di matches.match_date (timestamptz): l'admin scrive l'ora
+ * italiana e viene salvata come se fosse UTC. Una partita alle 21:00 di Roma
+ * è "…T21:00:00+00", non "…T19:00:00+00".
+ *
+ * - Per MOSTRARE data e ora si legge in UTC (formatMatchTime, o le parti
+ *   getUTC*): esce l'ora italiana giusta su server e browser.
+ * - Per CONFRONTARE con l'ora attuale (countdown, live, prossime partite)
+ *   si usa matchInstant, che reinterpreta l'orario come ora di Roma e dà
+ *   l'istante vero; nelle query si usa nowAsMatchDate. Mai confrontare
+ *   match_date con new Date()/Date.now()/toISOString() direttamente: si
+ *   sbaglierebbe di 1-2 ore. Lato SQL l'equivalente è public.match_kickoff().
  */
 export function matchInstant(matchDate: string): number {
   return Date.parse(romeLocalToIso(matchDate.slice(0, 16)));

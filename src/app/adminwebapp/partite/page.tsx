@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { deleteEvent as removeEvent, deleteMatch, insertEvent, insertMatch, updateMatch } from "@/lib/live-match";
 import { syncStandings, syncMessage } from "@/lib/standings";
+import { nowAsMatchDate } from "@/lib/format";
 import { groupLabel, groupOptions, isGroupFormat, matchdayLabel } from "@/lib/competitions";
 import LogoField from "@/components/admin/LogoField";
 import CommentaryEditor from "@/components/admin/CommentaryEditor";
@@ -333,7 +334,7 @@ export default function AdminPartite() {
 
   async function updateStartTime() {
     if (!liveMatchId || !liveStartTime) return;
-    const day = matches.find(m => m.id === liveMatchId)?.match_date.slice(0, 10) ?? new Date().toISOString().split("T")[0];
+    const day = matches.find(m => m.id === liveMatchId)?.match_date.slice(0, 10) ?? nowAsMatchDate().slice(0, 10);
     const newDatetime = `${day}T${liveStartTime}:00`;
     await updateMatch(liveMatchId, {
       match_date: newDatetime,
