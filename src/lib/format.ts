@@ -36,6 +36,28 @@ export function formatTime(dateStr: string) {
   });
 }
 
+/**
+ * Data e ora di match_date (orario da parete salvato come UTC) lette in UTC:
+ * escono uguali sul server e nel browser, per i componenti client.
+ */
+export function formatMatchDateFull(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("it-IT", {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+export function formatMatchTime(dateStr: string) {
+  return new Date(dateStr).toLocaleTimeString("it-IT", {
+    timeZone: "UTC",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function formatWeekday(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("it-IT", { weekday: "short" });
 }

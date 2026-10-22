@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { updateMatches } from "@/lib/live-match";
 import LogoField from "@/components/admin/LogoField";
 
 interface MatchRow {
@@ -65,10 +66,7 @@ export default function AdminLoghi() {
     setSaving(o.key);
     setMsg((m) => ({ ...m, [o.key]: "" }));
     const ids = rows.filter((r) => norm(r.away_team) === o.key).map((r) => r.id);
-    const { error } = await supabase
-      .from("matches")
-      .update({ opponent_logo_url: url || null })
-      .in("id", ids);
+    const { error } = await updateMatches(ids, { opponent_logo_url: url || null });
     setSaving(null);
     if (error) {
       setMsg((m) => ({ ...m, [o.key]: "Errore: " + error.message }));

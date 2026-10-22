@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { deleteEvent, insertEvent } from "@/lib/live-match";
 
 interface Match {
   id: string;
@@ -78,7 +79,7 @@ export default function AdminMarcatori() {
     e.preventDefault();
     setLoading(true);
     setMsg("");
-    const { error } = await supabase.from("match_events").insert({
+    const { error } = await insertEvent({
       match_id: form.match_id,
       player_id: form.player_id,
       event_type: form.event_type,
@@ -95,7 +96,7 @@ export default function AdminMarcatori() {
 
   async function handleDelete(id: string) {
     if (!confirm("Eliminare questo evento?")) return;
-    await supabase.from("match_events").delete().eq("id", id);
+    await deleteEvent(form.match_id, id);
     if (form.match_id) fetchEvents(form.match_id);
   }
 

@@ -8,6 +8,7 @@
  * spostate al primo salvataggio con la data.
  */
 import { supabase } from "@/lib/supabase";
+import { deleteMatch, insertMatch as saveNewMatch, updateMatch } from "@/lib/live-match";
 import {
   Fixture,
   MATCH_FIXTURE_COLUMNS,
@@ -105,7 +106,7 @@ async function knownLogo(opponent: string) {
 
 async function insertMatch(competitionId: string, f: FixtureFields) {
   const row = matchRow(f);
-  return supabase.from("matches").insert({ ...row, competition_id: competitionId, opponent_logo_url: await knownLogo(row.away_team) });
+  return saveNewMatch({ ...row, competition_id: competitionId, opponent_logo_url: await knownLogo(row.away_team) });
 }
 
 const playsVCH = (f: Pick<FixtureFields, "home_team" | "away_team">) => isVCH(f.home_team) || isVCH(f.away_team);
@@ -139,7 +140,7 @@ export async function updateFixture(competitionId: string, current: Fixture, f: 
   const vch = playsVCH(f);
   if (current.source === "match") {
     if (vch) {
-      const { error } = await supabase.from("matches").update(matchRow({ ...f, match_date: f.match_date ?? current.match_date })).eq("id", current.id);
+      const { error } = await updateMatch(current.id, matchRow({ ...f, match_date: f.match_date ?? current.match_date }));
       return error?.message ?? null;
     }
     // Il Victoria non gioca più questa partita (es. tabellone ricalcolato): si sposta solo se non ha ancora un risultato
@@ -148,7 +149,7 @@ export async function updateFixture(competitionId: string, current: Fixture, f: 
     }
     const { error } = await supabase.from("competition_results").insert({ ...resultRow(f), competition_id: competitionId });
     if (error) return error.message;
-    const { error: delError } = await supabase.from("matches").delete().eq("id", current.id);
+    const { error: delError } = await deleteMatch(current.id);
     return delError?.message ?? null;
   }
   if (vch && f.match_date) {

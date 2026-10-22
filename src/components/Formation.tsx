@@ -1,30 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 import { playerHref } from "@/lib/links";
 import { firstName, inferModule, shortName } from "@/lib/formation";
 import { VCHLogo } from "@/components/ui/TeamLogo";
 import { initials } from "@/lib/format";
-
-interface Player {
-  id: string;
-  slug: string | null;
-  full_name: string;
-  shirt_number: number | null;
-  photo_url: string | null;
-  role: string;
-}
-
-interface FormationRow {
-  id: string;
-  position_x: number;
-  position_y: number;
-  player: Player | null;
-}
-
-interface BenchRow {
-  player: Player | null;
-}
+import type { FormationRow, LivePlayer as Player } from "@/lib/live-match";
 
 interface EventRow {
   event_type: string;
@@ -34,25 +14,12 @@ interface EventRow {
   player: Player | null;
 }
 
-const PLAYER_FIELDS = "id, slug, full_name, shirt_number, photo_url, role";
-
-async function getLineup(matchId: string) {
-  const [{ data: formation }, { data: bench }, { data: events }, { data: coach }] = await Promise.all([
-    supabase.from("match_formations").select(`id, position_x, position_y, player:players(${PLAYER_FIELDS})`).eq("match_id", matchId),
-    supabase.from("match_lineups").select(`player:players(${PLAYER_FIELDS})`).eq("match_id", matchId).eq("is_starter", false),
-    supabase
-      .from("match_events")
-      .select(`event_type, minute, player_id, player_out_id, player:players!match_events_player_id_fkey(${PLAYER_FIELDS})`)
-      .eq("match_id", matchId)
-      .or("for_team.eq.vch,for_team.is.null"),
-    supabase.from("staff").select("full_name").ilike("role", "allenatore").limit(1).maybeSingle(),
-  ]);
-  return {
-    formation: ((formation as unknown as FormationRow[]) ?? []).filter(f => f.player),
-    bench: ((bench as unknown as BenchRow[]) ?? []).map(b => b.player).filter((p): p is Player => !!p),
-    events: (events as unknown as EventRow[]) ?? [],
-    coach: (coach as { full_name: string } | null)?.full_name ?? null,
-  };
+export interface LineupData {
+  formation: FormationRow[];
+  bench: Player[];
+  /** Eventi del Victoria */
+  events: EventRow[];
+  coach: string | null;
 }
 
 /** Eventi di un giocatore, per i badge sul campo e in panchina. */
@@ -262,25 +229,19 @@ function BenchPlayer({ player, stats }: { player: Player; stats: Stats }) {
   );
 }
 
-/**
- * Formazione del Victoria in stile livescore: campo con i titolari e i loro
- * eventi (gol, assist, cartellini, sostituzioni), poi panchina e allenatore.
- * Degli avversari non abbiamo la formazione. Ritorna null se non c'è nulla.
- */
-export default async function Formation({ matchId }: { matchId: string }) {
-  const lineup = await getLineup(matchId);
-  if (lineup.formation.length === 0 && lineup.bench.length === 0) return null;
-  return <FormationView {...lineup} />;
-}
-
-export type LineupData = Awaited<ReturnType<typeof getLineup>>;
-
 // Fascia verticale (in % del campo) occupata dai giocatori: dagli attaccanti in
 // alto al portiere in basso, lasciando spazio per foto ed etichette.
 const PITCH_TOP = 9;
 const PITCH_BOTTOM = 84;
 
-export function FormationView({ formation, bench, events, coach }: LineupData) {
+/**
+ * Formazione del Victoria in stile livescore: campo con i titolari e i loro
+ * eventi (gol, assist, cartellini, sostituzioni), poi panchina e allenatore.
+ * Degli avversari non abbiamo la formazione. Ritorna null se non c'è nulla.
+ */
+export default function Formation({ formation: rows, bench, events, coach }: LineupData) {
+  const formation = rows.filter(f => f.player);
+  if (formation.length === 0 && bench.length === 0) return null;
   const module = formation.length === 11 ? inferModule(formation.map(f => ({ x: f.position_x, y: f.position_y }))) : null;
   const keeperY = Math.max(...formation.map(f => f.position_y));
   const forwardY = Math.min(...formation.map(f => f.position_y));

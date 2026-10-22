@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { deleteEvent as removeEvent, deleteMatch, insertEvent, insertMatch, updateMatch } from "@/lib/live-match";
 import { syncStandings, syncMessage } from "@/lib/standings";
 import { groupLabel, groupOptions, isGroupFormat, matchdayLabel } from "@/lib/competitions";
 import LogoField from "@/components/admin/LogoField";
@@ -151,7 +152,7 @@ export default function AdminPartite() {
     const known = form.opponent_logo_url
       ? null
       : matches.find(x => x.away_team.trim().toLowerCase() === form.away_team.trim().toLowerCase() && x.opponent_logo_url)?.opponent_logo_url ?? null;
-    const { error } = await supabase.from("matches").insert({
+    const { error } = await insertMatch({
       away_team: form.away_team,
       match_date,
       is_home: form.is_home,
@@ -175,7 +176,7 @@ export default function AdminPartite() {
   async function handleDelete(id: string) {
     if (!confirm("Eliminare questa partita?")) return;
     const competitionId = matches.find(m => m.id === id)?.competition_id;
-    await supabase.from("matches").delete().eq("id", id);
+    await deleteMatch(id);
     await syncStandings(competitionId);
     fetchAll();
   }
@@ -220,7 +221,7 @@ export default function AdminPartite() {
     const ap = draw && editForm.away_penalties !== "" ? parseInt(editForm.away_penalties) : null;
     if ((hp == null) !== (ap == null)) { setEditMsg("Errore: inserisci i rigori di entrambe le squadre"); setEditLoading(false); return; }
     if (hp != null && hp === ap) { setEditMsg("Errore: ai rigori non si può pareggiare"); setEditLoading(false); return; }
-    const { error } = await supabase.from("matches").update({
+    const { error } = await updateMatch(editMatch.id, {
       away_team: editForm.away_team,
       match_date,
       is_home: editForm.is_home,
@@ -238,7 +239,7 @@ export default function AdminPartite() {
       opponent_logo_url: editForm.opponent_logo_url || null,
       instagram_reels: editReels.length > 0 ? editReels : null,
       match_report: editReport.trim() || null,
-    }).eq("id", editMatch.id);
+    });
     if (error) setEditMsg("Errore: " + error.message);
     else {
       // Se la competizione è cambiata va ricalcolata anche quella di prima
@@ -260,18 +261,18 @@ export default function AdminPartite() {
     setLiveStartTime(match.match_date.slice(11, 16));
     setLiveOpponentLogo(match.opponent_logo_url ?? "");
     setLiveMsg("");
-    await supabase.from("matches").update({
+    await updateMatch(match.id, {
       status: "live",
       live_period: match.live_period ?? "first_half",
       live_started_at: new Date().toISOString(),
-    }).eq("id", match.id);
+    });
     fetchAll();
     fetchLiveEvents(match.id);
   }
 
   async function setPeriod(period: string, minuteStart: number) {
     if (!liveMatchId) return;
-    await supabase.from("matches").update({
+    await updateMatch(liveMatchId, {
       live_period: period,
       live_minute: minuteStart,
       live_minute_set_at: new Date().toISOString(),
@@ -279,7 +280,7 @@ export default function AdminPartite() {
       // Il risultato finale sarà "d.t.s."
       ...(period === "extra_time" ? { extra_time: true } : {}),
       ...(period === "penalties" ? { live_minute_set_at: null } : {}),
-    }).eq("id", liveMatchId);
+    });
     if (period === "penalties") {
       setLivePenHome(String(liveMatch?.home_penalties ?? 0));
       setLivePenAway(String(liveMatch?.away_penalties ?? 0));
@@ -292,41 +293,41 @@ export default function AdminPartite() {
 
   async function updateLiveScore() {
     if (!liveMatchId) return;
-    await supabase.from("matches").update({
+    await updateMatch(liveMatchId, {
       home_score: parseInt(liveHome) || 0,
       away_score: parseInt(liveAway) || 0,
-    }).eq("id", liveMatchId);
+    });
     setLiveMsg("✅ Punteggio aggiornato!");
     fetchAll();
   }
 
   async function updateLivePenalties() {
     if (!liveMatchId) return;
-    await supabase.from("matches").update({
+    await updateMatch(liveMatchId, {
       home_penalties: parseInt(livePenHome) || 0,
       away_penalties: parseInt(livePenAway) || 0,
-    }).eq("id", liveMatchId);
+    });
     setLiveMsg("✅ Rigori aggiornati!");
     fetchAll();
   }
 
   async function updateLiveMinute() {
     if (!liveMatchId) return;
-    await supabase.from("matches").update({
+    await updateMatch(liveMatchId, {
       live_minute: parseInt(liveMinuteDisplay) || 0,
       live_minute_set_at: new Date().toISOString(),
       live_extra_time: parseInt(liveExtraTime) || 0,
-    }).eq("id", liveMatchId);
+    });
     setLiveMsg(`⏱️ Timer riparte da ${liveMinuteDisplay}'${parseInt(liveExtraTime) > 0 ? `+${liveExtraTime}` : ""}`);
     fetchAll();
   }
 
   async function stopTimer() {
     if (!liveMatchId) return;
-    await supabase.from("matches").update({
+    await updateMatch(liveMatchId, {
       live_minute: parseInt(liveMinuteDisplay) || 0,
       live_minute_set_at: null,
-    }).eq("id", liveMatchId);
+    });
     setLiveMsg("⏸ Timer fermato");
   }
 
@@ -334,17 +335,17 @@ export default function AdminPartite() {
     if (!liveMatchId || !liveStartTime) return;
     const day = matches.find(m => m.id === liveMatchId)?.match_date.slice(0, 10) ?? new Date().toISOString().split("T")[0];
     const newDatetime = `${day}T${liveStartTime}:00`;
-    await supabase.from("matches").update({
+    await updateMatch(liveMatchId, {
       match_date: newDatetime,
       live_started_at: newDatetime,
-    }).eq("id", liveMatchId);
+    });
     setLiveMsg("🕐 Orario aggiornato!");
     fetchAll();
   }
 
   async function addLiveEvent() {
     if (!liveMatchId || !livePlayer) return;
-    const { error } = await supabase.from("match_events").insert({
+    const { error } = await insertEvent({
       match_id: liveMatchId,
       player_id: livePlayer,
       player_out_id: liveEventType === "cambio" ? (livePlayerOut || null) : null,
@@ -358,10 +359,10 @@ export default function AdminPartite() {
         const newAway = liveForTeam === "opponent" ? parseInt(liveAway) + 1 : parseInt(liveAway);
         setLiveHome(String(newHome));
         setLiveAway(String(newAway));
-        await supabase.from("matches").update({
+        await updateMatch(liveMatchId, {
           home_score: newHome,
           away_score: newAway,
-        }).eq("id", liveMatchId);
+        });
         setShowConfirm(`GOL! ${liveForTeam === "vch" ? "VCH" : liveMatch?.away_team} ${newHome}–${newAway}`);
         setTimeout(() => setShowConfirm(null), 3000);
       }
@@ -381,9 +382,9 @@ export default function AdminPartite() {
       const newAway = forTeam === "opponent" ? Math.max(0, parseInt(liveAway) - 1) : parseInt(liveAway);
       setLiveHome(String(newHome));
       setLiveAway(String(newAway));
-      await supabase.from("matches").update({ home_score: newHome, away_score: newAway }).eq("id", liveMatchId);
+      await updateMatch(liveMatchId, { home_score: newHome, away_score: newAway });
     }
-    await supabase.from("match_events").delete().eq("id", eventId);
+    if (liveMatchId) await removeEvent(liveMatchId, eventId);
     setLiveMsg("↩️ Evento annullato");
     if (liveMatchId) fetchLiveEvents(liveMatchId);
     fetchAll();
@@ -392,11 +393,11 @@ export default function AdminPartite() {
   async function endMatch() {
     if (!liveMatchId) return;
     if (!confirm("Terminare la partita?")) return;
-    await supabase.from("matches").update({
+    await updateMatch(liveMatchId, {
       status: "finished",
       live_period: "finished",
       live_minute_set_at: null,
-    }).eq("id", liveMatchId);
+    });
     await syncStandings(matches.find(m => m.id === liveMatchId)?.competition_id);
     setLiveMatchId(null);
     setLiveMsg("");
@@ -571,7 +572,7 @@ export default function AdminPartite() {
                       const url = await uploadImage(file, "opponents");
                       if (url) {
                         setLiveOpponentLogo(url);
-                        await supabase.from("matches").update({ opponent_logo_url: url }).eq("id", liveMatchId);
+                        await updateMatch(liveMatchId, { opponent_logo_url: url });
                         setLiveMsg("✅ Logo aggiornato!");
                         fetchAll();
                       }
@@ -590,7 +591,7 @@ export default function AdminPartite() {
                 <button
                   onClick={async () => {
                     if (!liveMatchId || !liveOpponentLogo) return;
-                    await supabase.from("matches").update({ opponent_logo_url: liveOpponentLogo }).eq("id", liveMatchId);
+                    await updateMatch(liveMatchId, { opponent_logo_url: liveOpponentLogo });
                     setLiveMsg("✅ Logo salvato!");
                     fetchAll();
                   }}

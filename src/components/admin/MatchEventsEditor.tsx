@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { deleteEvent, insertEvent } from "@/lib/live-match";
 
 interface Player { id: string; full_name: string; }
 interface MatchEvent {
@@ -57,7 +58,7 @@ export default function MatchEventsEditor({ matchId, opponent, players }: { matc
     if (needsPlayer && !player) return;
     setSaving(true);
     setMsg("");
-    const { error } = await supabase.from("match_events").insert({
+    const { error } = await insertEvent({
       match_id: matchId,
       player_id: forTeam === "vch" ? player : null,
       player_out_id: forTeam === "vch" && type === "cambio" ? (playerOut || null) : null,
@@ -78,7 +79,7 @@ export default function MatchEventsEditor({ matchId, opponent, players }: { matc
 
   async function remove(id: string) {
     if (!confirm("Eliminare questo evento?")) return;
-    await supabase.from("match_events").delete().eq("id", id);
+    await deleteEvent(matchId, id);
     fetchEvents();
   }
 

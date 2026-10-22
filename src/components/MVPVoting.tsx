@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { Crown, Star } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { onVisibilityChange } from "@/lib/live-channel";
 import Avatar from "@/components/ui/Avatar";
 
 interface Player {
@@ -31,13 +32,20 @@ export default function MVPVoting({ matchId }: Props) {
     fetchVotes();
     const stored = localStorage.getItem(`mvp-voted-${matchId}`);
     if (stored) { setVoted(true); setSelectedPlayer(stored); }
-
-    const channel = supabase
-      .channel(`mvp-${matchId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "match_votes", filter: `match_id=eq.${matchId}` }, () => fetchVotes())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
   }, [matchId]);
+
+  // I voti li inseriscono i tifosi: niente realtime, si rileggono ogni minuto
+  // solo mentre la pagina è visibile (e subito quando si torna sulla pagina)
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+    const start = () => { clearInterval(interval); interval = setInterval(fetchVotes, 60_000); };
+    if (document.visibilityState === "visible") start();
+    const off = onVisibilityChange((v) => {
+      clearInterval(interval);
+      if (v) { fetchVotes(); start(); }
+    });
+    return () => { clearInterval(interval); off(); };
+  }, [matchId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchPlayers() {
     const { data: lineups } = await supabase

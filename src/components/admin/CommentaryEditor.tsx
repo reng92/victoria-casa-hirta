@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { deleteCommentary, insertCommentary } from "@/lib/live-match";
 
 interface Commentary {
   id: string;
@@ -45,7 +46,7 @@ export default function CommentaryEditor({
     if (!body) return;
     setSaving(true);
     setError("");
-    const { error } = await supabase.from("match_commentary").insert({
+    const { error } = await insertCommentary({
       match_id: matchId,
       minute: minute !== "" ? parseInt(minute) : null,
       text: body,
@@ -57,7 +58,7 @@ export default function CommentaryEditor({
 
   async function remove(id: string) {
     if (!confirm("Eliminare questo aggiornamento?")) return;
-    await supabase.from("match_commentary").delete().eq("id", id);
+    await deleteCommentary(matchId, id);
     fetchItems();
   }
 

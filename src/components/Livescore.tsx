@@ -6,10 +6,13 @@ import TeamLogo, { VCHLogo } from "@/components/ui/TeamLogo";
 import { LiveBadge } from "@/components/ui/Badge";
 import { getHomeAwayScores, getOpponent, getScores, matchResultNote } from "@/lib/competitions";
 import { matchHref } from "@/lib/links";
+import { nowAsMatchDate } from "@/lib/format";
+import { applyRows, isInLiveWindow, listenToMatch, nextWindowChange, onVisibilityChange } from "@/lib/live-channel";
 
 interface LiveMatch {
   slug?: string | null;
   id: string;
+  match_date: string;
   home_team: string;
   away_team: string;
   home_score: number | null;
@@ -27,29 +30,35 @@ interface LiveMatch {
 
 interface LiveEvent {
   id: string;
+  match_id: string;
   event_type: string;
   minute: number | null;
   for_team: string | null;
   player: { full_name: string } | null;
 }
 
+const GOAL_TYPES = ["gol", "autorete"];
+const byMinute = (a: LiveEvent, b: LiveEvent) => (a.minute ?? 999) - (b.minute ?? 999);
+
 /**
- * Barra livescore globale (realtime). Compare sotto l'header solo quando
- * c'è una partita in corso.
+ * Barra livescore globale. Compare sotto l'header solo quando c'è una partita
+ * in corso. Legge le partite in corso o in arrivo e ascolta il canale broadcast
+ * di ognuna finché la pagina è visibile.
  */
 export default function Livescore() {
-  const [matches, setMatches] = useState<LiveMatch[]>([]);
+  const [candidates, setCandidates] = useState<LiveMatch[]>([]);
   const [events, setEvents] = useState<Record<string, LiveEvent[]>>({});
+  const [visible, setVisible] = useState(true);
+  const [clock, setClock] = useState(0);
   const [, setTicks] = useState(0);
 
   useEffect(() => {
     fetchLive();
-    const channel = supabase
-      .channel("livescore")
-      .on("postgres_changes", { event: "*", schema: "public", table: "matches" }, () => fetchLive())
-      .on("postgres_changes", { event: "*", schema: "public", table: "match_events" }, () => fetchLive())
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    if (document.visibilityState !== "visible") setVisible(false);
+    return onVisibilityChange((v) => {
+      setVisible(v);
+      if (v) fetchLive();
+    });
   }, []);
 
   useEffect(() => {
@@ -57,23 +66,55 @@ export default function Livescore() {
     return () => clearInterval(interval);
   }, []);
 
+  // Prossima partita che entra nella finestra dei 30 minuti: si rilegge
+  useEffect(() => {
+    const waits = candidates.map(m => nextWindowChange(m)).filter((ms): ms is number => ms != null);
+    if (waits.length === 0) return;
+    const t = setTimeout(() => { setClock(c => c + 1); fetchLive(); }, Math.min(...waits));
+    return () => clearTimeout(t);
+  }, [candidates, clock]);
+
+  const watched = visible ? candidates.filter(m => isInLiveWindow(m)).map(m => m.id).sort().join(",") : "";
+
+  useEffect(() => {
+    if (!watched) return;
+    const offs = watched.split(",").map(id => listenToMatch(id, ({ table, action, payload }) => {
+      if (table === "matches") {
+        if (action === "update") setCandidates(list => list.map(m => (m.id === id ? { ...m, ...payload } : m)));
+        if (action === "delete") setCandidates(list => list.filter(m => m.id !== id));
+      }
+      if (table === "match_events") {
+        // Solo i gol: gli altri eventi non compaiono nella barra
+        const rows = (Array.isArray(payload) ? payload : [payload]) as LiveEvent[];
+        const goals = action === "delete" ? payload : rows.filter(e => GOAL_TYPES.includes(e.event_type));
+        if (action !== "delete" && goals.length === 0) return;
+        setEvents(map => ({ ...map, [id]: applyRows(map[id] ?? [], action, goals).sort(byMinute) }));
+      }
+    }));
+    return () => offs.forEach(off => off());
+  }, [watched]);
+
   async function fetchLive() {
+    // In corso, oppure programmate da poco iniziate o in arrivo
     const { data } = await supabase
       .from("matches")
-      .select("id, slug, home_team, away_team, home_score, away_score, home_penalties, away_penalties, extra_time, is_home, status, opponent_logo_url, live_minute, live_minute_set_at, competition:competitions(name)")
-      .eq("status", "live");
-    const liveMatches = (data as unknown as LiveMatch[]) ?? [];
-    setMatches(liveMatches);
+      .select("id, slug, match_date, home_team, away_team, home_score, away_score, home_penalties, away_penalties, extra_time, is_home, status, opponent_logo_url, live_minute, live_minute_set_at, competition:competitions(name)")
+      .or(`status.eq.live,and(status.eq.scheduled,match_date.gte.${nowAsMatchDate(3)})`)
+      .order("match_date", { ascending: true })
+      .limit(10);
+    const list = (data as unknown as LiveMatch[]) ?? [];
+    setCandidates(list);
 
+    const liveIds = list.filter(m => m.status === "live").map(m => m.id);
     const eventsMap: Record<string, LiveEvent[]> = {};
-    for (const m of liveMatches) {
+    if (liveIds.length > 0) {
       const { data: evs } = await supabase
         .from("match_events")
-        .select("id, event_type, minute, for_team, player:players(full_name)")
-        .eq("match_id", m.id)
-        .in("event_type", ["gol", "autorete"])
+        .select("id, match_id, event_type, minute, for_team, player:players!match_events_player_id_fkey(full_name)")
+        .in("match_id", liveIds)
+        .in("event_type", GOAL_TYPES)
         .order("minute", { ascending: true });
-      eventsMap[m.id] = (evs as unknown as LiveEvent[]) ?? [];
+      for (const e of (evs as unknown as LiveEvent[]) ?? []) (eventsMap[e.match_id] ??= []).push(e);
     }
     setEvents(eventsMap);
   }
@@ -86,6 +127,7 @@ export default function Livescore() {
     return (m.live_minute ?? 0) + elapsedMinutes;
   }
 
+  const matches = candidates.filter(m => m.status === "live");
   if (matches.length === 0) return null;
 
   return (

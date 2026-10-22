@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { broadcastLive } from "@/lib/live-channel";
+import { FORMATION_SELECT, PLAYER_FIELDS, type LivePlayer } from "@/lib/live-match";
 import { MODULES, inferModule, moduleSlots, shortName } from "@/lib/formation";
 
 interface Match {
@@ -126,11 +128,16 @@ export default function AdminFormazione() {
     // Titolari e panchina valgono anche come presenze (match_lineups)
     const del1 = await supabase.from("match_formations").delete().eq("match_id", selectedMatch);
     const del2 = await supabase.from("match_lineups").delete().eq("match_id", selectedMatch);
-    const ins1 = formationRows.length ? await supabase.from("match_formations").insert(formationRows) : { error: null };
-    const ins2 = lineupRows.length ? await supabase.from("match_lineups").insert(lineupRows) : { error: null };
+    const ins1 = formationRows.length ? await supabase.from("match_formations").insert(formationRows).select(FORMATION_SELECT) : { data: [], error: null };
+    const ins2 = lineupRows.length ? await supabase.from("match_lineups").insert(lineupRows).select(`is_starter, player:players(${PLAYER_FIELDS})`) : { data: [], error: null };
     const error = del1.error || del2.error || ins1.error || ins2.error;
     if (error) setMsg("Errore: " + error.message);
     else {
+      // Livescore: la formazione salvata sostituisce quella di prima, con la panchina
+      const bench = ((ins2.data ?? []) as unknown as { is_starter: boolean; player: LivePlayer | null }[])
+        .filter(r => !r.is_starter && r.player).map(r => r.player);
+      void broadcastLive(selectedMatch, "match_formations", "delete", { match_id: selectedMatch })
+        .then(() => broadcastLive(selectedMatch, "match_formations", "insert", { rows: ins1.data ?? [], bench }));
       setMsg(formationRows.length < 11 && formationRows.length > 0
         ? `Salvata, ma i titolari sono ${formationRows.length} su 11.`
         : "Formazione salvata!");
@@ -143,6 +150,8 @@ export default function AdminFormazione() {
     if (!selectedMatch || !confirm("Cancellare formazione e panchina di questa partita?")) return;
     await supabase.from("match_formations").delete().eq("match_id", selectedMatch);
     await supabase.from("match_lineups").delete().eq("match_id", selectedMatch);
+    void broadcastLive(selectedMatch, "match_formations", "delete", { match_id: selectedMatch })
+      .then(() => broadcastLive(selectedMatch, "match_formations", "insert", { rows: [], bench: [] }));
     setStarters(Array(moduleSlots(module).length).fill(""));
     setBench([]);
     setDirty(false);
