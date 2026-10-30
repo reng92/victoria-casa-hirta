@@ -7,6 +7,7 @@ import HomeCompetitions from "@/components/home/HomeCompetitions";
 import UpcomingMatches from "@/components/home/UpcomingMatches";
 import LatestNews from "@/components/home/LatestNews";
 import HomeMvp from "@/components/home/HomeMvp";
+import HomeTrophy from "@/components/home/HomeTrophy";
 import HomePrediction, { getPredictableMatch } from "@/components/home/HomePrediction";
 import { PREDICTIONS_ENABLED } from "@/lib/predictions";
 import SponsorMarquee, { type SponsorItem } from "@/components/SponsorMarquee";
@@ -64,6 +65,11 @@ export default async function HomePage() {
             <NextMatch />
           </Suspense>
         </div>
+
+        {/* Coppa appena vinta: striscia celebrativa per qualche settimana dopo la finale */}
+        <Suspense fallback={null}>
+          <HomeTrophy index={1} className="md:col-span-4 xl:col-span-6" />
+        </Suspense>
 
         {/* MVP del mese: solo se c'è una votazione in corso, in arrivo o appena chiusa */}
         <Suspense fallback={null}>
