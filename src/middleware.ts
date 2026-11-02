@@ -1,15 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { PREDICTIONS_ENABLED } from "@/lib/predictions";
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-
-  // Pronostici nascosti: 307 (temporaneo) verso la home. Il notFound() della
-  // pagina con lo streaming risponderebbe 200.
-  if (!PREDICTIONS_ENABLED && (pathname === "/pronostici" || pathname === "/pronostici/")) {
-    return NextResponse.redirect(new URL("/", req.url), 307);
-  }
 
   // Vecchi URL con l'UUID di partite e giocatori: 308 verso lo slug leggibile.
   // La pagina reindirizza anche da sola, ma con lo streaming risponderebbe 200.
@@ -63,7 +56,6 @@ async function lookupSlug(table: "matches" | "players", id: string): Promise<str
 export const config = {
   matcher: [
     "/adminwebapp/:path*",
-    "/pronostici",
     "/calendario/:id([0-9a-fA-F-]{36})",
     "/rosa/:id([0-9a-fA-F-]{36})",
   ],

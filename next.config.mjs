@@ -1,4 +1,6 @@
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://qhzlqmiddvhyjvtlgysc.supabase.co";
+// Tenere allineato a PREDICTIONS_ENABLED di src/lib/predictions.ts
+const PREDICTIONS_ENABLED = false;
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -26,6 +28,9 @@ const nextConfig = {
       { source: "/coming-soon/:path*", destination: "/", permanent: true },
       // Le classifiche ora sono nelle pagine delle competizioni
       { source: "/classifica", destination: "/competizioni", permanent: true },
+      // Pronostici nascosti (PREDICTIONS_ENABLED = false in src/lib/predictions.ts):
+      // 307 verso la home, senza eseguire il middleware.
+      ...(PREDICTIONS_ENABLED ? [] : [{ source: "/pronostici", destination: "/", permanent: false }]),
     ];
   },
   async rewrites() {

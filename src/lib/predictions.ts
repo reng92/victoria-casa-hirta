@@ -5,7 +5,7 @@
  * Tutte le scritture passano dalle RPC chiamate dal browser, che leggono l'IP
  * del tifoso per il limite di 3 pronostici per rete.
  */
-/** Sezione pronostici nascosta: rimettere a true per riattivarla ovunque. */
+/** Sezione pronostici nascosta: rimettere a true per riattivarla ovunque (anche in next.config.mjs). */
 export const PREDICTIONS_ENABLED = false;
 
 export type Pick = "vch" | "draw" | "opp";
