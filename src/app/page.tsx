@@ -14,7 +14,7 @@ import SponsorMarquee, { type SponsorItem } from "@/components/SponsorMarquee";
 import Reveal from "@/components/ui/Reveal";
 import Skeleton, { SkeletonCard } from "@/components/ui/Skeleton";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },

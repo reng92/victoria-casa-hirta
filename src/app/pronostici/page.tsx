@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { pageMetadata } from "@/lib/seo";
 import { PREDICTIONS_ENABLED } from "@/lib/predictions";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata = pageMetadata({
   title: "Pronostici",

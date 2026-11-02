@@ -20,6 +20,11 @@ export async function POST(req: NextRequest) {
   if (isAdmin !== true) return NextResponse.json({ ok: false }, { status: 403 });
 
   const { paths } = (await req.json().catch(() => ({}))) as { paths?: unknown };
+  // "*": tutto il sito (dopo qualsiasi scrittura dall'area admin)
+  if (Array.isArray(paths) && paths.includes("*")) {
+    revalidatePath("/", "layout");
+    return NextResponse.json({ ok: true, revalidated: ["*"] });
+  }
   const list = Array.isArray(paths) ? paths.filter((p): p is string => typeof p === "string" && p.startsWith("/")) : [];
   // Le route dinamiche ("/competizioni/[slug]") vanno rigenerate tutte
   for (const p of list.slice(0, 20)) {

@@ -5,8 +5,20 @@
  * timeZone Europe/Rome (Vercel gira in UTC, il telefono del tifoso può
  * essere ovunque).
  */
+import { supabase } from "@/lib/supabase";
 
 export const ROME_TZ = "Europe/Rome";
+
+/**
+ * Ora del server in ms, letta dal database (RPC server_now, migrazione
+ * 2026-11-02_server_now.sql) senza passare da una funzione Vercel.
+ * Se la chiamata fallisce si usa l'orologio del dispositivo.
+ */
+export async function fetchServerNow(): Promise<number> {
+  const { data, error } = await supabase.rpc("server_now");
+  if (!error && typeof data === "string") return Date.parse(data);
+  return Date.now();
+}
 
 export interface MvpPoll {
   id: string;

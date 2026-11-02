@@ -2,7 +2,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { uploadImage } from "@/lib/storage";
-import { refreshPages } from "@/lib/revalidate";
 import { getOpponent } from "@/lib/competitions";
 import { nowAsMatchDate } from "@/lib/format";
 
@@ -69,10 +68,6 @@ export default function AdminGalleria() {
 
   const match = matches.find((m) => m.id === target) ?? null;
 
-  function pagesToRefresh() {
-    return ["/", "/galleria", ...(match?.slug ? [`/calendario/${match.slug}`] : [])];
-  }
-
   async function handleFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     e.target.value = "";
@@ -94,7 +89,6 @@ export default function AdminGalleria() {
     }
     setProgress(null);
     setCaption("");
-    await refreshPages(pagesToRefresh());
     const ok = files.length - failed;
     setMsg(failed ? `Errore: ${failed} foto non caricate${ok ? `, ${ok} caricate` : ""}` : ok === 1 ? "Foto caricata!" : `${ok} foto caricate!`);
     fetchPhotos(target);
@@ -105,7 +99,6 @@ export default function AdminGalleria() {
     // Prima si toglie la copertina attuale: al massimo una per partita
     await supabase.from("gallery").update({ is_cover: false }).eq("match_id", p.match_id).eq("is_cover", true);
     const { error } = p.is_cover ? { error: null } : await supabase.from("gallery").update({ is_cover: true }).eq("id", p.id);
-    await refreshPages(pagesToRefresh());
     setMsg(error ? "Errore: " + error.message : p.is_cover ? "Copertina tolta" : "Copertina impostata: comparirà in home");
     fetchPhotos(target);
   }
@@ -113,14 +106,12 @@ export default function AdminGalleria() {
   async function saveCaption(p: Photo, value: string) {
     if ((p.caption ?? "") === value.trim()) return;
     await supabase.from("gallery").update({ caption: value.trim() || null }).eq("id", p.id);
-    await refreshPages(pagesToRefresh());
     fetchPhotos(target);
   }
 
   async function handleDelete(p: Photo) {
     if (!confirm("Eliminare questa foto?")) return;
     await supabase.from("gallery").delete().eq("id", p.id);
-    await refreshPages(pagesToRefresh());
     fetchPhotos(target);
   }
 

@@ -10,7 +10,7 @@ import { initials } from "@/lib/format";
 import { playerHref } from "@/lib/links";
 import { pageMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata = pageMetadata({
   title: "MVP del mese",
@@ -44,7 +44,7 @@ export default async function MvpPage() {
         <section className="mt-10" aria-labelledby="albo-mvp">
           <h2 id="albo-mvp" className="font-display text-h3 mb-4">Albo d&apos;oro</h2>
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {winners.flat().map(({ poll, player, votes }) => (
+            {winners.flat().map(({ poll, player }) => (
               <li key={`${poll.id}-${player.id}`}>
                 <Link href={playerHref(player)} className="bento-card tap flex items-center gap-4 p-3">
                   <span className="relative w-16 h-20 rounded-xl overflow-hidden bg-surface-2 shrink-0">
@@ -61,7 +61,6 @@ export default async function MvpPage() {
                       <Crown className="w-3.5 h-3.5" aria-hidden /> {monthLabel(poll.month)}
                     </span>
                     <span className="block font-display font-bold leading-tight mt-0.5">{player.full_name}</span>
-                    <span className="block text-xs text-muted mt-0.5 tabular">{votes} {votes === 1 ? "voto" : "voti"}</span>
                   </span>
                 </Link>
               </li>

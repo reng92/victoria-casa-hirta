@@ -19,6 +19,15 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    // Gestiti dalla CDN di Vercel, senza eseguire funzioni
+    return [
+      // Il sito è pubblico: la vecchia pagina "coming soon" rimanda alla home
+      { source: "/coming-soon/:path*", destination: "/", permanent: true },
+      // Le classifiche ora sono nelle pagine delle competizioni
+      { source: "/classifica", destination: "/competizioni", permanent: true },
+    ];
+  },
   async rewrites() {
     // Le immagini caricate dall'admin stanno nel bucket "media" di Supabase,
     // ma vengono servite dal dominio del sito: victoriacasahirta.it/media/...

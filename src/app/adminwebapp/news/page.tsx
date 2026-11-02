@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { refreshPages } from "@/lib/revalidate";
 import LogoField from "@/components/admin/LogoField";
 import { newsHref } from "@/lib/links";
 
@@ -44,16 +43,11 @@ export default function AdminNews() {
       body: form.body || null,
       cover_url: form.cover_url || null,
     };
-    // Lo slug lo genera il database dal titolo: lo rileggo per aggiornare la pagina della news
-    const previous = newsList.find(n => n.id === editingId);
-    const { data, error } = editingId
-      ? await supabase.from("news").update(fields).eq("id", editingId).select("id, slug").single()
-      : await supabase.from("news").insert({ ...fields, published_at: new Date().toISOString() }).select("id, slug").single();
+    const { error } = editingId
+      ? await supabase.from("news").update(fields).eq("id", editingId)
+      : await supabase.from("news").insert({ ...fields, published_at: new Date().toISOString() });
     if (error) setMsg("Errore: " + error.message);
     else {
-      const paths = ["/", "/news", newsHref(data)];
-      if (previous && previous.slug !== data.slug) paths.push(newsHref(previous));
-      await refreshPages(paths);
       setMsg(editingId ? "News aggiornata!" : "News pubblicata!");
       setEditingId(null);
       setForm(emptyForm);
@@ -66,7 +60,6 @@ export default function AdminNews() {
     if (!confirm("Eliminare questa news?")) return;
     await supabase.from("news").delete().eq("id", n.id);
     if (editingId === n.id) cancelEdit();
-    await refreshPages(["/", "/news", newsHref(n)]);
     fetchNews();
   }
 

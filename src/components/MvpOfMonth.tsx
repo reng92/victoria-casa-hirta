@@ -15,6 +15,7 @@ import {
   voteErrors,
   type MvpCandidate,
   type MvpPoll,
+  fetchServerNow,
 } from "@/lib/mvp";
 
 interface Props {
@@ -60,9 +61,8 @@ export default function MvpOfMonth({ poll, renderedAt, compact = false }: Props)
   useEffect(() => {
     setNow(Date.now());
     const started = Date.now();
-    fetch("/api/time", { cache: "no-store" })
-      .then((r) => r.json())
-      .then(({ now: server }: { now: number }) => {
+    fetchServerNow()
+      .then((server) => {
         // Metà del tempo di andata e ritorno per compensare la latenza
         setOffset(server + (Date.now() - started) / 2 - Date.now());
       })
@@ -147,10 +147,8 @@ export default function MvpOfMonth({ poll, renderedAt, compact = false }: Props)
           {status === "closed" && (
             <>
               <Pill tone="neutral"><Lock className="w-3 h-3" aria-hidden /> Votazioni chiuse</Pill>
-              <span>{total} {total === 1 ? "voto" : "voti"} in totale</span>
             </>
           )}
-          {status === "open" && myVote && <span>· {total} {total === 1 ? "voto" : "voti"}</span>}
         </div>
       </div>
 
@@ -191,7 +189,7 @@ export default function MvpOfMonth({ poll, renderedAt, compact = false }: Props)
                 onClick={() => canVote && setSelected(isSelected ? null : p.id)}
                 disabled={!canVote}
                 aria-pressed={canVote ? isSelected : undefined}
-                aria-label={`${p.full_name}${showResults ? `, ${count} voti` : ""}`}
+                aria-label={`${p.full_name}${showResults ? `, ${pct}%` : ""}`}
                 className={`group relative w-full text-left rounded-card overflow-hidden border-2 transition ${
                   isWinner ? "border-draw" :
                   isSelected || isMine ? "border-accent" :
@@ -231,8 +229,7 @@ export default function MvpOfMonth({ poll, renderedAt, compact = false }: Props)
                     <p className={`font-display font-bold text-white leading-tight text-balance ${compact ? "text-xs" : "text-sm"}`}>{p.full_name}</p>
                     {showResults && (
                       <div className="mt-1.5">
-                        <div className="flex justify-between text-[11px] text-white/80 tabular mb-0.5">
-                          <span>{count} {count === 1 ? "voto" : "voti"}</span>
+                        <div className="flex justify-end text-[11px] text-white/80 tabular mb-0.5">
                           <span>{pct}%</span>
                         </div>
                         <div className="h-1 rounded-full bg-white/20 overflow-hidden">

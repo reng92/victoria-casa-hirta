@@ -11,7 +11,13 @@ import { Pill } from "@/components/ui/Badge";
 import { formatDateNumeric } from "@/lib/format";
 import { pageMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 300;
+
+// Pagine generate al build e poi rigenerate in background (ISR)
+export async function generateStaticParams() {
+  const { data } = await supabase.from("players").select("slug");
+  return (data ?? []).filter((p) => p.slug).map((p) => ({ slug: p.slug as string }));
+}
 
 interface Player {
   slug: string | null;

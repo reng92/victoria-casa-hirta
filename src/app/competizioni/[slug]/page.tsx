@@ -19,7 +19,13 @@ import {
 } from "@/lib/competition-data";
 import { pageMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 300;
+
+// Pagine generate al build e poi rigenerate in background (ISR)
+export async function generateStaticParams() {
+  const all = await getCompetitions();
+  return all.map((c) => ({ slug: competitionSlug(c.name) }));
+}
 
 async function getCompetition(slug: string) {
   const all = await getCompetitions();

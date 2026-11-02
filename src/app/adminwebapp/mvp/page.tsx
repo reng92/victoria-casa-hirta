@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { refreshPages } from "@/lib/revalidate";
 import {
   formatRomeDateTime,
   isoToRomeLocal,
@@ -9,6 +8,7 @@ import {
   pollStatus,
   romeLocalToIso,
   type MvpPoll,
+  fetchServerNow,
 } from "@/lib/mvp";
 
 interface Player {
@@ -35,8 +35,7 @@ const statusClass = {
 /** Ora del server (Vercel), non quella del dispositivo dell'admin. */
 async function serverNow() {
   try {
-    const res = await fetch("/api/time", { cache: "no-store" });
-    return ((await res.json()) as { now: number }).now;
+    return await fetchServerNow();
   } catch {
     return Date.now();
   }
@@ -172,7 +171,6 @@ export default function AdminMvp() {
       resetForm();
     }
     await fetchPolls();
-    refreshPages(["/", "/mvp"]);
     setLoading(false);
   }
 
@@ -186,7 +184,6 @@ export default function AdminMvp() {
     const { error } = await supabase.from("mvp_polls").update(patch).eq("id", p.id);
     if (error) setMsg({ ok: false, text: "Errore: " + error.message });
     await fetchPolls();
-    refreshPages(["/", "/mvp"]);
   }
 
   async function handleDelete(p: Poll) {
@@ -194,7 +191,6 @@ export default function AdminMvp() {
     await supabase.from("mvp_polls").delete().eq("id", p.id);
     if (editId === p.id) resetForm();
     await fetchPolls();
-    refreshPages(["/", "/mvp"]);
   }
 
   const byId = Object.fromEntries(players.map((p) => [p.id, p]));

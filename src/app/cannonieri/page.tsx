@@ -7,7 +7,7 @@ import Avatar from "@/components/ui/Avatar";
 import { playerHref } from "@/lib/links";
 import { pageMetadata } from "@/lib/seo";
 
-export const revalidate = 0;
+export const revalidate = 300;
 
 export const metadata = pageMetadata({
   title: "Cannonieri",

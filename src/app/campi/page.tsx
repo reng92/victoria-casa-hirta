@@ -6,7 +6,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { Pill } from "@/components/ui/Badge";
 import { pageMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata = pageMetadata({
   title: "Campi di gioco",

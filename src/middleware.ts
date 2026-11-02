@@ -5,16 +5,6 @@ import { PREDICTIONS_ENABLED } from "@/lib/predictions";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Il sito è pubblico: la vecchia pagina "coming soon" rimanda alla home
-  if (pathname.startsWith("/coming-soon")) {
-    return NextResponse.redirect(new URL("/", req.url), 308);
-  }
-
-  // Le classifiche ora sono nelle pagine delle competizioni
-  if (pathname === "/classifica" || pathname === "/classifica/") {
-    return NextResponse.redirect(new URL("/competizioni", req.url), 308);
-  }
-
   // Pronostici nascosti: 307 (temporaneo) verso la home. Il notFound() della
   // pagina con lo streaming risponderebbe 200.
   if (!PREDICTIONS_ENABLED && (pathname === "/pronostici" || pathname === "/pronostici/")) {
@@ -67,6 +57,14 @@ async function lookupSlug(table: "matches" | "players", id: string): Promise<str
   }
 }
 
+// Solo le route che servono: le pagine pubbliche, i file statici, le immagini,
+// il manifest e il service worker non eseguono mai il middleware (ogni
+// esecuzione è un'invocazione su Vercel). I redirect fissi sono in next.config.mjs.
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|media/).*)"],
+  matcher: [
+    "/adminwebapp/:path*",
+    "/pronostici",
+    "/calendario/:id([0-9a-fA-F-]{36})",
+    "/rosa/:id([0-9a-fA-F-]{36})",
+  ],
 };

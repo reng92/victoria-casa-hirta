@@ -117,7 +117,7 @@ export default function MVPVoting({ matchId }: Props) {
           <div className="min-w-0">
             <h2 className="font-display text-base font-bold leading-tight">MVP della partita</h2>
             <p className="text-xs text-muted mt-0.5">
-              {voted ? `${totalVotes} voti totali` : "Vota il migliore in campo"}
+              {voted ? "Grazie per aver votato" : "Vota il migliore in campo"}
             </p>
           </div>
         </div>
@@ -174,8 +174,7 @@ export default function MVPVoting({ matchId }: Props) {
                 <span className="font-semibold text-xs leading-tight">{p.full_name}</span>
                 {voted && (
                   <div className="mt-2 w-full">
-                    <div className="flex justify-between text-[11px] text-muted mb-1 tabular">
-                      <span>{voteCount} voti</span>
+                    <div className="flex justify-end text-[11px] text-muted mb-1 tabular">
                       <span>{percentage}%</span>
                     </div>
                     <div className="w-full bg-surface rounded-full h-1.5 overflow-hidden">

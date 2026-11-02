@@ -13,7 +13,13 @@ import { Pill } from "@/components/ui/Badge";
 import { formatDateFull } from "@/lib/format";
 import { excerpt, pageMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 300;
+
+// Pagine generate al build e poi rigenerate in background (ISR)
+export async function generateStaticParams() {
+  const { data } = await supabase.from("news").select("slug");
+  return (data ?? []).filter((n) => n.slug).map((n) => ({ slug: n.slug as string }));
+}
 
 interface NewsItem {
   id: string;

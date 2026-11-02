@@ -7,7 +7,7 @@ import EmptyState from "@/components/ui/EmptyState";
 import { initials } from "@/lib/format";
 import { pageMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata = pageMetadata({
   title: "Sponsor",

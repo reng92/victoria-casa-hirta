@@ -13,7 +13,14 @@ import { getHomeAwayScores, getOpponent, matchContextLabel, matchResultNote } fr
 import { MATCH_SELECT, fetchLiveState } from "@/lib/live-match";
 import { excerpt, pageMetadata } from "@/lib/seo";
 
-export const revalidate = 0;
+export const revalidate = 60;
+
+// Pagine generate al build e poi rigenerate in background (ISR); le partite
+// nuove vengono generate alla prima visita
+export async function generateStaticParams() {
+  const { data } = await supabase.from("matches").select("slug");
+  return (data ?? []).filter((m) => m.slug).map((m) => ({ slug: m.slug as string }));
+}
 
 // Condivisa tra generateMetadata e la pagina: una sola query per richiesta
 const getMatch = cache(async (key: string): Promise<Match | null> => {

@@ -13,7 +13,7 @@ import { competitionHref, getTeamLogos, getUnscheduledVCH } from "@/lib/competit
 import { isVCH, teamKey } from "@/lib/competitions";
 import { pageMetadata } from "@/lib/seo";
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 export const metadata = pageMetadata({
   title: "Partite e risultati",
