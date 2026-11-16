@@ -18,91 +18,101 @@ interface Props {
   variant?: "chip" | "card";
 }
 
-// wttr.in dà le previsioni per oggi e i due giorni successivi, a fasce di 3 ore
-interface WttrHour {
-  time: string;
-  tempC: string;
-  FeelsLikeC: string;
-  humidity: string;
-  windspeedKmph: string;
-  chanceofrain: string;
-  weatherCode: string;
-  lang_it?: { value: string }[];
-  weatherDesc?: { value: string }[];
+// Previsioni di 3bmeteo: pagina oraria della città, oggi (/meteo/<città>) e i
+// 7 giorni successivi (/meteo/<città>/<n>), una riga per ogni ora.
+const CITY_SLUGS: Record<string, string> = {
+  "cancello scalo": "san+felice+a+cancello",
+};
+
+function citySlug(city: string) {
+  const key = city.trim().toLowerCase();
+  return CITY_SLUGS[key] ?? key.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/'/g, "").replace(/\s+/g, "+");
 }
 
-interface WttrDay {
-  date: string;
-  hourly: WttrHour[];
-  astronomy?: { sunrise?: string; sunset?: string }[];
+/** Giorni di calendario tra oggi (ora di Roma) e la data della partita. */
+function daysFromToday(matchDate: string) {
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Rome" });
+  return Math.round((Date.parse(matchDate.slice(0, 10)) - Date.parse(today)) / 86_400_000);
 }
 
-/** "06:35 PM" → minuti dalla mezzanotte (ora locale della città). */
-function clockToMinutes(value: string | undefined): number | null {
-  const m = value?.match(/^(d{1,2}):(d{2})s*(AM|PM)$/i);
-  if (!m) return null;
-  const h = (Number(m[1]) % 12) + (m[3].toUpperCase() === "PM" ? 12 : 0);
-  return h * 60 + Number(m[2]);
-}
+const cellText = (html: string) => html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+const firstInt = (text: string | undefined) => {
+  const m = text?.match(/-?\d+/);
+  return m ? parseInt(m[0]) : 0;
+};
 
 /**
  * Previsioni per il giorno e l'ora della partita. match_date è salvato con
  * l'orario locale scritto come UTC (14:30 → 14:30Z), quindi si leggono le
- * parti UTC; anche wttr.in usa l'ora locale della città.
- * Null se la partita è oltre i giorni coperti dalle previsioni.
+ * parti UTC; anche 3bmeteo usa l'ora italiana.
+ * Null se la partita è oltre i giorni coperti o la pagina non si legge.
  */
 async function getForecast(city: string, matchDate: string): Promise<WeatherData | null> {
   try {
+    const days = daysFromToday(matchDate);
+    if (days < 0 || days > 7) return null;
     const res = await fetch(
-      `https://wttr.in/${encodeURIComponent(city)}?format=j1&lang=it`,
-      { next: { revalidate: 3600 } }
+      `https://www.3bmeteo.com/meteo/${citySlug(city)}${days > 0 ? `/${days}` : ""}`,
+      { headers: { "User-Agent": "Mozilla/5.0" }, next: { revalidate: 3600 } }
     );
     if (!res.ok) return null;
-    const data = await res.json();
-    const day = (data.weather as WttrDay[] | undefined)?.find(
-      (d) => d.date === matchDate.slice(0, 10)
-    );
-    if (!day?.hourly?.length) return null;
+    const html = await res.text();
+
+    const rows = html
+      .split("forecast-table-exp__hour-cell")
+      .slice(1)
+      .map((chunk) => {
+        const row = chunk.split("</tr>")[0];
+        const time = row.match(/lead-time">(\d{1,2}):(\d{2})/);
+        const icon = row.match(/set_icone\/\d+\/(\w+)\.svg"\s+alt="([^"]*)"/);
+        // Il pezzo parte dentro la cella dell'ora, quindi le <td> complete sono:
+        // tempo, temp, precipitazioni, probabilità, vento, raffica, UR, pressione, T.perc.
+        const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) => cellText(m[1]));
+        if (!time || cells.length < 9) return null;
+        return {
+          minutes: Number(time[1]) * 60 + Number(time[2]),
+          night: icon?.[1]?.endsWith("n") ?? false,
+          description: cells[0] || icon?.[2] || "",
+          temperature: firstInt(cells[1]),
+          precipitation: cells[2],
+          rainChance: firstInt(cells[3]),
+          wind: firstInt(cells[4]),
+          humidity: firstInt(cells[6]),
+          feelsLike: firstInt(cells[8]),
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+    if (!rows.length) return null;
 
     const match = new Date(matchDate);
     const minutes = match.getUTCHours() * 60 + match.getUTCMinutes();
-    const hour = day.hourly.reduce((best, h) => {
-      const diff = (h: WttrHour) => Math.abs(Math.floor(Number(h.time) / 100) * 60 - minutes);
-      return diff(h) < diff(best) ? h : best;
-    });
+    const hour = rows.reduce((best, r) => (Math.abs(r.minutes - minutes) < Math.abs(best.minutes - minutes) ? r : best));
 
-    const code = parseInt(hour.weatherCode);
-    // Partita dopo il tramonto (o prima dell'alba): icone notturne
-    const sunrise = clockToMinutes(day.astronomy?.[0]?.sunrise) ?? 7 * 60;
-    const sunset = clockToMinutes(day.astronomy?.[0]?.sunset) ?? 19 * 60;
-    const night = minutes < sunrise || minutes >= sunset;
+    const desc = hour.description.toLowerCase();
+    const wet = /pioggia|piogge|pioviggin|rovesc|acquazz|temporal/.test(desc);
     return {
-      temperature: parseInt(hour.tempC),
-      feelsLike: parseInt(hour.FeelsLikeC),
-      // Con lang=it wttr.in mette la descrizione tradotta in lang_it
-      description: (hour.lang_it?.[0]?.value ?? hour.weatherDesc?.[0]?.value ?? "").trim(),
-      icon: getWeatherEmoji(code, night),
-      rain: RAIN_CODES.includes(code) || STORM_CODES.includes(code),
-      rainChance: parseInt(hour.chanceofrain) || 0,
-      humidity: parseInt(hour.humidity),
-      wind: parseInt(hour.windspeedKmph),
+      temperature: hour.temperature,
+      feelsLike: hour.feelsLike,
+      description: hour.description.charAt(0).toUpperCase() + hour.description.slice(1),
+      icon: getWeatherEmoji(desc, hour.night),
+      rain: wet || (!!hour.precipitation && !/assent/i.test(hour.precipitation) && /\d/.test(hour.precipitation)),
+      rainChance: hour.rainChance,
+      humidity: hour.humidity,
+      wind: hour.wind,
     };
   } catch {
     return null;
   }
 }
 
-const RAIN_CODES = [176, 263, 266, 281, 284, 293, 296, 299, 302, 305, 308, 311, 314, 317, 320, 353, 356, 359, 362, 365, 374, 377];
-const STORM_CODES = [200, 386, 389, 392];
-
-function getWeatherEmoji(code: number, night: boolean): string {
-  if (code === 113) return night ? "🌙" : "☀️";
-  if (code === 116) return night ? "☁️" : "⛅";
-  if (code === 119 || code === 122) return "☁️";
-  if ([143, 248, 260].includes(code)) return "🌫️";
-  if (RAIN_CODES.includes(code)) return "🌧️";
-  if ([179, 182, 185, 227, 230, 323, 326, 329, 332, 335, 338, 350, 368, 371, 395].includes(code)) return "❄️";
-  if (STORM_CODES.includes(code)) return "⛈️";
+function getWeatherEmoji(desc: string, night: boolean): string {
+  if (/temporal/.test(desc)) return "⛈️";
+  if (/neve|nevischio/.test(desc)) return "❄️";
+  if (/pioggia|piogge|pioviggin|rovesc|acquazz/.test(desc)) return "🌧️";
+  if (/nebbi|foschi/.test(desc)) return "🌫️";
+  if (/sereno|soleggiato|limpido/.test(desc)) return night ? "🌙" : "☀️";
+  if (/poco nuvoloso|nubi sparse|parz|velat/.test(desc)) return night ? "☁️" : "⛅";
+  if (/nuvol|copert/.test(desc)) return "☁️";
   return night ? "🌙" : "🌤️";
 }
 
@@ -133,7 +143,7 @@ export default async function WeatherWidget({ matchDate, city, variant = "card" 
     return (
       <div className="bento-card p-5 text-sm text-muted">
         <p className="text-[11px] font-semibold uppercase tracking-wider mb-1">Meteo a {city}</p>
-        Le previsioni per la partita compaiono due giorni prima.
+        Le previsioni per la partita compaiono una settimana prima.
       </div>
     );
   }
