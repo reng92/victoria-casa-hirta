@@ -97,29 +97,6 @@ function ResultsByMatchday({ fixtures, logos, showGroup = true }: { fixtures: Fi
 }
 
 /* ------------------------------------------------------------------ */
-/* Zone (girone unico)                                                 */
-/* ------------------------------------------------------------------ */
-
-type Zone = "promo" | "playoff" | "playout" | "releg" | null;
-
-/** Zone di classifica (indicative): 1ª promozione, 2ª-4ª playoff, ultime 2 retrocessione, terzultima playout. */
-function getZone(pos: number, total: number): Zone {
-  if (total < 6) return pos === 1 ? "promo" : null;
-  if (pos === 1) return "promo";
-  if (pos <= 4) return "playoff";
-  if (pos > total - 2) return "releg";
-  if (pos === total - 2) return "playout";
-  return null;
-}
-
-const zoneStyle: Record<Exclude<Zone, null>, { bar: string; label: string }> = {
-  promo: { bar: "bg-win", label: "Promozione" },
-  playoff: { bar: "bg-brand-soft", label: "Playoff" },
-  playout: { bar: "bg-draw", label: "Playout" },
-  releg: { bar: "bg-loss", label: "Retrocessione" },
-};
-
-/* ------------------------------------------------------------------ */
 /* Tabella                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -132,11 +109,10 @@ function StandingsTable({
 }: {
   logos: TeamLogos;
   rows: Standing[];
-  mode: "zones" | "groups";
+  mode: "league" | "groups";
   caption: string;
   qualified?: number;
 }) {
-  const total = rows.length;
   return (
     <div className="rounded-card border border-border bg-surface shadow-card">
       <table className="w-full text-xs sm:text-sm">
@@ -160,15 +136,8 @@ function StandingsTable({
             const pos = i + 1;
             const vch = isVCH(row.team_name);
             const dr = row.goals_for - row.goals_against;
-            const bar =
-              mode === "groups"
-                ? pos <= qualified
-                  ? "bg-win"
-                  : "bg-transparent"
-                : (() => {
-                    const z = getZone(pos, total);
-                    return z ? zoneStyle[z].bar : "bg-transparent";
-                  })();
+            const groups = mode === "groups";
+            const bar = pos <= qualified ? "bg-win" : "bg-transparent";
             return (
               <tr
                 key={row.id}
@@ -178,7 +147,7 @@ function StandingsTable({
               >
                 <td className="py-3 pl-3 sm:pl-4 pr-1">
                   <span className="inline-flex items-center gap-2">
-                    <span className={`w-1 h-5 rounded-full ${bar}`} aria-hidden />
+                    {groups && <span className={`w-1 h-5 rounded-full ${bar}`} aria-hidden />}
                     <span className="tabular text-muted">{pos}</span>
                   </span>
                 </td>
@@ -202,19 +171,6 @@ function StandingsTable({
         </tbody>
       </table>
     </div>
-  );
-}
-
-function ZoneLegend() {
-  return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3 px-1 text-[11px] text-muted" aria-label="Legenda zone">
-      {(Object.keys(zoneStyle) as Exclude<Zone, null>[]).map((z) => (
-        <li key={z} className="inline-flex items-center gap-1.5">
-          <span className={`w-2 h-2 rounded-full ${zoneStyle[z].bar}`} aria-hidden />
-          {zoneStyle[z].label}
-        </li>
-      ))}
-    </ul>
   );
 }
 
@@ -319,8 +275,7 @@ export default function CompetitionView({
   }
   return (
     <>
-      {rows.length > 0 && <StandingsTable rows={rows} mode="zones" caption={c.name} logos={logos} />}
-      {rows.length >= 6 && <ZoneLegend />}
+      {rows.length > 0 && <StandingsTable rows={rows} mode="league" caption={c.name} logos={logos} />}
       <ResultsByMatchday fixtures={fixtures.filter((f) => !f.round)} logos={logos} />
       {knockout.length > 0 && (
         <div className="mt-6">
