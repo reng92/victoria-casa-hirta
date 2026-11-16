@@ -10,7 +10,7 @@ const WINNER_DAYS = 10;
 export default async function HomeMvp({ index, className }: { index: number; className: string }) {
   const now = Date.now();
   const poll = featuredPoll(await getMvpPolls(), now);
-  if (!poll) return null;
+  if (!poll || poll.show_in_home === false) return null;
   if (pollStatus(poll, now) === "closed" && now - Date.parse(poll.closes_at) > WINNER_DAYS * 86400000) return null;
   return (
     <Reveal index={index} className={className}>

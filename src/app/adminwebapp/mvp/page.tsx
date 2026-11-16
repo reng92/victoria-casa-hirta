@@ -92,7 +92,7 @@ export default function AdminMvp() {
   async function fetchPolls() {
     const { data } = await supabase
       .from("mvp_polls")
-      .select("id, title, month, opens_at, closes_at, mvp_candidates(player_id)")
+      .select("*, mvp_candidates(player_id)")
       .order("month", { ascending: false })
       .order("opens_at", { ascending: false });
     const list = (data as unknown as Poll[]) ?? [];
@@ -183,6 +183,12 @@ export default function AdminMvp() {
       : { [field]: now };
     const { error } = await supabase.from("mvp_polls").update(patch).eq("id", p.id);
     if (error) setMsg({ ok: false, text: "Errore: " + error.message });
+    await fetchPolls();
+  }
+
+  async function toggleHome(p: Poll) {
+    const { error } = await supabase.from("mvp_polls").update({ show_in_home: p.show_in_home === false }).eq("id", p.id);
+    if (error) setMsg({ ok: false, text: "Errore: " + error.message + (error.message.includes("show_in_home") ? " (lancia la migrazione 2026-11-16_mvp_show_in_home.sql)" : "") });
     await fetchPolls();
   }
 
@@ -318,6 +324,14 @@ export default function AdminMvp() {
                   {status === "open" && (
                     <button onClick={() => setNow(p, "closes_at")} className="text-xs bg-amber-50 text-amber-700 px-3 py-1 rounded-full hover:bg-amber-100 transition">⏹ Chiudi ora</button>
                   )}
+                  <button
+                    onClick={() => toggleHome(p)}
+                    aria-pressed={p.show_in_home !== false}
+                    title="Mostra o nascondi la card di questa votazione nella home"
+                    className={`text-xs px-3 py-1 rounded-full transition ${p.show_in_home !== false ? "bg-blue-50 text-brand-blue hover:bg-blue-100" : "bg-gray-100 text-gray-400 hover:bg-gray-200"}`}
+                  >
+                    {p.show_in_home !== false ? "🏠 In home" : "🚫 Nascosta in home"}
+                  </button>
                   <button onClick={() => openEdit(p)} className="text-xs bg-gray-100 text-gray-600 px-3 py-1 rounded-full hover:bg-gray-200 transition">✏️ Modifica</button>
                   <button onClick={() => handleDelete(p)} className="text-xs text-gray-400 hover:text-red-500 transition">🗑️</button>
                 </div>

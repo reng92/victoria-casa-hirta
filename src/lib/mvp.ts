@@ -26,6 +26,8 @@ export interface MvpPoll {
   month: string;
   opens_at: string;
   closes_at: string;
+  /** Card in home (migrazione 2026-11-16_mvp_show_in_home.sql); se manca vale true. */
+  show_in_home?: boolean;
 }
 
 export interface MvpCandidate {

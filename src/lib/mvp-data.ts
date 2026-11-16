@@ -15,7 +15,7 @@ export interface MvpWinner {
 export async function getMvpPolls(): Promise<MvpPollWithCandidates[]> {
   const { data } = await supabase
     .from("mvp_polls")
-    .select("id, title, month, opens_at, closes_at, mvp_candidates(players(id, slug, full_name, shirt_number, role, photo_url))")
+    .select("*, mvp_candidates(players(id, slug, full_name, shirt_number, role, photo_url))")
     .order("month", { ascending: false })
     .order("opens_at", { ascending: false });
   type Row = MvpPoll & { mvp_candidates: { players: MvpCandidate | null }[] };
